@@ -267,6 +267,8 @@
 
   ASSIGN(rootBuildDir, [prefs stringForKey:RootBuildDirectory]);
   ASSIGN(buildTool, [prefs stringForKey:BuildTool]);
+  if ([[project projectDict] objectForKey:@"XCODE_BuildScript"])
+    ASSIGN(buildTool, @"/bin/bash");
 
   promptOnClean = [prefs boolForKey:PromptOnClean];
 }
@@ -585,6 +587,16 @@
   PCProjectEditor *projectEditor;
   int             ret;
 
+  NSDictionary *metadata = [project projectDict];
+  if ([metadata objectForKey:@"XCODE_PROJECT_PATH"] &&
+      ![metadata objectForKey:@"XCODE_BuildScript"] &&
+      ![fm fileExistsAtPath:[[project projectPath] stringByAppendingPathComponent:@"GNUmakefile"]])
+    {
+      NSRunAlertPanel(@"GNUstep Build Required",
+        @"This Xcode project has no GNUmakefile. Configure BuildScript in GNUstep/ProjectCenter.plist. macOS SDKs and Xcode build phases cannot be built on Linux directly.", @"OK", nil, nil);
+      return NO;
+    }
+
   // Checking for project 'edited' state 
   if ([project isProjectChanged])
     {
@@ -689,7 +701,14 @@
 			    object:nil];
 
   makeTask = [[NSTask alloc] init];
-  [makeTask setArguments:buildArgs];
+  NSString *script = [[project projectDict] objectForKey:@"XCODE_BuildScript"];
+  if (script)
+    {
+      NSMutableArray *arguments = [NSMutableArray arrayWithObject:script];
+      [arguments addObjectsFromArray:buildArgs];
+      [makeTask setArguments:arguments];
+    }
+  else [makeTask setArguments:buildArgs];
   [makeTask setCurrentDirectoryPath:[project projectPath]];
   [makeTask setLaunchPath:buildTool];
   [makeTask setStandardOutput:stdOutPipe];

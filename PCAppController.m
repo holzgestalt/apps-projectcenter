@@ -150,6 +150,8 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
   pcProject = [fileName stringByAppendingPathComponent:@"PC.project"];
 
   isProject = ([[fileName pathExtension] isEqualToString:@"pcproj"] == YES
+               || [[fileName pathExtension] isEqualToString:@"xcodeproj"] == YES
+               || [[fileName lastPathComponent] isEqualToString:@"project.pbxproj"] == YES
 	       || [[fileName pathExtension] isEqualToString:@"project"] == YES
 	       || ([fm fileExistsAtPath:fileName isDirectory:&isDir] && isDir
 		   && (([fm fileExistsAtPath:pcProject isDirectory:&pcProjectIsDir]

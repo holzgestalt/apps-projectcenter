@@ -35,7 +35,12 @@ extern NSString *PCBrowserDidSetPathNotification;
 @interface PCProjectBrowser : NSObject
 {
   PCProject *project;
-  NSBrowser *browser;
+  NSOutlineView *outline;
+  NSScrollView *sourceScroll;
+  NSMutableArray *sourceRoots;
+  NSMutableDictionary *sourceItems;
+  NSString *sourcePath;
+  BOOL updatingSelection;
 }
 
 // ============================================================================
@@ -53,6 +58,7 @@ extern NSString *PCBrowserDidSetPathNotification;
 // Returns nil if multiple files selected
 - (NSString *)nameOfSelectedFile;
 - (NSString *)projectFileForCategoryPath:(NSString *)categoryPath;
+- (NSString *)categoryPathForFilePath:(NSString *)filePath;
 - (NSString *)pathToSelectedFile;
 
 // Returns nil if multiple categories selected
@@ -80,13 +86,6 @@ extern NSString *PCBrowserDidSetPathNotification;
 // ==== Notifications
 // ============================================================================
 - (void)projectDictDidChange:(NSNotification *)aNotif;
-
-@end
-
-@interface PCProjectBrowser (ProjectBrowserDelegate)
-
-- (void)browser:(NSBrowser *)sender createRowsForColumn:(NSInteger)column 
-                                               inMatrix:(NSMatrix *)matrix;
 
 @end
 

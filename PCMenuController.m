@@ -303,6 +303,16 @@
   PCProjectEditor  *projectEditor = [aProject projectEditor];
   PCProjectBrowser *projectBrowser = [aProject projectBrowser];
 
+  if ([[aProject projectDict] objectForKey:@"XCODE_PROJECT_PATH"])
+    {
+      NSString *title = [menuItem title];
+      if ([menuTitle isEqual:@"Project"] &&
+          [@[@"Save", @"Add Files...", @"Remove Files...", @"New Subproject...", @"Add Subproject..."] containsObject:title])
+        return NO;
+      if ([menuTitle isEqual:@"File"] && [@[@"New in Project", @"Rename"] containsObject:title])
+        return NO;
+    }
+
   if ([[projectManager loadedProjects] count] == 0) 
     {
       // Project related menu items

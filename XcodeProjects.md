@@ -1,0 +1,86 @@
+# Opening Xcode projects on GNUstep
+
+Use **Project → Open…** to select an `.xcodeproj` directory. Opening
+`project.pbxproj` through the application's file-open handler also works.
+The navigator is a resizable outline on the left of the editor. For an Xcode
+project it shows the project row and below it Xcode's own groups, in project
+order (synchronized folders are sorted by name). Files that are not in any
+Xcode group, such as `project.pbxproj`, the GNUmakefile and the sidecar plist,
+follow under their ProjectCenter category (Supporting Files, Libraries).
+A single file click opens the integrated editor. Multiple file selection and reveal-from-editor preserve full relative
+paths.
+
+The project window has a toolbar with Run, Stop and Build, and toggles for the
+navigator, the bottom area and the inspector panel (Clean, Debug and Find can
+be added by customizing it). Build and run output open in a bottom area below
+the editor, which stays visible. The loaded-files list appears below the
+navigator. Choosing separate panels in Preferences → Miscellaneous
+(`UseTearOffWindows`) moves build, run and loaded files into their own windows
+instead; an earlier ProjectCenter may have stored that choice as `YES`.
+With GTK4Native, Project Open uses GTK's folder chooser: navigate to and select
+the `.xcodeproj` folder itself, then press Open. File Open uses GTK's file chooser.
+In File Open, navigate inside the `.xcodeproj` directory and select
+`project.pbxproj` to load the project rather than a text editor. GTK's file
+chooser navigates into folders; to select the wrapper folder itself use
+Project Open instead.
+Source files can be edited and saved normally. Xcode metadata is read-only:
+ProjectCenter does not convert the project, write a `.pcproj`, regenerate the
+GNUmakefile or rewrite the application's Info plist. Reopen to refresh the
+file list after changing Xcode metadata or a synchronized folder's contents.
+
+The reader supports OpenStep-format `project.pbxproj` files, nested PBXGroup
+and PBXVariantGroup references, SOURCE_ROOT and absolute references, and
+Xcode 16+ PBXFileSystemSynchronizedRootGroup folders. The browser includes the
+project's local files, including files belonging to other targets; it does not
+interpret target membership exclusions as a filter. Hidden files and symlinks
+inside synchronized folders are skipped. Asset catalogs remain single entries.
+SDK/build-product references and unresolved build-setting paths are omitted.
+
+One application target must be selected. A project containing one application
+target works immediately (test and aggregate targets do not count). For several
+application targets, select one with `TargetName` below. Framework/tool-only
+projects, `.xcworkspace`, scheme selection, build-setting expansion, Swift
+packages and Xcode project editing are not implemented.
+
+## GNUstep build and debug integration
+
+Reading an Xcode project does not supply Apple's SDKs or translate its build
+phases. The Build/Clean controls use an existing `GNUmakefile` in the project
+root. Alternatively, create `GNUstep/ProjectCenter.plist` beside the
+`.xcodeproj`:
+
+```text
+{
+    TargetName = MyApp;
+    BuildScript = "scripts/build-gnustep.sh";
+    Executable = "build/MyApp.app/MyApp";
+}
+```
+
+`TargetName` is optional for a single application target. `BuildScript` and
+`Executable` paths are absolute or relative to the directory containing the
+`.xcodeproj`. The script is invoked with `/bin/bash` when Build/Clean is selected,
+with the project root as its working directory and GNUstep Make arguments
+(including `all`/`clean`) forwarded to it. Opening a project does not execute it.
+Without a script or makefile, browsing/editing still works and Build explains
+that a GNUstep build is required. `Executable` selects the binary for Run/Debug;
+otherwise ProjectCenter searches its standard GNUstep output locations.
+Launch ProjectCenter from a shell with the correct GNUstep environment loaded.
+Project settings changed in the Inspector/Build panels are session-local;
+edit the sidecar file for persistent configuration.
+
+This workspace configures EditGlyphData to use its existing build script,
+resource preparation and GTK4Native output in `build/EditGlyphData/`.
+
+## Workspace validation
+
+```bash
+bash scripts/build-projectcenter.sh install
+bash scripts/test-projectcenter-xcode.sh
+bash scripts/test-projectcenter-xcode.sh --integration
+```
+
+Run from the workspace root. The integration test uses Xvfb and GNUstep's user
+defaults. It opens EditGlyphData, checks duplicate-open handling and resource
+paths, verifies save leaves the original project/build files unchanged, checks
+the configured executable, and closes the project.

@@ -58,6 +58,9 @@
   NSSplitView *v_split;
 
   NSBox       *customView;
+  NSSplitView *contentSplit;   // editor above the collapsible bottom area
+  NSBox       *bottomView;     // build or run output
+  CGFloat     bottomHeight;
   NSResponder *firstResponder;
 
   BOOL        _isToolbarVisible;
@@ -87,6 +90,10 @@
 - (void)showProjectBuild:(id)sender;
 - (void)showProjectLaunch:(id)sender;
 - (void)showProjectEditor:(id)sender;
+- (void)toggleNavigator:(id)sender;
+- (void)toggleBottomArea:(id)sender;
+- (BOOL)isNavigatorVisible;
+- (BOOL)isBottomAreaVisible;
 - (BOOL)isToolbarVisible;
 - (void)toggleToolbar;
 

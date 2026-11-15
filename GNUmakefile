@@ -129,6 +129,11 @@ ProjectCenter_main.m
 
 -include GNUmakefile.preamble
 include $(GNUSTEP_MAKEFILES)/aggregate.make
+ifneq ($(GNUSTEP_APPLICATION_THEME),)
+GNUSTEP_THEME_ROOT ?= $(abspath ../..)
+include $(GNUSTEP_THEME_ROOT)/native/application-theme.make
+else
 include $(GNUSTEP_MAKEFILES)/application.make
+endif
 -include GNUmakefile.postamble
 include $(GNUSTEP_MAKEFILES)/Master/nsis.make

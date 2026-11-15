@@ -397,8 +397,13 @@ static PCFileManager *_mgr = nil;
     case PCOpenProjectOperation: 
       panel = [NSOpenPanel openPanel];
       [panel setAllowsMultipleSelection:NO];
-      [panel setCanChooseFiles:YES];
+      /* Xcode and ProjectCenter wrappers are directories. A folder-only
+       * chooser also works with the native platform file chooser. Validate
+       * the selected wrapper after it returns, rather than installing an
+       * otherwise unnecessary delegate that forces the AppKit fallback. */
+      [panel setCanChooseFiles:NO];
       [panel setCanChooseDirectories:YES];
+      [panel setTreatsFilePackagesAsDirectories:YES];
       lastOpenDir = [prefs stringForKey:@"ProjectOpenLastDirectory"];
       break;
     case PCOpenDirectoryOperation: 
@@ -432,16 +437,13 @@ static PCFileManager *_mgr = nil;
       lastOpenDir = NSHomeDirectory();
     }
   [panel setDirectory:lastOpenDir];
-  [panel setDelegate:self];
+  [panel setDelegate:(op == PCAddFileOperation ? self : nil)];
 
   if (title != nil)
     {
       [panel setTitle:title];
     }
-  if (accessoryView != nil)
-    {
-      [panel setAccessoryView:accessoryView];
-    }
+  [panel setAccessoryView:accessoryView];
 
 
   return panel;
@@ -487,10 +489,7 @@ static PCFileManager *_mgr = nil;
   int            result = -10;
 
   panel = [self _panelForOperation:op title:title accView:accessoryView];
-  if (types != nil)
-    {
-      [panel setAllowedFileTypes:types];
-    }
+  [panel setAllowedFileTypes:types];
 
   if ((op == PCOpenFileOperation) || 
       (op == PCOpenProjectOperation) || 
@@ -499,6 +498,21 @@ static PCFileManager *_mgr = nil;
       if ((result = [panel runModalForTypes:types]) == NSOKButton) 
 	{
 	  [fileList addObjectsFromArray:[panel filenames]];
+	  if (op == PCOpenProjectOperation)
+	    {
+	      NSString *path = [fileList firstObject];
+	      NSFileManager *fm = [NSFileManager defaultManager];
+	      NSString *extension = [path pathExtension];
+	      BOOL valid = ([extension isEqual:@"xcodeproj"] &&
+	        [fm isReadableFileAtPath:[path stringByAppendingPathComponent:@"project.pbxproj"]]) ||
+	        [fm isReadableFileAtPath:[path stringByAppendingPathComponent:@"PC.project"]];
+	      if (!valid)
+	        {
+	          NSRunAlertPanel(@"Open Project", @"Choose an .xcodeproj or .pcproj folder, or a folder containing PC.project.", @"OK", nil, nil);
+	          [fileList release];
+	          return nil;
+	        }
+	    }
 	}
     }
   else if (op == PCSaveFileOperation)
@@ -609,6 +623,9 @@ static PCFileManager *_mgr = nil;
 
   if (operation == PCOpenProjectOperation)
     {
+      if ([[filename pathExtension] isEqual:@"xcodeproj"] &&
+          [fm fileExistsAtPath:[filename stringByAppendingPathComponent:@"project.pbxproj"]])
+        return YES;
       if ([fm fileExistsAtPath:filename isDirectory:&isDir] && isDir)
 	{
 	  e = [[sender allowedFileTypes] objectEnumerator]; 

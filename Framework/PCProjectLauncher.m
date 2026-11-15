@@ -203,6 +203,8 @@ enum {
 
 - (NSString *)applicationPath
 {
+  NSString *executable = [[project projectDict] objectForKey:@"XCODE_Executable"];
+  if (executable) return [executable stringByDeletingLastPathComponent];
   if ([[project projectTypeName] isEqualToString: @"Application"])
     {
       NSString *appName;
@@ -216,6 +218,8 @@ enum {
 
 - (NSString *)executablePath
 {
+  NSString *configured = [[project projectDict] objectForKey:@"XCODE_Executable"];
+  if (configured) return configured;
   NSMutableArray *candidates;
   NSString      *projectPath;
   NSString      *projectName;
@@ -284,6 +288,18 @@ enum {
   if (!_isRunning && !_isDebugging)
     {
       [runButton performClick:self];
+    }
+}
+
+- (void)performStop
+{
+  if (_isRunning)
+    {
+      [runButton performClick:self];
+    }
+  else if (_isDebugging)
+    {
+      [debugButton performClick:self];
     }
 }
 

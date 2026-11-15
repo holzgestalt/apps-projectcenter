@@ -34,6 +34,7 @@
 #import <ProjectCenter/PCProjectManager.h>
 
 #import <ProjectCenter/PCProject.h>
+#import "PCXcodeProject.h"
 #import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCProjectBrowser.h>
 #import <ProjectCenter/PCProjectInspector.h>
@@ -121,6 +122,14 @@ PCNoteRecentProjectPath(NSString *projectPath)
 }
 
 @implementation PCProjectManager
+
++ (void)initialize
+{
+  /* One window like Xcode: build and run output open below the editor
+   * unless the user chooses separate panels in the preferences. */
+  [[NSUserDefaults standardUserDefaults] registerDefaults:
+    [NSDictionary dictionaryWithObject:@"NO" forKey:@"UseTearOffWindows"]];
+}
 
 // ============================================================================
 // ==== Intialization & deallocation
@@ -648,6 +657,9 @@ PCNoteRecentProjectPath(NSString *projectPath)
       return nil;
     }
 
+  if ([[aPath lastPathComponent] isEqual:@"project.pbxproj"])
+    aPath = [aPath stringByDeletingLastPathComponent];
+
   // Check project path for invalid characters
   if ([aPath rangeOfString: @" "].location != NSNotFound ||
       [aPath rangeOfString: @"\t"].location != NSNotFound ||
@@ -667,7 +679,8 @@ PCNoteRecentProjectPath(NSString *projectPath)
     }
 
   projectFileType = [[aPath lastPathComponent] pathExtension];
-  if ([projectFileType isEqualToString:@"pcproj"] || 
+  if ([projectFileType isEqualToString:@"xcodeproj"] ||
+      [projectFileType isEqualToString:@"pcproj"] ||
       [projectFileType isEqualToString:@"project"])
     {
       projectPath = [aPath stringByDeletingLastPathComponent];
@@ -682,7 +695,8 @@ PCNoteRecentProjectPath(NSString *projectPath)
       projectPath = aPath;
     }
 
-  if ((project = [loadedProjects objectForKey:projectPath])== nil)
+  NSString *loadedKey = [projectFileType isEqual:@"xcodeproj"] ? aPath : projectPath;
+  if ((project = [loadedProjects objectForKey:loadedKey])== nil)
     {  
       NSMutableDictionary *projectFile = nil;
       NSString            *projectTypeName = nil;
@@ -699,7 +713,17 @@ PCNoteRecentProjectPath(NSString *projectPath)
 	}
 
       projectPathToOpen = aPath;
-      if (isDir)
+      if ([projectFileType isEqual:@"xcodeproj"])
+	{
+	  NSString *error = nil;
+	  projectFile = [[[PCXcodeProject projectAtPath:aPath error:&error] mutableCopy] autorelease];
+	  if (!projectFile)
+	    {
+	      NSRunAlertPanel(@"Open Xcode Project", @"%@", @"OK", nil, nil, error);
+	      return nil;
+	    }
+	}
+      else if (isDir)
 	{
 	  NSString *pcProject = [aPath stringByAppendingPathComponent:@"PC.project"];
 	  BOOL     pcProjectIsDir = NO;
@@ -797,8 +821,9 @@ PCNoteRecentProjectPath(NSString *projectPath)
       [self startSaveTimer];
       [project validateProjectDict];
       
-      [loadedProjects setObject:project forKey:[project projectPath]];
-      PCNoteRecentProjectPath([project projectPath]);
+      NSString *sourcePath = [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
+      [loadedProjects setObject:project forKey:(sourcePath ?: [project projectPath])];
+      PCNoteRecentProjectPath(sourcePath ?: [project projectPath]);
       PCLogStatus(self, @"Saved opened Document as %@", [project projectPath]);
 
       if (flag)
@@ -846,7 +871,7 @@ PCNoteRecentProjectPath(NSString *projectPath)
   NSArray       *files = nil;
   NSString      *filePath = nil;
 
-  fileTypes = [NSArray arrayWithObjects:@"pcproj",@"project",nil];
+  fileTypes = [NSArray arrayWithObjects:@"pcproj",@"project",@"xcodeproj",nil];
   files = [fileManager filesOfTypes:fileTypes
 			  operation:PCOpenProjectOperation
 			   multiple:NO
@@ -1162,14 +1187,15 @@ PCNoteRecentProjectPath(NSString *projectPath)
 {
   PCProject *currentProject = nil;
 
-  currentProject = [loadedProjects objectForKey: [aProject projectPath]];
+  NSString *sourcePath = [[aProject projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
+  currentProject = [loadedProjects objectForKey:(sourcePath ?: [aProject projectPath])];
   if (!currentProject)
     {
       return;
     }
 
   // Remove it from the loaded projects!
-  [loadedProjects removeObjectForKey: [aProject projectPath]];
+  [loadedProjects removeObjectForKey:(sourcePath ?: [aProject projectPath])];
 
   if ([loadedProjects count] == 0)
     {
@@ -1239,6 +1265,18 @@ PCNoteRecentProjectPath(NSString *projectPath)
 - (void)openFileAtPath:(NSString *)filePath
 	      windowed:(BOOL)windowed
 {
+  /* File Open, recent files and callers must share the project routing used
+   * by the application file-open handler. A pbxproj is project metadata,
+   * not an ordinary source file to send to the text editor. */
+  NSString *extension = [filePath pathExtension];
+  if ([extension isEqual:@"xcodeproj"] || [extension isEqual:@"pcproj"] ||
+      [[filePath lastPathComponent] isEqual:@"PC.project"] ||
+      ([[filePath lastPathComponent] isEqual:@"project.pbxproj"] &&
+       [[[filePath stringByDeletingLastPathComponent] pathExtension] isEqual:@"xcodeproj"]))
+    {
+      [self openProjectAt:filePath makeActive:YES];
+      return;
+    }
   editorManager = [self editorManager];
 
   if (filePath != nil)

@@ -30,6 +30,7 @@
 #import <ProjectCenter/PCFileManager.h>
 #import <ProjectCenter/PCProjectManager.h>
 #import <ProjectCenter/PCProject.h>
+#import "PCXcodeProject.h"
 #import <ProjectCenter/PCDefines.h>
 
 #import <ProjectCenter/PCProjectWindow.h>
@@ -202,6 +203,15 @@ PCResourceArrayFromProjectValue(id value)
 
 - (PCProject *)openWithWrapperAt:(NSString *)aPath
 {
+  if ([[aPath pathExtension] isEqual:@"xcodeproj"] ||
+      [[aPath lastPathComponent] isEqual:@"project.pbxproj"])
+    {
+      NSDictionary *dict = [PCXcodeProject projectAtPath:aPath error:NULL];
+      if (!dict) return nil;
+      NSString *bundle = [dict objectForKey:@"XCODE_PROJECT_PATH"];
+      [self assignProjectDict:dict atPath:[bundle stringByDeletingLastPathComponent]];
+      return self;
+    }
   BOOL isDir = NO;
   BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath: aPath 
 						isDirectory: &isDir];
@@ -467,7 +477,9 @@ PCResourceArrayFromProjectValue(id value)
   while ((key = [enumerator nextObject]))
     {
       [projectDict setObject:
-	PCResourceArrayFromProjectValue([projectDict objectForKey:key])
+	([projectDict objectForKey:@"XCODE_PROJECT_PATH"]
+          ? PCArrayFromProjectValue([projectDict objectForKey:key], NO)
+          : PCResourceArrayFromProjectValue([projectDict objectForKey:key]))
 		     forKey:key];
     }
 
@@ -569,6 +581,7 @@ PCResourceArrayFromProjectValue(id value)
 // Saves backup file
 - (BOOL)writeMakefile
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return YES;
   NSString *mf = [projectPath stringByAppendingPathComponent:@"GNUmakefile"];
   NSString *bu = [projectPath stringByAppendingPathComponent:@"GNUmakefile~"];
   NSFileManager *fm = [NSFileManager defaultManager];
@@ -594,6 +607,7 @@ PCResourceArrayFromProjectValue(id value)
 
 - (BOOL)saveProjectWindowsAndPanels
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return YES;
   NSMutableDictionary *windows = [NSMutableDictionary dictionary];
   NSString            *projectFile = nil;
   NSMutableDictionary *projectFileDict = nil;
@@ -618,6 +632,8 @@ PCResourceArrayFromProjectValue(id value)
   // ProjectBrowser
   [windows setObject:NSStringFromRect([[projectBrowser view] frame])
               forKey:@"ProjectBrowser"];
+  [windows setObject:[NSNumber numberWithDouble:[[projectBrowser view] frame].size.width]
+              forKey:@"SourceOutlineWidth"];
 
   // Write to file and exit if preferences wasn't set to save panels
   if (!rememberWindows)
@@ -689,6 +705,8 @@ PCResourceArrayFromProjectValue(id value)
 
 - (BOOL)save
 {
+  /* Xcode owns its metadata and GNUstep owns its existing build files. */
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return YES;
   NSFileManager  *fm = [NSFileManager defaultManager];
   NSUInteger      spCount = [loadedSubprojects count];
   int            i;
@@ -1160,6 +1178,7 @@ PCResourceArrayFromProjectValue(id value)
 // May files will be added to category?
 - (BOOL)isEditableCategory:(NSString *)category
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return NO;
   NSString *key = [self keyForCategory:category];
 
   if ([key isEqualToString:PCSupportingFiles])
@@ -1176,6 +1195,9 @@ PCResourceArrayFromProjectValue(id value)
   NSString *key = [self keyForCategory:[projectBrowser nameOfSelectedCategory]];
   NSString *fileName = [filePath lastPathComponent];
   NSString *extension = [filePath pathExtension];
+
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"])
+    return ![fileName isEqual:@"project.pbxproj"];
 
   if ([key isEqualToString:PCSupportingFiles]) 
     {
@@ -1241,6 +1263,7 @@ PCResourceArrayFromProjectValue(id value)
 
 - (NSString *)dirForCategoryKey:(NSString *)key 
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return projectPath;
   if ([[self resourceFileKeys] containsObject:key])
     {
       return [projectPath stringByAppendingPathComponent:@"Resources"];
@@ -1283,6 +1306,8 @@ PCResourceArrayFromProjectValue(id value)
 
 - (NSString *)pathForFile:(NSString *)file forKey:(NSString *)key
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"])
+    return [file isAbsolutePath] ? file : [projectPath stringByAppendingPathComponent:file];
   NSString *resPath = nil;
 
   if ([[self resourceFileKeys] containsObject:key])

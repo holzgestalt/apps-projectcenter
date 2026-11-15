@@ -81,6 +81,11 @@
 
 - (void)loadInfoFile
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"])
+    {
+      infoDict = [[NSMutableDictionary alloc] init];
+      return;
+    }
   PCFileManager  *pcfm = [PCFileManager defaultManager];
   NSMutableArray *otherRes = nil;
   NSString       *oldFile = @"Info-gnustep.plist";
@@ -280,7 +285,7 @@
 
 - (PCProject *)openWithWrapperAt:(NSString *)path
 {
-  [super openWithWrapperAt: path];
+  if (![super openWithWrapperAt: path]) return nil;
   [self loadInfoFile];
   return self;
 }
@@ -451,6 +456,7 @@
 
 - (BOOL)writeInfoFile
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return YES;
   NSString *infoFile = nil;
   NSArray  *documentTypes = nil;
 
@@ -495,6 +501,7 @@
 // Overriding
 - (BOOL)writeMakefile
 {
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return YES;
   PCMakefileFactory *mf = [PCMakefileFactory sharedFactory];
   NSUInteger        i,count; 
   NSString          *mfl = nil;

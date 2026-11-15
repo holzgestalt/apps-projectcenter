@@ -31,7 +31,7 @@
 
 #import <ProjectCenter/PCProject.h>
 #import <ProjectCenter/PCProjectWindow.h>
-#import <ProjectCenter/PCProjectBrowser.h>
+#import "../Headers/ProjectCenter/PCProjectBrowser.h"
 #import <ProjectCenter/PCProjectEditor.h>
 
 #import <ProjectCenter/PCLogController.h>
@@ -226,7 +226,7 @@
 
   // Category path was changed by user's clicking inside browser.
   // That's why new category path must be transfered to editor.
-  NSString *categoryPath = [NSString stringWithFormat: @"/Classes/%@/", fileName];
+  NSString *categoryPath = [[_project projectBrowser] categoryPathForFilePath:filePath] ?: @"/";
   [editor setCategoryPath:categoryPath];
   [self orderFrontEditorForFile:filePath];
 

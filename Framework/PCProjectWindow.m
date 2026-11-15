@@ -47,6 +47,14 @@
 
 #import <math.h>
 
+@interface PCProjectWindow (Layout)
+- (void)_createToolbar;
+- (void)_setBottomAreaVisible:(BOOL)visible;
+- (void)_showInBottomArea:(NSView *)view;
+- (void)resizeContentSubviews;
+- (void)resizeHorizontalSubiewsWithOldSize:(NSSize)oldSize;
+@end
+
 @implementation PCProjectWindow
 
 // ============================================================================
@@ -64,9 +72,179 @@
   // Editor in the Box
   [customView setContentView:[[project projectEditor] componentView]];
 
-  [h_split addSubview:customView];
+  /* Editor above, build/run output below. The bottom area joins the split
+   * only while it is shown. */
+  contentSplit = [[NSSplitView alloc] initWithFrame:NSMakeRect(0,0,562,252)];
+  [contentSplit setVertical:NO];
+  [contentSplit setDelegate:self];
+  [contentSplit setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable];
+  [contentSplit addSubview:customView];
   RELEASE(customView);
-  [h_split adjustSubviews];
+
+  bottomView = [[NSBox alloc] initWithFrame:NSMakeRect(0,0,562,220)];
+  [bottomView setTitlePosition:NSNoTitle];
+  [bottomView setBorderType:NSNoBorder];
+  [bottomView setContentViewMargins:NSMakeSize(0.0,0.0)];
+  bottomHeight = 220;
+
+  [h_split addSubview:contentSplit];
+  RELEASE(contentSplit);
+  [self resizeHorizontalSubiewsWithOldSize:NSZeroSize];
+}
+
+// ============================================================================
+// ==== Toolbar
+// ============================================================================
+
+static NSString * const PCToolbarRun = @"PCToolbarRun";
+static NSString * const PCToolbarStop = @"PCToolbarStop";
+static NSString * const PCToolbarBuild = @"PCToolbarBuild";
+static NSString * const PCToolbarClean = @"PCToolbarClean";
+static NSString * const PCToolbarDebug = @"PCToolbarDebug";
+static NSString * const PCToolbarFind = @"PCToolbarFind";
+static NSString * const PCToolbarNavigator = @"PCToolbarNavigator";
+static NSString * const PCToolbarBottomArea = @"PCToolbarBottomArea";
+static NSString * const PCToolbarInspector = @"PCToolbarInspector";
+
+/* Monochrome glyphs for actions the bundled artwork does not cover. */
+static NSImage *PCToolbarGlyph(NSString *identifier)
+{
+  NSImage *image = [[[NSImage alloc] initWithSize:NSMakeSize(32,32)] autorelease];
+  NSBezierPath *path = [NSBezierPath bezierPath];
+  [image lockFocus];
+  [[NSColor blackColor] set];
+  if ([identifier isEqual:PCToolbarRun])
+    {
+      [path moveToPoint:NSMakePoint(9,5)];
+      [path lineToPoint:NSMakePoint(26,16)];
+      [path lineToPoint:NSMakePoint(9,27)];
+      [path closePath];
+      [path fill];
+    }
+  else if ([identifier isEqual:PCToolbarStop])
+    {
+      [[NSBezierPath bezierPathWithRect:NSMakeRect(8,8,16,16)] fill];
+    }
+  else
+    {
+      /* A window outline with the toggled pane filled. */
+      NSRect frame = NSMakeRect(4.5,6.5,23,19);
+      NSRect pane = NSMakeRect(4.5,6.5,8,19);
+      if ([identifier isEqual:PCToolbarBottomArea]) pane = NSMakeRect(4.5,6.5,23,7);
+      else if ([identifier isEqual:PCToolbarInspector]) pane = NSMakeRect(19.5,6.5,8,19);
+      [[NSBezierPath bezierPathWithRect:pane] fill];
+      path = [NSBezierPath bezierPathWithRect:frame];
+      [path setLineWidth:1.5];
+      [path stroke];
+    }
+  [image unlockFocus];
+  [image setTemplate:YES];
+  return image;
+}
+
+- (void)_createToolbar
+{
+  NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"PCProjectWindowToolbar"];
+  [toolbar setDelegate:(id)self];
+  [toolbar setAllowsUserCustomization:YES];
+  [toolbar setDisplayMode:NSToolbarDisplayModeIconOnly];
+  [projectWindow setToolbar:toolbar];
+  RELEASE(toolbar);
+}
+
+- (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar
+{
+  return [NSArray arrayWithObjects:PCToolbarRun, PCToolbarStop, PCToolbarBuild,
+    PCToolbarClean, PCToolbarDebug, PCToolbarFind, PCToolbarNavigator,
+    PCToolbarBottomArea, PCToolbarInspector, NSToolbarFlexibleSpaceItemIdentifier,
+    NSToolbarSpaceItemIdentifier, NSToolbarSeparatorItemIdentifier, nil];
+}
+
+- (NSArray *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar
+{
+  return [NSArray arrayWithObjects:PCToolbarRun, PCToolbarStop, PCToolbarBuild,
+    NSToolbarFlexibleSpaceItemIdentifier, PCToolbarNavigator,
+    PCToolbarBottomArea, PCToolbarInspector, nil];
+}
+
+- (NSToolbarItem *)toolbar:(NSToolbar *)toolbar
+     itemForItemIdentifier:(NSString *)identifier
+ willBeInsertedIntoToolbar:(BOOL)flag
+{
+  NSDictionary *items = [NSDictionary dictionaryWithObjectsAndKeys:
+    @[@"Run", @"Run the application", @"toolbarRun:", @""], PCToolbarRun,
+    @[@"Stop", @"Stop the running build or application", @"toolbarStop:", @""], PCToolbarStop,
+    @[@"Build", @"Build the project", @"toolbarBuild:", @"Build"], PCToolbarBuild,
+    @[@"Clean", @"Clean the project", @"toolbarClean:", @"Clean"], PCToolbarClean,
+    @[@"Debug", @"Run the application in the debugger", @"toolbarDebug:", @"Debug"], PCToolbarDebug,
+    @[@"Find", @"Find in project", @"toolbarFind:", @"Find"], PCToolbarFind,
+    @[@"Navigator", @"Hide or show the navigator", @"toggleNavigator:", @""], PCToolbarNavigator,
+    @[@"Debug Area", @"Hide or show build and run output", @"toggleBottomArea:", @""], PCToolbarBottomArea,
+    @[@"Inspector", @"Show the project inspector", @"showProjectInspector:", @""], PCToolbarInspector,
+    nil];
+  NSArray *description = [items objectForKey:identifier];
+  if (!description) return nil;
+  NSToolbarItem *item = [[[NSToolbarItem alloc] initWithItemIdentifier:identifier] autorelease];
+  NSString *artwork = [description objectAtIndex:3];
+  [item setLabel:[description objectAtIndex:0]];
+  [item setPaletteLabel:[description objectAtIndex:0]];
+  [item setToolTip:[description objectAtIndex:1]];
+  [item setTarget:self];
+  [item setAction:NSSelectorFromString([description objectAtIndex:2])];
+  [item setImage:[artwork length] ? IMAGE(artwork) : PCToolbarGlyph(identifier)];
+  return item;
+}
+
+- (BOOL)validateToolbarItem:(NSToolbarItem *)item
+{
+  NSString *identifier = [item itemIdentifier];
+  PCProjectBuilder *builder = [project projectBuilder];
+  PCProjectLauncher *launcher = [project projectLauncher];
+  BOOL building = [builder isBuilding] || [builder isCleaning];
+  BOOL running = [launcher isRunning] || [launcher isDebugging];
+
+  if ([identifier isEqual:PCToolbarRun] || [identifier isEqual:PCToolbarDebug])
+    return [project isExecutable] && !running && !building;
+  if ([identifier isEqual:PCToolbarStop]) return building || running;
+  if ([identifier isEqual:PCToolbarBuild] || [identifier isEqual:PCToolbarClean])
+    return !building;
+  return YES;
+}
+
+- (void)toolbarBuild:(id)sender
+{
+  [self showProjectBuild:self];
+  [[project projectBuilder] performStartBuild];
+}
+
+- (void)toolbarClean:(id)sender
+{
+  [self showProjectBuild:self];
+  [[project projectBuilder] performStartClean];
+}
+
+- (void)toolbarRun:(id)sender
+{
+  [self showProjectLaunch:self];
+  [[project projectLauncher] performRun];
+}
+
+- (void)toolbarDebug:(id)sender
+{
+  [self showProjectLaunch:self];
+  [[project projectLauncher] performDebug];
+}
+
+- (void)toolbarStop:(id)sender
+{
+  PCProjectBuilder *builder = [project projectBuilder];
+  if ([builder isBuilding] || [builder isCleaning]) [builder performStopBuild];
+  else [[project projectLauncher] performStop];
+}
+
+- (void)toolbarFind:(id)sender
+{
+  [NSApp sendAction:@selector(findShowPanel:) to:nil from:self];
 }
 
 - (void)awakeFromNib
@@ -106,24 +284,27 @@
   /*
    * Horizontal split view
    */
-  rect = [[projectWindow contentView] frame];
-  rect.size.height -= 62;
-  rect.size.width -= 16;
-  rect.origin.x += 8;
-  rect.origin.y = -2;
+  /* The window toolbar replaces the nib's button row; the navigator and
+   * editor fill the window. The nib's views stay alive for their outlets. */
+  RETAIN(toolbarView);
+  RETAIN(statusLine);
+  for (NSView *view in [NSArray arrayWithArray:[[projectWindow contentView] subviews]])
+    if (view != h_split) [view removeFromSuperview];
+  [h_split setFrame:[[projectWindow contentView] bounds]];
+  [h_split setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [self _createToolbar];
   [h_split setDelegate:self];
+  [h_split setVertical:YES];
 
   /*
    * Vertical split view
    */
-  rect = [[projectWindow contentView] frame];
-  if (h_split)
-    {
-      rect.size.height = 185;
-    }
+  rect = [h_split bounds];
+  CGFloat savedWidth = [[[[project projectDict] objectForKey:PCWindows] objectForKey:@"SourceOutlineWidth"] doubleValue];
+  rect.size.width = savedWidth > 0 ? savedWidth : 240;
   v_split = [[NSSplitView alloc] initWithFrame:rect];
-  [v_split setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
-  [v_split setVertical:YES];
+  [v_split setAutoresizingMask:NSViewHeightSizable];
+  [v_split setVertical:NO];
   [v_split setDelegate:self];
 
   /*
@@ -263,7 +444,12 @@
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [h_split setDelegate:nil];
   [v_split setDelegate:nil];
+  [contentSplit setDelegate:nil];
+  [[projectWindow toolbar] setDelegate:nil];
   [projectWindow close];
+  RELEASE(bottomView);
+  RELEASE(toolbarView);
+  RELEASE(statusLine);
 
   [super dealloc];
 }
@@ -316,9 +502,9 @@
 
   if ([prefs boolForKey:UseTearOffWindows])
     {
-      if ([customView contentView] == view)
+      if ([bottomView contentView] == view)
 	{
-	  [self showProjectEditor:self];
+	  [self _setBottomAreaVisible:NO];
 	}
       if (rootActiveProject == project)
 	{
@@ -331,7 +517,7 @@
 	{
 	  [buildPanel close];
 	}
-      [self setCustomContentView:view];
+      [self _showInBottomArea:view];
     }
 }
 
@@ -346,9 +532,9 @@
 
   if ([prefs boolForKey:UseTearOffWindows])
     {
-      if ([customView contentView] == view)
+      if ([bottomView contentView] == view)
 	{
-	  [self showProjectEditor:self];
+	  [self _setBottomAreaVisible:NO];
 	}
       [launchPanel orderFront:nil];
     }
@@ -358,7 +544,7 @@
 	{
 	  [launchPanel close];
 	}
-      [self setCustomContentView:view];
+      [self _showInBottomArea:view];
     }
 }
 
@@ -410,87 +596,80 @@
   [self makeFirstResponder:firstResponder];
 }
 
+- (void)_setBottomAreaVisible:(BOOL)visible
+{
+  if (visible == [self isBottomAreaVisible]) return;
+  if (visible)
+    {
+      [contentSplit addSubview:bottomView];
+    }
+  else
+    {
+      bottomHeight = [bottomView frame].size.height;
+      [bottomView removeFromSuperview];
+    }
+  [self resizeContentSubviews];
+  [contentSplit setNeedsDisplay:YES];
+}
+
+- (void)_showInBottomArea:(NSView *)view
+{
+  if ([bottomView contentView] != view) [bottomView setContentView:view];
+  [self _setBottomAreaVisible:YES];
+}
+
+- (BOOL)isBottomAreaVisible
+{
+  return [bottomView superview] == contentSplit;
+}
+
+- (void)toggleBottomArea:(id)sender
+{
+  if ([self isBottomAreaVisible])
+    {
+      [self _setBottomAreaVisible:NO];
+    }
+  else if ([[[bottomView contentView] subviews] count])
+    {
+      [self _setBottomAreaVisible:YES];
+    }
+  else
+    {
+      [self showProjectBuild:self];
+    }
+}
+
+- (BOOL)isNavigatorVisible
+{
+  return [v_split superview] == h_split;
+}
+
+- (void)toggleNavigator:(id)sender
+{
+  if ([self isNavigatorVisible])
+    {
+      RETAIN(v_split);
+      [v_split removeFromSuperview];
+    }
+  else
+    {
+      [h_split addSubview:v_split positioned:NSWindowBelow relativeTo:contentSplit];
+      RELEASE(v_split);
+    }
+  [self resizeHorizontalSubiewsWithOldSize:NSZeroSize];
+  [h_split setNeedsDisplay:YES];
+}
+
 - (BOOL)isToolbarVisible
 {
-  return _isToolbarVisible;
+  return [[projectWindow toolbar] isVisible];
 }
 
 - (void)toggleToolbar
 {
-  NSRect rect;
-  NSView *cView = [projectWindow contentView];
-
-  if (_isToolbarVisible)
-    {
-      RETAIN(toolbarView);
-      [toolbarView removeFromSuperview];
-      if (h_split)
-	{
-	  rect = [h_split frame];
-	  rect.size.height += 48;
-
-	  // Hack. NSBrowser resizes incorrectly without removing/adding
-	  // from/to superview
-	  RETAIN(h_split);
-	  [h_split removeFromSuperview];
-          rect = [cView centerScanRect: rect];
-	  [h_split setFrame:rect];
-	  [cView addSubview:h_split];
-	  RELEASE(h_split);
-	}
-      else if (v_split)
-	{
-	  rect = [v_split frame];
-	  rect.size.height += 48;
-
-	  // Hack. See above
-	  RETAIN(v_split);
-	  [v_split removeFromSuperview];
-	  [v_split setFrame:rect];
-          rect = [cView centerScanRect: rect];
-	  [cView addSubview:v_split];
-	  RELEASE(v_split);
-	}
-      _isToolbarVisible = NO;
-    }
-  else
-    {
-      rect = [cView frame];
-      rect.origin.x = 8;
-      rect.origin.y = rect.size.height - 57;
-      rect.size.width -= 16;
-      rect.size.height = 48;
-      [toolbarView setFrame:rect];
-
-      [cView addSubview:toolbarView];
-      RELEASE(toolbarView);
-      if (h_split)
-	{
-	  rect = [h_split frame];
-	  rect.size.height -= 48;
-
-	  // Hack. See above
-	  RETAIN(h_split);
-	  [h_split removeFromSuperview];
-          rect = [cView centerScanRect: rect];
-	  [h_split setFrame:rect];
-	  [cView addSubview:h_split];
-	  RELEASE(h_split);
-	}
-      else if (v_split)
-	{
-	  rect = [v_split frame];
-	  rect.size.height -= 48;
-
-	  // Hack. See above
-	  RETAIN(v_split);
-	  [v_split removeFromSuperview];
-	  [v_split setFrame:rect];
-	  [cView addSubview:v_split];
-	  RELEASE(v_split);
-	}
-      _isToolbarVisible = YES;
-    }
+  NSToolbar *toolbar = [projectWindow toolbar];
+  [toolbar setVisible:![toolbar isVisible]];
+  _isToolbarVisible = [toolbar isVisible];
 }
 
 // ============================================================================
@@ -776,140 +955,88 @@
 // ==== SplitView delegate
 // ============================================================================
 
-// Subviews: browser and loaded files
+// Sidebar: source outline above the optional loaded-files list.
 - (void)resizeVerticalSubiewsWithOldSize:(NSSize)oldSize
 {
-  NSSize       splitSize = [v_split frame].size;
-  NSDictionary *projectDict = nil;
-  NSDictionary *windowsDict = nil;
-  NSString     *browserString = nil;
-  NSRect       browserRect = NSMakeRect(0,0,0,0);
-  NSRect       boxRect;
-
-//  NSLog(@"resizeVerticalSubiewsWithOldSize entered split view width: %f, height %f", splitSize.width, splitSize.height);
-
-  boxRect = [v_split frame];
-  [v_split setFrame:boxRect];
-
-  if (splitSize.width == oldSize.width && splitSize.height == oldSize.height)
+  NSSize size = [v_split bounds].size;
+  NSArray *views = [v_split subviews];
+  if ([views count] < 2)
     {
+      [browserView setFrame:NSMakeRect(0,0,size.width,size.height)];
       return;
     }
+  NSView *loaded = [views objectAtIndex:1];
+  CGFloat divider = [v_split dividerThickness];
+  CGFloat loadedHeight = [loaded frame].size.height;
+  if (loadedHeight <= 0) loadedHeight = 140;
+  loadedHeight = MIN(MAX(80,loadedHeight),size.height * 0.4);
+  CGFloat outlineHeight = MAX(0,size.height - divider - loadedHeight);
+  BOOL flipped = [v_split isFlipped];
+  [browserView setFrame:NSMakeRect(0,flipped ? 0 : loadedHeight + divider,size.width,outlineHeight)];
+  [loaded setFrame:NSMakeRect(0,flipped ? outlineHeight + divider : 0,size.width,loadedHeight)];
+}
 
-//  NSLog(@"resize vertical split view");
-//  NSLog(@"v_split %@", NSStringFromRect([v_split frame]));
-
-  if (!_splitViewsRestored)
+// Main split: a fixed-width source sidebar on the left, flexible content right.
+- (void)resizeHorizontalSubiewsWithOldSize:(NSSize)oldSize
+{
+  if (!v_split || !contentSplit) return;
+  NSSize size = [h_split bounds].size;
+  if (![self isNavigatorVisible])
     {
-      projectDict = [project projectDict];
-      windowsDict = [projectDict objectForKey:PCWindows];
-      if (windowsDict != nil)
-	{
-	  browserString = [windowsDict objectForKey:@"ProjectBrowser"];
-	  if (browserString != nil && ![browserString isEqualToString:@""])
-	    {
-	      browserRect = NSRectFromString(browserString);
-	    }
-	}
-      // Unable to restore browser frame
-      if (browserRect.size.width == 0 && browserRect.size.height == 0)
-	{
-	  browserRect = NSMakeRect(0, 0, splitSize.width, splitSize.height);
-	}
-      [browserView setFrame:browserRect];
+      [contentSplit setFrame:NSMakeRect(0,0,size.width,size.height)];
+      [self resizeContentSubviews];
+      return;
     }
-
-  // Use saved frame of ProjectBrowser only first time. Every time window is
-  // resized use new size of subviews.
-/*  if (_splitViewsRestored)
-    {
-      browserRect = [[[project projectBrowser] view] frame];
-      browserRect.size.height = splitSize.height;
-      if ([[prefs objectForKey:UseTearOffWindows] isEqualToString:@"YES"])
-	{
-	  browserRect.size.width = splitSize.width;
-	}
-    }
-
-  // Browser
-  NSLog(@"%@ browser %@",
-	[project projectName], NSStringFromRect(browserRect));
-  [browserView setFrame:browserRect];*/
-
-  // Loaded Files 
-/*  if ([[prefs objectForKey:UseTearOffWindows] isEqualToString:@"NO"])
-    {
-      boxRect.origin.x = browserRect.size.width + [v_split dividerThickness];
-      boxRect.origin.y = 0;
-      boxRect.size.width = [v_split frame].size.width - boxRect.origin.x;
-      boxRect.size.height = [v_split frame].size.height;
-
-      if (boxRect.size.width < 60)
-	{
-	  boxRect.size.width = 60;
-	  boxRect.origin.x = [v_split frame].size.width - boxRect.size.width;
-	}
-
-      NSLog(@"%@ loadedFiles %@",
-	    [project projectName], NSStringFromRect(boxRect));
-      [[[project projectLoadedFiles] componentView] setFrame:boxRect];
-    }*/
-
-  [v_split adjustSubviews];
-
+  CGFloat divider = [h_split dividerThickness];
+  CGFloat width = [v_split frame].size.width;
+  if (width <= 0) width = 240;
+  width = MIN(MAX(160,width),MAX(100,size.width - divider - 220));
+  [v_split setFrame:NSMakeRect(0,0,width,size.height)];
+  [contentSplit setFrame:NSMakeRect(width + divider,0,MAX(0,size.width - width - divider),size.height)];
+  [self resizeVerticalSubiewsWithOldSize:NSZeroSize];
+  [self resizeContentSubviews];
   _splitViewsRestored = YES;
 }
 
-// Subviews: vertical split view and custom view
-- (void)resizeHorizontalSubiewsWithOldSize:(NSSize)oldSize
+// Content: the editor takes what the bottom area leaves.
+- (void)resizeContentSubviews
 {
-  NSSize splitSize = [h_split frame].size;
-  NSSize hSplitSize;
-  NSRect vSplitRect;
-  NSRect boxRect;
-  
-//  NSLog(@"resizeHorizontalSubiewsWithOldSize entered split view width: %f, height %f", splitSize.width, splitSize.height);
-
-  if (splitSize.width == oldSize.width && splitSize.height == oldSize.height)
+  if (!contentSplit || !customView) return;
+  NSSize size = [contentSplit bounds].size;
+  if (![self isBottomAreaVisible])
     {
+      [customView setFrame:NSMakeRect(0,0,size.width,size.height)];
       return;
     }
+  CGFloat divider = [contentSplit dividerThickness];
+  CGFloat height = [bottomView frame].size.height;
+  if (height <= 0 || [bottomView frame].size.width <= 0) height = bottomHeight;
+  height = MAX(0,MIN(MAX(80,height),size.height - divider - 120));
+  CGFloat editorHeight = MAX(0,size.height - divider - height);
+  BOOL flipped = [contentSplit isFlipped];
+  [customView setFrame:NSMakeRect(0,flipped ? 0 : height + divider,size.width,editorHeight)];
+  [bottomView setFrame:NSMakeRect(0,flipped ? editorHeight + divider : 0,size.width,height)];
+}
 
-//  NSLog(@"resize horizontal split view");
+- (CGFloat)splitView:(NSSplitView *)split constrainMinCoordinate:(CGFloat)proposed ofSubviewAt:(NSInteger)index
+{
+  if (split == contentSplit) return MAX(120,proposed);
+  return split == h_split ? MAX(160,proposed) : MAX(80,proposed);
+}
 
-  hSplitSize = [h_split frame].size;
-  
-  // Vertical Split View
-  vSplitRect = [browserView frame];
-  vSplitRect.origin.x = 0;
-  vSplitRect.origin.y = 0;
-/*  if (![self hasCustomView])
-    {
-      vSplitRect.size = hSplitSize;
-    }
-  else
-    {*/
-      vSplitRect.size.width = hSplitSize.width;
-/*    }*/
-  vSplitRect = [browserView centerScanRect: vSplitRect];
-  [v_split setFrame:vSplitRect];
-  
-  // Custom view (Editor|Builder|Launcher)
-/*  if ([self hasCustomView])
-    {*/
-      boxRect.origin.x = 0;
-      boxRect.origin.y = vSplitRect.size.height + [h_split dividerThickness];
-      boxRect.size.width = hSplitSize.width;
-      boxRect.size.height = hSplitSize.height - boxRect.origin.y;
-      boxRect = [customView centerScanRect: boxRect];
-      [customView setFrame:boxRect];
-//    }
+- (CGFloat)splitView:(NSSplitView *)split constrainMaxCoordinate:(CGFloat)proposed ofSubviewAt:(NSInteger)index
+{
+  return split == h_split ? MIN(proposed,[split bounds].size.width - 220) : MIN(proposed,[split bounds].size.height - 80);
 }
 
 - (void)         splitView:(NSSplitView *)sender
  resizeSubviewsWithOldSize:(NSSize)oldSize
 {
-  if (sender == v_split)
+  if (sender == contentSplit)
+    {
+      [self resizeContentSubviews];
+    }
+  else if (sender == v_split)
     {
       [self resizeVerticalSubiewsWithOldSize:oldSize];
     }

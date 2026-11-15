@@ -65,6 +65,7 @@
 - (NSString *)applicationPath;
 - (void)performRun;
 - (void)performDebug;
+- (void)performStop;
 
 - (void)debug:(id)sender;
 - (void)run:(id)sender;

@@ -36,7 +36,7 @@
       NSIcon = FileProject.tiff;
       NSName = GSPCProjectFileType;
       NSRole = Editor;
-      NSUnixExtensions = ( pcproj );
+      NSUnixExtensions = ( pcproj, xcodeproj, pbxproj );
     },
     {
       NSDocumentClass = PCClassDocument;
