@@ -11,6 +11,21 @@ A single file click opens the integrated editor. Multiple file selection and rev
 paths. Above the code, a jump bar shows the file's place in the navigator
 (project, groups, file); click a part to reveal it in the navigator. Code
 editors show line numbers but no tab-stop ruler.
+The file navigator distinguishes Objective-C implementations (violet `m`), headers
+(teal `h`), C sources (blue `c`), XIB interfaces (yellow tools) and plists (purple
+hierarchy) with original icons inspired by Xcode. Source icons use plain letters;
+folder icons continue to follow the theme.
+
+Selecting a modern Cocoa `.xib` opens an embedded interface editor. Its object
+outline uses the theme's native control, with file/item icons and expandable
+subtrees. Choose an object in the outline or click its canvas representation to
+inspect it; canvas selection reveals any collapsed ancestors. Edit the
+title or frame fields and press **Apply**, then use **File → Save** to write the
+XIB. Double-clicking the file reuses the embedded editor. The canvas shows stored
+frames; it does not solve Auto Layout constraints or instantiate custom classes.
+Actions, outlets, constraints and other XML metadata are preserved. This initial
+editor supports title and frame changes; adding controls, editing connections
+and constraints, and legacy XIB formats are not supported.
 
 The project window has a toolbar with Run, Stop and Build, and toggles for the
 navigator, the bottom area and the inspector panel (Clean, Debug and Find can
@@ -109,6 +124,7 @@ resource preparation and GTK4Native output in `build/EditGlyphData/`.
 bash scripts/build-projectcenter.sh install
 bash scripts/test-projectcenter-xcode.sh
 bash scripts/test-projectcenter-xcode.sh --integration
+bash scripts/test-projectcenter-interface.sh
 ```
 
 Run from the workspace root. The integration test uses Xvfb and GNUstep's user
@@ -116,3 +132,6 @@ defaults. It opens EditGlyphData, checks duplicate-open handling and resource
 paths, verifies save leaves the original project/build files unchanged, checks
 the configured executable, debugs a small test program (line and exception
 breakpoints, call stack, frame selection, Stop) and closes the project.
+The focused interface test exercises the theme's native outline rows, icons,
+disclosure controls, nested object selection and document reload without using
+the project file chooser.

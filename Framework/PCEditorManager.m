@@ -37,6 +37,7 @@
 #import <Protocols/CodeEditor.h>
 
 #import "Modules/Preferences/Misc/PCMiscPrefs.h"
+#import "PCInterfaceEditor.h"
 
 NSString *PCEditorDidChangeFileNameNotification = 
           @"PCEditorDidChangeFileNameNotification";
@@ -171,6 +172,23 @@ NSString *PCEditorDidResignActiveNotification =
 		      @"File doesn't exist.",
 		      @"Close", nil, nil, filePath);
       return nil;
+    }
+
+  /* XIB is XML, but selecting it should open the visual editor rather than
+   * whichever source editor the user has chosen for plain text. */
+  if (!isDir && [[[filePath pathExtension] lowercaseString] isEqual:@"xib"])
+    {
+      editor = [_editorsDict objectForKey:filePath];
+      if (!editor)
+        {
+          PCInterfaceEditor *interfaceEditor = [[PCInterfaceEditor alloc] init];
+          editor = [interfaceEditor openFileAtPath:filePath editorManager:self editable:editable];
+          if (editor) [_editorsDict setObject:editor forKey:filePath];
+          [interfaceEditor release];
+        }
+      if (editor) [self setActiveEditor:editor];
+      [editor setWindowed:windowed];
+      return editor;
     }
 
   // Determine if file is text file

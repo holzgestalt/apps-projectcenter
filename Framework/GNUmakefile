@@ -64,6 +64,8 @@ ProjectCenter_HEADER_FILES = \
 ProjectCenter_OBJC_FILES = \
   PCBundleManager.m \
   PCEditorManager.m \
+  PCInterfaceEditor.m \
+  PCFileTypeIcon.m \
   PCMakefileFactory.m \
   PCFileManager.m \
   PCAddFilesPanel.m \

@@ -9,6 +9,8 @@
 #import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCFileManager.h>
 #import "Framework/PCNavigators.h"
+#import "Framework/PCInterfaceEditor.h"
+#import "Framework/PCFileTypeIcon.h"
 #include <gtk/gtk.h>
 #include <gdk/x11/gdkx.h>
 #include <cairo-xlib.h>
@@ -23,6 +25,26 @@ static GtkWidget *FindLabel(GtkWidget *widget, const char *text)
       GtkWidget *found = FindLabel(child,text);
       if (found) return found;
     }
+  return NULL;
+}
+
+static GtkWidget *FindIcon(GtkWidget *widget, const char *name)
+{
+  if (GTK_IS_IMAGE(widget) && !g_strcmp0(gtk_image_get_icon_name(GTK_IMAGE(widget)),name)) return widget;
+  for (GtkWidget *child = gtk_widget_get_first_child(widget); child; child = gtk_widget_get_next_sibling(child))
+    {
+      GtkWidget *found = FindIcon(child,name);
+      if (found) return found;
+    }
+  return NULL;
+}
+
+static GtkWidget *FindCustomIcon(GtkWidget *widget)
+{
+  if (GTK_IS_IMAGE(widget) && gtk_image_get_storage_type(GTK_IMAGE(widget)) == GTK_IMAGE_PAINTABLE
+      && gtk_image_get_paintable(GTK_IMAGE(widget))) return widget;
+  for (GtkWidget *child=gtk_widget_get_first_child(widget); child; child=gtk_widget_get_next_sibling(child))
+    { GtkWidget *found=FindCustomIcon(child); if (found) return found; }
   return NULL;
 }
 
@@ -179,6 +201,32 @@ int main(int argc, char **argv)
         }
       NSArray *originalFiles = [[NSFileManager defaultManager] directoryContentsAtPath:root];
       [NSApplication sharedApplication];
+      NSMutableSet *iconData = [NSMutableSet set];
+      NSArray *iconTypes = @[@"m",@"h",@"c",@"xib",@"plist"];
+      for (NSString *type in iconTypes)
+        {
+          NSImage *icon = PCFileTypeIcon(type);
+          Check(icon != nil && NSEqualSizes([icon size],NSMakeSize(16,16)), @"file type has a navigator-size icon");
+          NSBitmapImageRep *bitmap = [NSBitmapImageRep imageRepWithData:[icon TIFFRepresentation]];
+          Check([bitmap pixelsWide] == 48 && [bitmap pixelsHigh] == 48, @"file artwork keeps its full raster when passed to the native theme");
+          Check(PCFileTypeIcon([type uppercaseString]) == icon, @"file icons are cached and extension matching ignores case");
+          [iconData addObject:[icon TIFFRepresentation]];
+        }
+      Check([iconData count] == 5 && PCFileTypeIcon(@"unknown") == nil, @"five distinct file icons with generic fallback for other types");
+      const char *iconPreview = getenv("PC_FILE_ICONS_PREVIEW");
+      if (iconPreview)
+        {
+          NSImage *sheet = [[[NSImage alloc] initWithSize:NSMakeSize(480,100)] autorelease];
+          [sheet lockFocus]; [[NSColor whiteColor] set]; NSRectFill(NSMakeRect(0,0,480,100));
+          for (NSUInteger i=0; i<[iconTypes count]; i++)
+            {
+              [PCFileTypeIcon([iconTypes objectAtIndex:i]) drawInRect:NSMakeRect(i*96+24,35,48,48) fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1];
+              [[@"." stringByAppendingString:[iconTypes objectAtIndex:i]] drawAtPoint:NSMakePoint(i*96+30,12) withAttributes:nil];
+            }
+          [sheet unlockFocus];
+          NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:[sheet TIFFRepresentation]];
+          Check([[rep representationUsingType:NSPNGFileType properties:@{}] writeToFile:[NSString stringWithUTF8String:iconPreview] atomically:YES], @"file icon preview");
+        }
       /* Test the integrated layout whatever this user has stored; the
        * argument domain overrides without writing to their defaults. */
       [[NSUserDefaults standardUserDefaults] setVolatileDomain:
@@ -301,6 +349,16 @@ int main(int argc, char **argv)
           Check(label != NULL, @"native source file label is visible");
           graphene_rect_t bounds;
           Check(gtk_widget_compute_bounds(label,GTK_WIDGET(host),&bounds), @"native row coordinates");
+          GtkWidget *fileIcon = FindCustomIcon(gtk_widget_get_parent(label));
+          Check(fileIcon != NULL, @"Objective-C source row uses custom artwork in a native image widget");
+          GtkWidget *xibLabel = FindLabel(GTK_WIDGET(host),"GSDocument.xib");
+          Check(xibLabel && FindCustomIcon(gtk_widget_get_parent(xibLabel)), @"localized XIB group uses the interface icon");
+          Check(gdk_paintable_get_intrinsic_width(gtk_image_get_paintable(GTK_IMAGE(fileIcon))) <= gtk_widget_get_width(fileIcon)
+            && gdk_paintable_get_intrinsic_height(gtk_image_get_paintable(GTK_IMAGE(fileIcon))) <= gtk_widget_get_height(fileIcon), @"native file artwork fits the row without clipping");
+          Check(FindIcon(GTK_WIDGET(host),"folder-symbolic") != NULL, @"folders use desktop symbolic icons");
+          graphene_rect_t iconBounds;
+          Check(gtk_widget_compute_bounds(fileIcon,GTK_WIDGET(host),&iconBounds), @"source icon coordinates");
+          Check(fabs((iconBounds.origin.y + iconBounds.size.height / 2) - (bounds.origin.y + bounds.size.height / 2)) <= 1, @"source icon and label have aligned centers");
           double dx,dy; gtk_native_get_surface_transform(GTK_NATIVE(host),&dx,&dy);
           int scale = gdk_surface_get_scale_factor(surface);
           int x,y; Window ignored;
@@ -315,6 +373,10 @@ int main(int argc, char **argv)
           GtkWidget *list = gtk_widget_get_ancestor(label,GTK_TYPE_LIST_VIEW);
           GtkWidget *scroller = gtk_widget_get_ancestor(list,GTK_TYPE_SCROLLED_WINDOW);
           Check(list && scroller, @"native source list and scroller");
+          GtkWidget *row = label;
+          while (gtk_widget_get_parent(row) && gtk_widget_get_parent(row) != list) row = gtk_widget_get_parent(row);
+          NSLog(@"Sidebar row height: %d logical pixels",gtk_widget_get_height(row));
+          Check(gtk_widget_get_height(row) <= 26, @"source rows use compact spacing");
           GtkAdjustment *adjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scroller));
           double scrollBefore = gtk_adjustment_get_value(adjustment);
           NSUInteger modelChanges = 0;
@@ -347,6 +409,116 @@ int main(int argc, char **argv)
       Check([manager activeProject] == project && [[manager loadedProjects] count] == 1, @"direct folder file-open routing");
       [driver release];
       Check([[project pathForFile:@"EditGlyphData/Base.lproj/MainMenu.xib" forKey:@"INTERFACES"] isEqual:[root stringByAppendingPathComponent:@"EditGlyphData/Base.lproj/MainMenu.xib"]], @"resource path stays source-root-relative");
+      NSString *xibPath = [root stringByAppendingPathComponent:@"EditGlyphData/Base.lproj/MainMenu.xib"];
+      NSData *originalXib = [NSData dataWithContentsOfFile:xibPath];
+      NSString *interfacePath = [sourceTree categoryPathForFilePath:xibPath];
+      Check([sourceTree setPath:interfacePath], @"select XIB in source navigator");
+      [sourceTree click:outline];
+      id interfaceEditor = [[project projectEditor] activeEditor];
+      Check([interfaceEditor isKindOfClass:[PCInterfaceEditor class]], @"single XIB selection opens visual editor");
+      Check([[interfaceEditor componentView] window] == window, @"visual editor is embedded in project window");
+      PumpEvents(0.1);
+      NSOutlineView *objectTree = [interfaceEditor valueForKey:@"tree"];
+      Check([objectTree isKindOfClass:[NSOutlineView class]], @"interface objects use NSOutlineView");
+      id fileItem = [objectTree itemAtRow:0];
+      Check([[fileItem valueForKey:@"title"] isEqual:@"MainMenu.xib"]
+        && [fileItem valueForKey:@"icon"] != nil, @"outline has a file root and icon");
+      id menuItem = [objectTree itemAtRow:[objectTree selectedRow]];
+      Check([objectTree parentForItem:menuItem] == fileItem && [objectTree isExpandable:menuItem], @"interface menu is an expandable child of the file");
+      GtkWindow *interfaceHost = GTK4NativeHostForWindow(window);
+      GtkWidget *menuLabel = FindLabel(GTK_WIDGET(interfaceHost),"Main Menu (menu)");
+      Check(menuLabel && gtk_widget_get_ancestor(menuLabel,GTK_TYPE_LIST_VIEW), @"theme supplies native interface outline rows");
+      GtkWidget *nativeList = gtk_widget_get_ancestor(menuLabel,GTK_TYPE_LIST_VIEW);
+      GtkWidget *nativeRow = menuLabel;
+      while (gtk_widget_get_parent(nativeRow) != nativeList) nativeRow = gtk_widget_get_parent(nativeRow);
+      Check(FindIcon(nativeRow,"open-menu-symbolic") != NULL, @"interface item uses native symbolic icon");
+      GtkWidget *disclosure = FindIcon(nativeRow,"pan-end-symbolic");
+      Check(disclosure != NULL, @"collapsed subtree has native disclosure control");
+      NSInteger collapsedRows = [objectTree numberOfRows];
+      g_signal_emit_by_name(gtk_widget_get_ancestor(disclosure,GTK_TYPE_BUTTON),"clicked");
+      PumpEvents(0.1);
+      Check([objectTree isItemExpanded:menuItem] && [objectTree numberOfRows] > collapsedRows, @"native disclosure opens interface subtree");
+      menuLabel = FindLabel(GTK_WIDGET(interfaceHost),"Main Menu (menu)");
+      nativeRow = menuLabel;
+      while (gtk_widget_get_parent(nativeRow) != nativeList) nativeRow = gtk_widget_get_parent(nativeRow);
+      disclosure = FindIcon(nativeRow,"pan-down-symbolic");
+      Check(disclosure != NULL, @"expanded subtree has native disclosure control");
+      g_signal_emit_by_name(gtk_widget_get_ancestor(disclosure,GTK_TYPE_BUTTON),"clicked");
+      PumpEvents(0.1);
+      Check(![objectTree isItemExpanded:menuItem] && [objectTree numberOfRows] == collapsedRows, @"native disclosure closes interface subtree");
+      Check([objectTree itemAtRow:[objectTree selectedRow]] == menuItem, @"toggling subtree preserves selected interface object");
+      NSView *interfaceCanvas = [interfaceEditor editorView];
+      NSSize viewport = [[interfaceCanvas enclosingScrollView] contentSize];
+      Check([interfaceCanvas frame].size.width >= viewport.width && [interfaceCanvas frame].size.height >= viewport.height, @"interface canvas fills resized editor viewport");
+      const char *xibPreview = getenv("PC_XIB_PREVIEW");
+      if (xibPreview)
+        {
+          GtkWindow *host = GTK4NativeHostForWindow(window);
+          GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(host));
+          Display *display = gdk_x11_display_get_xdisplay(gdk_surface_get_display(surface));
+          Window xid = gdk_x11_surface_get_xid(surface);
+          XWindowAttributes attributes; XGetWindowAttributes(display,xid,&attributes);
+          cairo_surface_t *capture = cairo_xlib_surface_create(display,xid,attributes.visual,attributes.width,attributes.height);
+          Check(cairo_surface_write_to_png(capture,xibPreview) == CAIRO_STATUS_SUCCESS, @"embedded interface screenshot");
+          cairo_surface_destroy(capture);
+        }
+      [sourceTree doubleClick:outline];
+      Check([[project projectEditor] activeEditor] == interfaceEditor && ![interfaceEditor isWindowed], @"double-click reuses embedded XIB editor");
+      Check([[NSData dataWithContentsOfFile:xibPath] isEqual:originalXib], @"viewing real XIB does not rewrite it");
+
+      /* Use a disposable document for edits; never rewrite the sample project. */
+      NSString *fixture = @"<?xml version=\"1.0\"?><document type=\"com.apple.InterfaceBuilder3.Cocoa.XIB\" useAutolayout=\"YES\"><objects><window id=\"win\" title=\"Window\"><view key=\"contentView\" id=\"view\"><rect key=\"frame\" x=\"0\" y=\"0\" width=\"400\" height=\"300\"/><subviews><button id=\"button\" customClass=\"MyButton\"><rect key=\"frame\" x=\"20\" y=\"30\" width=\"100\" height=\"24\"/><buttonCell title=\"Original\" id=\"cell\"/><connections><action selector=\"clicked:\" target=\"owner\" id=\"action\"/></connections></button></subviews><constraints><constraint firstItem=\"button\" firstAttribute=\"width\" constant=\"100\" id=\"constraint\"/></constraints></view></window><customObject id=\"owner\" customClass=\"Controller\"><connections><outlet property=\"button\" destination=\"button\" id=\"outlet\"/></connections></customObject></objects><customMetadata value=\"keep me\"/></document>";
+      NSString *fixturePath = [NSTemporaryDirectory() stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"projectcenter-%@.xib",[[NSProcessInfo processInfo] globallyUniqueString]]];
+      Check([fixture writeToFile:fixturePath atomically:YES encoding:NSUTF8StringEncoding error:NULL], @"write XIB fixture");
+      PCInterfaceEditor *fixtureEditor = [[PCInterfaceEditor alloc] init];
+      Check([fixtureEditor openFileAtPath:fixturePath editorManager:nil editable:YES] != nil, @"open editable interface fixture");
+      NSXMLDocument *xml = [fixtureEditor valueForKey:@"document"];
+      NSXMLElement *button = [[xml nodesForXPath:@"//*[@id='button']" error:NULL] objectAtIndex:0];
+      [fixtureEditor selectObject:button];
+      NSOutlineView *fixtureTree = [fixtureEditor valueForKey:@"tree"];
+      id buttonItem = [fixtureTree itemAtRow:[fixtureTree selectedRow]];
+      id viewItem = [fixtureTree parentForItem:buttonItem];
+      id windowItem = [fixtureTree parentForItem:viewItem];
+      Check([[[viewItem valueForKey:@"element"] attributeForName:@"id"].stringValue isEqual:@"view"]
+        && [[[windowItem valueForKey:@"element"] attributeForName:@"id"].stringValue isEqual:@"win"], @"outline skips XML wrappers and keeps object hierarchy");
+      Check([fixtureTree levelForItem:buttonItem] == 3, @"nested object has real outline depth");
+      [fixtureTree collapseItem:windowItem];
+      Check([fixtureTree rowForItem:buttonItem] < 0, @"closing parent hides nested objects");
+      [fixtureEditor selectObject:button];
+      Check([fixtureTree isItemExpanded:windowItem] && [fixtureTree isItemExpanded:viewItem]
+        && [fixtureTree itemAtRow:[fixtureTree selectedRow]] == buttonItem, @"canvas selection reveals collapsed ancestors and selects matching row");
+      NSMutableArray *propertyFields = [NSMutableArray array];
+      for (NSView *view in [[fixtureEditor componentView] subviews])
+        if ([view isKindOfClass:[NSTextField class]] && [(NSTextField *)view isEditable]) [propertyFields addObject:view];
+      Check([propertyFields count] == 5, @"title and four frame properties are available");
+      [[propertyFields objectAtIndex:0] setStringValue:@"Edited & preserved"];
+      [[propertyFields objectAtIndex:1] setStringValue:@"42"];
+      [fixtureEditor applyProperties:nil];
+      Check([fixtureTree isItemExpanded:windowItem] && [fixtureTree isItemExpanded:viewItem], @"property edit preserves subtree expansion");
+      Check([fixtureEditor isEdited] && [fixtureEditor saveFile], @"visual edits mark document dirty and save successfully");
+      NSXMLDocument *saved = [[[NSXMLDocument alloc] initWithContentsOfURL:[NSURL fileURLWithPath:fixturePath] options:0 error:NULL] autorelease];
+      Check([[saved nodesForXPath:@"//*[@id='cell' and @title='Edited & preserved']" error:NULL] count] == 1, @"edited title survives XML escaping and reload");
+      Check([[saved nodesForXPath:@"//*[@id='button']/rect[@x='42']" error:NULL] count] == 1, @"edited frame survives reload");
+      Check([[saved nodesForXPath:@"//*[@id='action' and @selector='clicked:' and @target='owner'] | //*[@id='outlet' and @destination='button'] | //*[@id='constraint' and @constant='100'] | //customMetadata[@value='keep me'] | //*[@id='button' and @customClass='MyButton']" error:NULL] count] == 5, @"save preserves actions, outlets, constraints, custom classes and unknown metadata");
+      [[propertyFields objectAtIndex:0] setStringValue:@"Unsaved"];
+      [fixtureEditor applyProperties:nil];
+      Check([fixtureEditor revertFileToSaved] && ![fixtureEditor isEdited], @"revert reloads saved visual document");
+      xml = [fixtureEditor valueForKey:@"document"];
+      button = [[xml nodesForXPath:@"//*[@id='button']" error:NULL] objectAtIndex:0];
+      [fixtureEditor selectObject:button];
+      Check([[[propertyFields objectAtIndex:0] stringValue] isEqual:@"Edited & preserved"], @"revert restores saved properties in inspector");
+      [fixtureEditor release];
+      PCInterfaceEditor *readOnlyEditor = [[PCInterfaceEditor alloc] init];
+      NSData *savedBytes = [NSData dataWithContentsOfFile:fixturePath];
+      Check([readOnlyEditor openFileAtPath:fixturePath editorManager:nil editable:NO] != nil, @"open read-only interface");
+      [readOnlyEditor applyProperties:nil];
+      Check(![readOnlyEditor isEdited] && ![readOnlyEditor saveFile]
+        && [[NSData dataWithContentsOfFile:fixturePath] isEqual:savedBytes], @"read-only editor cannot change or save XIB");
+      [readOnlyEditor setWindowed:YES]; [readOnlyEditor show];
+      Check([readOnlyEditor isWindowed] && [[readOnlyEditor editorWindow] isVisible], @"standalone File Open can show a visual editor window");
+      [readOnlyEditor closeFile:nil save:NO]; [readOnlyEditor release];
+      [[NSFileManager defaultManager] removeItemAtPath:fixturePath error:NULL];
       Check([project save] && [project writeMakefile] && [project saveProjectWindowsAndPanels], @"safe save paths");
       Check(![project isEditableFile:@"project.pbxproj"], @"Xcode metadata is read-only");
       Check([project isEditableFile:@"GNUmakefile"], @"existing GNUstep build file remains editable");

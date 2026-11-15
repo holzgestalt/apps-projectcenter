@@ -35,6 +35,7 @@
 #import <ProjectCenter/PCLogController.h>
 
 #import "Modules/Preferences/Misc/PCMiscPrefs.h"
+#import "PCFileTypeIcon.h"
 
 NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
 
@@ -42,6 +43,24 @@ NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
  * view prototypes explicitly, just as its XIB loader does. */
 @interface NSTableView (PCSourceViewSupport)
 - (void)_registerPrototypeViews:(NSArray *)views;
+@end
+
+@interface PCSourceIconView : NSImageView
+{
+  NSString *symbolicIconName;
+}
+@end
+@implementation PCSourceIconView
++ (void)initialize { if (self == [PCSourceIconView class]) [self exposeBinding:@"symbolicIconName"]; }
+- (NSString *)symbolicIconName { return symbolicIconName; }
+- (void)setSymbolicIconName:(NSString *)name { ASSIGNCOPY(symbolicIconName,name); }
+- (NSString *)gtk4NativeIconName { return symbolicIconName; }
+- (void)dealloc { [symbolicIconName release]; [super dealloc]; }
+@end
+
+@interface PCSourceOutlineView : NSOutlineView @end
+@implementation PCSourceOutlineView
+- (BOOL)gtk4NativeCompactRows { return YES; }
 @end
 
 /* Items have stable identities until the project file list changes. The
@@ -65,13 +84,25 @@ NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
 @end
 @implementation PCSourceItem
 - (id)init { if ((self = [super init])) children = [NSMutableArray new]; return self; }
+- (NSString *)symbolicIconName
+{
+  if (projectRoot || subprojectName) return @"folder-documents-symbolic";
+  if (!file && [[[title pathExtension] lowercaseString] isEqual:@"xib"]) return nil;
+  if (!file) return @"folder-symbolic";
+  if ([@[@"m",@"h",@"c",@"xib",@"plist"] containsObject:[[file pathExtension] lowercaseString]]) return nil;
+  if ([@[@"png", @"jpg", @"jpeg", @"tiff", @"svg", @"pdf", @"xcassets"] containsObject:[[file pathExtension] lowercaseString]])
+    return @"image-x-generic-symbolic";
+  return @"text-x-generic-symbolic";
+}
 - (NSImage *)icon
 {
   if (icon) return icon;
   NSImage *image = nil;
   if (projectRoot || subprojectName) image = [NSImage imageNamed:@"FileProject"];
+  else if (!file && [[[title pathExtension] lowercaseString] isEqual:@"xib"])
+    image = PCFileTypeIcon(@"xib");
   else if (file)
-    image = [[NSWorkspace sharedWorkspace] iconForFile:
+    image = PCFileTypeIcon([file pathExtension]) ?: [[NSWorkspace sharedWorkspace] iconForFile:
       [owner pathForFile:file forKey:[owner keyForCategory:category]]];
   else image = [NSImage imageNamed:@"common_Folder"];
   icon = [image retain];
@@ -87,10 +118,12 @@ NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
 
 static NSTableCellView *SourceCell(void)
 {
-  NSTableCellView *cell = [[[NSTableCellView alloc] initWithFrame:NSMakeRect(0,0,230,24)] autorelease];
+  NSTableCellView *cell = [[[NSTableCellView alloc] initWithFrame:NSMakeRect(0,0,230,20)] autorelease];
   [cell setIdentifier:@"SourceItem"];
-  NSImageView *icon = [[[NSImageView alloc] initWithFrame:NSMakeRect(2,4,16,16)] autorelease];
-  NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(24,0,204,24)] autorelease];
+  NSImageView *icon = [[[PCSourceIconView alloc] initWithFrame:NSMakeRect(2,2,16,16)] autorelease];
+  [icon setImageAlignment:NSImageAlignCenter];
+  [icon setImageScaling:NSImageScaleProportionallyUpOrDown];
+  NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(22,0,206,20)] autorelease];
   [label setEditable:NO]; [label setSelectable:NO]; [label setBezeled:NO]; [label setBordered:NO]; [label setDrawsBackground:NO];
   [label setFont:[NSFont systemFontOfSize:12]];
   [[label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
@@ -99,6 +132,7 @@ static NSTableCellView *SourceCell(void)
   [cell setImageView:icon]; [cell setTextField:label];
   [label bind:NSValueBinding toObject:cell withKeyPath:@"objectValue.title" options:nil];
   [icon bind:NSValueBinding toObject:cell withKeyPath:@"objectValue.icon" options:nil];
+  [icon bind:@"symbolicIconName" toObject:cell withKeyPath:@"objectValue.symbolicIconName" options:nil];
   return cell;
 }
 
@@ -127,7 +161,7 @@ static NSTableCellView *SourceCell(void)
       [sourceScroll setHasVerticalScroller:YES];
       [sourceScroll setHasHorizontalScroller:NO];
       [sourceScroll setAutohidesScrollers:YES];
-      outline = [[NSOutlineView alloc] initWithFrame:[[sourceScroll contentView] bounds]];
+      outline = [[PCSourceOutlineView alloc] initWithFrame:[[sourceScroll contentView] bounds]];
       NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"Source"];
       [column setWidth:230];
       [column setMinWidth:80];
@@ -137,7 +171,7 @@ static NSTableCellView *SourceCell(void)
       [outline setHeaderView:nil];
       [outline setGridStyleMask:NSTableViewGridNone];
       [outline _registerPrototypeViews:@[SourceCell()]];
-      [outline setRowHeight:24];
+      [outline setRowHeight:20];
       [outline setIndentationPerLevel:14];
       [outline setAllowsMultipleSelection:YES];
       [outline setAllowsEmptySelection:YES];
@@ -526,7 +560,8 @@ static NSTableCellView *SourceCell(void)
   else
     {
       [self setPath:item->path];
-      if ([item->category isEqual:@"Interfaces"] || [item->category isEqual:@"Images"])
+      if (([item->category isEqual:@"Interfaces"] && ![[[item->file pathExtension] lowercaseString] isEqual:@"xib"])
+          || [item->category isEqual:@"Images"])
         [[NSWorkspace sharedWorkspace] openFile:[item->owner pathForFile:item->file forKey:[item->owner keyForCategory:item->category]]];
       else [[item->owner projectEditor] openEditorForCategoryPath:item->path windowed:YES];
     }
