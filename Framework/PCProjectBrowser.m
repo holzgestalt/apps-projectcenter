@@ -379,6 +379,21 @@ static NSTableCellView *SourceCell(void)
   return nil;
 }
 
+- (NSArray *)navigatorItemsForFilePath:(NSString *)filePath
+{
+  NSString *categoryPath = [self categoryPathForFilePath:filePath];
+  PCSourceItem *item = categoryPath ? [sourceItems objectForKey:categoryPath] : nil;
+  NSMutableArray *items = [NSMutableArray array];
+
+  for (; item; item = item->parent)
+    {
+      NSImage *icon = [item icon];
+      [items insertObject:[NSDictionary dictionaryWithObjectsAndKeys:
+        item->title, @"Title", item->path, @"Path", icon, @"Icon", nil] atIndex:0];
+    }
+  return [items count] ? items : nil;
+}
+
 - (NSString *)nameOfSelectedFile { PCSourceItem *item = [self selectedItem]; return item ? item->file : nil; }
 - (NSString *)pathToSelectedFile { return [self nameOfSelectedFile] ? [self path] : nil; }
 - (NSString *)nameOfSelectedCategory

@@ -26,18 +26,22 @@
 
 #import "PCEditor.h"
 #import "PCEditorView.h"
-#import "PCCharacterRulerView.h"
 #import "PCLineNumberRulerView.h"
 
 #import <Protocols/Preferences.h>
 #import "Modules/Preferences/EditorFSC/PCEditorFSCPrefs.h"
 #import <ProjectCenter/PCProjectManager.h>
+#import <ProjectCenter/PCProject.h>
+#import <ProjectCenter/PCProjectBrowser.h>
+#import <ProjectCenter/PCProjectEditor.h>
+#import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCLogController.h>
 
 #import <AppKit/NSFont.h>
 
 #define PARENTHESIS_HL_DELAY     0.1
 #define STATUS_LINE_UPDATE_DELAY 0.1
+#define PCJumpBarHeight 26.0
 
 @implementation PCEditor (UInterface)
 
@@ -58,9 +62,9 @@
       return;
     }
 
+  /* A code editor has no use for a tab-stop ruler: line numbers only. */
   [scrollView setRulersVisible:YES];
-  [scrollView setHasHorizontalRuler:
-    [self _rulerPreferenceForKey:EditorShowTopRuler]];
+  [scrollView setHasHorizontalRuler:NO];
   [scrollView setHasVerticalRuler:YES];
   lineRuler = (PCLineNumberRulerView *)[scrollView verticalRulerView];
   if ([lineRuler isKindOfClass:[PCLineNumberRulerView class]])
@@ -86,24 +90,11 @@
   ruler = [[PCLineNumberRulerView alloc] initWithScrollView:scrollView
                                                    textView:editorView];
   [scrollView setVerticalRulerView:ruler];
+  [scrollView setHasHorizontalRuler:NO];
   [scrollView setRulersVisible:YES];
   [scrollView setHasVerticalRuler:YES];
   [ruler setShowsLineNumbers:
     [self _rulerPreferenceForKey:EditorShowSideRuler]];
-  RELEASE(ruler);
-}
-
-- (void)_installCharacterRulerForScrollView:(NSScrollView *)scrollView
-                                 editorView:(PCEditorView *)editorView
-{
-  PCCharacterRulerView *ruler;
-
-  ruler = [[PCCharacterRulerView alloc] initWithScrollView:scrollView
-                                                  textView:editorView];
-  [scrollView setHorizontalRulerView:ruler];
-  [scrollView setRulersVisible:YES];
-  [scrollView setHasHorizontalRuler:
-    [self _rulerPreferenceForKey:EditorShowTopRuler]];
   RELEASE(ruler);
 }
 
@@ -149,8 +140,6 @@
   // Text view in ScrollView
   _extEditorView = [self _createEditorViewWithFrame:rect];
   [_extScrollView setDocumentView:_extEditorView];
-  [self _installCharacterRulerForScrollView:_extScrollView
-                                 editorView:_extEditorView];
   [self _installLineNumberRulerForScrollView:_extScrollView
                                   editorView:_extEditorView];
   RELEASE(_extEditorView);
@@ -187,8 +176,8 @@
   NSRect contRect = NSMakeRect(0,0,512,320);
   NSRect rect;
 
-  // Scroll view
-  _intScrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,16,512,320-16)];
+  // Scroll view, below the jump bar
+  _intScrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,16,512,320-16-PCJumpBarHeight)];
   [_intScrollView setHasHorizontalScroller:NO];
   [_intScrollView setHasVerticalScroller:YES];
   [_intScrollView setBorderType:NSBezelBorder];
@@ -212,6 +201,17 @@
   [_containerView setAutoresizingMask: (NSViewWidthSizable|NSViewHeightSizable)];
   [_containerView addSubview:_intStatusField];
   [_containerView addSubview:_intScrollView];
+
+  /* Jump bar, as in Xcode: project, groups and file of this editor. */
+  _jumpBar = [[NSPathControl alloc] initWithFrame:
+    NSMakeRect(0, 320 - PCJumpBarHeight, 512, PCJumpBarHeight)];
+  [_jumpBar setAutoresizingMask:NSViewWidthSizable | NSViewMinYMargin];
+  [_jumpBar setPathStyle:NSPathStyleStandard];
+  [_jumpBar setTarget:self];
+  [_jumpBar setAction:@selector(_jumpBarClicked:)];
+  [_containerView addSubview:_jumpBar];
+  RELEASE(_jumpBar);
+  [self _updateJumpBar];
   RELEASE(_intStatusField);
   RELEASE(_intScrollView);
 
@@ -219,11 +219,88 @@
    * Setting up ext view / scroll view / window
    */
   [_intScrollView setDocumentView:_intEditorView];
-  [self _installCharacterRulerForScrollView:_intScrollView
-                                 editorView:_intEditorView];
   [self _installLineNumberRulerForScrollView:_intScrollView
                                   editorView:_intEditorView];
   RELEASE(_intEditorView);
+}
+
+- (void)_updateJumpBar
+{
+  NSMutableArray *pathItems = [NSMutableArray array];
+  PCProject *project = nil;
+  NSArray *components;
+
+  if (_jumpBar == nil || _path == nil)
+    {
+      return;
+    }
+  if ([_editorManager respondsToSelector:@selector(project)])
+    {
+      project = [_editorManager project];
+    }
+  components = [[project projectBrowser] navigatorItemsForFilePath:_path];
+  if (components == nil)
+    {
+      /* Not in the navigator (e.g. a library source shown by the debugger):
+       * its folders and name. */
+      NSArray *parts = [_path pathComponents];
+      NSUInteger first = [parts count] > 3 ? [parts count] - 3 : 1;
+      NSMutableArray *list = [NSMutableArray array];
+      NSUInteger i;
+
+      for (i = first; i < [parts count]; i++)
+        {
+          NSString *partial = [NSString pathWithComponents:
+            [parts subarrayWithRange:NSMakeRange(0, i + 1)]];
+          [list addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+            [parts objectAtIndex:i], @"Title",
+            [[NSWorkspace sharedWorkspace] iconForFile:partial], @"Icon", nil]];
+        }
+      components = list;
+    }
+  for (NSDictionary *component in components)
+    {
+      NSPathControlItem *item = [[[NSPathControlItem alloc] init] autorelease];
+      NSImage *icon = [[[component objectForKey:@"Icon"] copy] autorelease];
+
+      [icon setSize:NSMakeSize(16, 16)];
+      [item setTitle:[component objectForKey:@"Title"]];
+      [item setImage:icon];
+      if ([component objectForKey:@"Path"])
+        {
+          /* The navigator path; the URL only carries it to the click. */
+          [item setURL:[NSURL URLWithString:[[component objectForKey:@"Path"]
+            stringByAddingPercentEncodingWithAllowedCharacters:
+              [NSCharacterSet URLPathAllowedCharacterSet]]
+                              relativeToURL:[NSURL URLWithString:@"pcnavigator:///"]]];
+        }
+      [pathItems addObject:item];
+    }
+  [_jumpBar setPathItems:pathItems];
+}
+
+/* Reveal the clicked group or file in the project navigator. */
+- (void)_jumpBarClicked:(id)sender
+{
+  NSPathControlItem *item = [_jumpBar clickedPathItem];
+  NSString *navigatorPath = [[[item URL] path] stringByRemovingPercentEncoding];
+  PCProject *project = nil;
+
+  if ([_editorManager respondsToSelector:@selector(project)])
+    {
+      project = [_editorManager project];
+    }
+  if (navigatorPath == nil || project == nil)
+    {
+      return;
+    }
+  [[project projectWindow] selectNavigatorAtIndex:0];
+  [[project projectBrowser] setPath:navigatorPath];
+}
+
+- (NSPathControl *)jumpBar
+{
+  return _jumpBar;
 }
 
 - (PCEditorView *)_createEditorViewWithFrame:(NSRect)fr
@@ -640,6 +717,7 @@
 {
   [_categoryPath autorelease];
   _categoryPath = [path copy];
+  [self _updateJumpBar];
 }
 
 - (BOOL)isEdited

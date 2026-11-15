@@ -352,6 +352,17 @@ int main(int argc, char **argv)
       Check([project isEditableFile:@"GNUmakefile"], @"existing GNUstep build file remains editable");
       Check([[project projectEditor] openEditorForFilePath:[root stringByAppendingPathComponent:@"EditGlyphData/GSWindowController.m"] windowed:NO] != nil, @"open source in integrated editor");
       Check([[sourceTree nameOfSelectedFile] isEqual:@"EditGlyphData/GSWindowController.m"], @"opening an editor reveals the matching outline file");
+      id codeEditor = [[project projectEditor] activeEditor];
+      NSScrollView *codeScroll = [[codeEditor editorView] enclosingScrollView];
+      Check(![codeScroll hasHorizontalRuler] && [codeScroll hasVerticalRuler], @"code editor has line numbers but no tab ruler");
+      NSPathControl *jumpBar = [codeEditor performSelector:@selector(jumpBar)];
+      Check([jumpBar window] == window && NSMaxY([jumpBar frame]) <= NSMaxY([[jumpBar superview] bounds])
+            && NSMinY([jumpBar frame]) >= NSMaxY([codeScroll frame]) - 1, @"jump bar sits above the code");
+      Check([[[jumpBar pathItems] valueForKey:@"title"] isEqual:(@[@"EditGlyphData", @"EditGlyphData", @"GSWindowController.m"])], @"jump bar shows project, group and file");
+      Check([[[jumpBar pathItems] objectAtIndex:2] image] != nil, @"jump bar items have icons");
+      [[jumpBar cell] setValue:[[[jumpBar cell] pathComponentCells] objectAtIndex:1] forKey:@"_clickedPathComponentCell"];
+      [codeEditor performSelector:@selector(_jumpBarClicked:) withObject:jumpBar];
+      Check([[sourceTree path] isEqual:@"/@EditGlyphData/EditGlyphData"] && [sourceTree nameOfSelectedFile] == nil, @"jump bar reveals a group in the navigator");
       PCProjectBuilder *builder = [project projectBuilder];
       [builder startBuild:nil];
       NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:20];

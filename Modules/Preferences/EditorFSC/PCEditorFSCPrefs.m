@@ -201,9 +201,8 @@
   val = [prefs stringForKey:EditorColumns defaultValue:@"80"];
   [editorColumnsField setStringValue:val];
 
-  [showTopRulerButton setState:
-    ([prefs boolForKey:EditorShowTopRuler defaultValue:YES]
-      ? NSOnState : NSOffState)];
+  /* Code editors have no top (tab-stop) ruler any more. */
+  [showTopRulerButton setHidden:YES];
   [showSideRulerButton setState:
     ([prefs boolForKey:EditorShowSideRuler defaultValue:YES]
       ? NSOnState : NSOffState)];

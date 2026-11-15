@@ -59,6 +59,9 @@ extern NSString *PCBrowserDidSetPathNotification;
 - (NSString *)nameOfSelectedFile;
 - (NSString *)projectFileForCategoryPath:(NSString *)categoryPath;
 - (NSString *)categoryPathForFilePath:(NSString *)filePath;
+/* The navigator rows from the project down to the file, as dictionaries
+ * {Title, Path, Icon}; nil when the file is not in the navigator. */
+- (NSArray *)navigatorItemsForFilePath:(NSString *)filePath;
 - (NSString *)pathToSelectedFile;
 
 // Returns nil if multiple categories selected

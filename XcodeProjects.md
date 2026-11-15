@@ -8,7 +8,9 @@ order (synchronized folders are sorted by name). Files that are not in any
 Xcode group, such as `project.pbxproj`, the GNUmakefile and the sidecar plist,
 follow under their ProjectCenter category (Supporting Files, Libraries).
 A single file click opens the integrated editor. Multiple file selection and reveal-from-editor preserve full relative
-paths.
+paths. Above the code, a jump bar shows the file's place in the navigator
+(project, groups, file); click a part to reveal it in the navigator. Code
+editors show line numbers but no tab-stop ruler.
 
 The project window has a toolbar with Run, Stop and Build, and toggles for the
 navigator, the bottom area and the inspector panel (Clean, Debug and Find can
