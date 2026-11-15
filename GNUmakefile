@@ -42,6 +42,9 @@ Resources/Info-gnustep.plist \
 Images/ProjectCenter.tiff \
 Images/FileProject.tiff \
 Images/Build.tiff \
+Images/GSBuildTemplate.tiff \
+Images/GSBottomPaneTemplate.tiff \
+Images/GSInspectorPaneTemplate.tiff \
 Images/Clean.tiff \
 Images/Debug.tiff \
 Images/Files.tiff \
