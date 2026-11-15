@@ -100,47 +100,10 @@ static NSString * const PCToolbarRun = @"PCToolbarRun";
 static NSString * const PCToolbarStop = @"PCToolbarStop";
 static NSString * const PCToolbarBuild = @"PCToolbarBuild";
 static NSString * const PCToolbarClean = @"PCToolbarClean";
-static NSString * const PCToolbarDebug = @"PCToolbarDebug";
 static NSString * const PCToolbarFind = @"PCToolbarFind";
 static NSString * const PCToolbarNavigator = @"PCToolbarNavigator";
 static NSString * const PCToolbarBottomArea = @"PCToolbarBottomArea";
 static NSString * const PCToolbarInspector = @"PCToolbarInspector";
-
-/* Monochrome glyphs for actions the bundled artwork does not cover. */
-static NSImage *PCToolbarGlyph(NSString *identifier)
-{
-  NSImage *image = [[[NSImage alloc] initWithSize:NSMakeSize(32,32)] autorelease];
-  NSBezierPath *path = [NSBezierPath bezierPath];
-  [image lockFocus];
-  [[NSColor blackColor] set];
-  if ([identifier isEqual:PCToolbarRun])
-    {
-      [path moveToPoint:NSMakePoint(9,5)];
-      [path lineToPoint:NSMakePoint(26,16)];
-      [path lineToPoint:NSMakePoint(9,27)];
-      [path closePath];
-      [path fill];
-    }
-  else if ([identifier isEqual:PCToolbarStop])
-    {
-      [[NSBezierPath bezierPathWithRect:NSMakeRect(8,8,16,16)] fill];
-    }
-  else
-    {
-      /* A window outline with the toggled pane filled. */
-      NSRect frame = NSMakeRect(4.5,6.5,23,19);
-      NSRect pane = NSMakeRect(4.5,6.5,8,19);
-      if ([identifier isEqual:PCToolbarBottomArea]) pane = NSMakeRect(4.5,6.5,23,7);
-      else if ([identifier isEqual:PCToolbarInspector]) pane = NSMakeRect(19.5,6.5,8,19);
-      [[NSBezierPath bezierPathWithRect:pane] fill];
-      path = [NSBezierPath bezierPathWithRect:frame];
-      [path setLineWidth:1.5];
-      [path stroke];
-    }
-  [image unlockFocus];
-  [image setTemplate:YES];
-  return image;
-}
 
 - (void)_createToolbar
 {
@@ -155,7 +118,7 @@ static NSImage *PCToolbarGlyph(NSString *identifier)
 - (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar
 {
   return [NSArray arrayWithObjects:PCToolbarRun, PCToolbarStop, PCToolbarBuild,
-    PCToolbarClean, PCToolbarDebug, PCToolbarFind, PCToolbarNavigator,
+    PCToolbarClean, PCToolbarFind, PCToolbarNavigator,
     PCToolbarBottomArea, PCToolbarInspector, NSToolbarFlexibleSpaceItemIdentifier,
     NSToolbarSpaceItemIdentifier, NSToolbarSeparatorItemIdentifier, nil];
 }
@@ -172,15 +135,14 @@ static NSImage *PCToolbarGlyph(NSString *identifier)
  willBeInsertedIntoToolbar:(BOOL)flag
 {
   NSDictionary *items = [NSDictionary dictionaryWithObjectsAndKeys:
-    @[@"Run", @"Run the application", @"toolbarRun:", @""], PCToolbarRun,
-    @[@"Stop", @"Stop the running build or application", @"toolbarStop:", @""], PCToolbarStop,
-    @[@"Build", @"Build the project", @"toolbarBuild:", @"Build"], PCToolbarBuild,
-    @[@"Clean", @"Clean the project", @"toolbarClean:", @"Clean"], PCToolbarClean,
-    @[@"Debug", @"Run the application in the debugger", @"toolbarDebug:", @"Debug"], PCToolbarDebug,
-    @[@"Find", @"Find in project", @"toolbarFind:", @"Find"], PCToolbarFind,
-    @[@"Navigator", @"Hide or show the navigator", @"toggleNavigator:", @""], PCToolbarNavigator,
-    @[@"Debug Area", @"Hide or show build and run output", @"toggleBottomArea:", @""], PCToolbarBottomArea,
-    @[@"Inspector", @"Show the project inspector", @"showProjectInspector:", @""], PCToolbarInspector,
+    @[@"Run", @"Run the application", @"toolbarRun:", @"NSTouchBarPlayTemplate"], PCToolbarRun,
+    @[@"Stop", @"Stop the running build or application", @"toolbarStop:", @"NSTouchBarRecordStopTemplate"], PCToolbarStop,
+    @[@"Build", @"Build the project", @"toolbarBuild:", @"GSBuildTemplate"], PCToolbarBuild,
+    @[@"Clean", @"Clean the project", @"toolbarClean:", @"NSTouchBarDeleteTemplate"], PCToolbarClean,
+    @[@"Find", @"Find in project", @"toolbarFind:", @"NSTouchBarSearchTemplate"], PCToolbarFind,
+    @[@"Navigator", @"Hide or show the navigator", @"toggleNavigator:", @"NSTouchBarSidebarTemplate"], PCToolbarNavigator,
+    @[@"Debug Area", @"Hide or show build and run output", @"toggleBottomArea:", @"GSBottomPaneTemplate"], PCToolbarBottomArea,
+    @[@"Inspector", @"Show the project inspector", @"showProjectInspector:", @"GSInspectorPaneTemplate"], PCToolbarInspector,
     nil];
   NSArray *description = [items objectForKey:identifier];
   if (!description) return nil;
@@ -191,7 +153,7 @@ static NSImage *PCToolbarGlyph(NSString *identifier)
   [item setToolTip:[description objectAtIndex:1]];
   [item setTarget:self];
   [item setAction:NSSelectorFromString([description objectAtIndex:2])];
-  [item setImage:[artwork length] ? IMAGE(artwork) : PCToolbarGlyph(identifier)];
+  [item setImage:[NSImage imageNamed:artwork]];
   return item;
 }
 
@@ -203,7 +165,7 @@ static NSImage *PCToolbarGlyph(NSString *identifier)
   BOOL building = [builder isBuilding] || [builder isCleaning];
   BOOL running = [launcher isRunning] || [launcher isDebugging];
 
-  if ([identifier isEqual:PCToolbarRun] || [identifier isEqual:PCToolbarDebug])
+  if ([identifier isEqual:PCToolbarRun])
     return [project isExecutable] && !running && !building;
   if ([identifier isEqual:PCToolbarStop]) return building || running;
   if ([identifier isEqual:PCToolbarBuild] || [identifier isEqual:PCToolbarClean])
@@ -227,12 +189,6 @@ static NSImage *PCToolbarGlyph(NSString *identifier)
 {
   [self showProjectLaunch:self];
   [[project projectLauncher] performRun];
-}
-
-- (void)toolbarDebug:(id)sender
-{
-  [self showProjectLaunch:self];
-  [[project projectLauncher] performDebug];
 }
 
 - (void)toolbarStop:(id)sender
