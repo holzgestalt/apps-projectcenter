@@ -11,6 +11,7 @@
   PCEditorView *_textView;
   NSDictionary *_attributes;
   NSMutableSet *_breakpoints;
+  NSUInteger _executionLine;   // debugger position, 0 if none
   BOOL _showsLineNumbers;
 }
 
@@ -18,5 +19,6 @@
 - (void)invalidateLineNumbers:(NSNotification *)notification;
 - (void)setShowsLineNumbers:(BOOL)flag;
 - (BOOL)showsLineNumbers;
+- (NSUInteger)executionLine;
 
 @end

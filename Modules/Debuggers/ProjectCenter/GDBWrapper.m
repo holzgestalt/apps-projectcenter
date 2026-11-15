@@ -287,6 +287,27 @@
 	  [scanner scanString: @"]" intoString: NULL];
 	  elementEnd = YES;
 	}
+      else
+	{
+	  /* A result list element: name=value. Keep the value. */
+	  NSUInteger before = [scanner scanLocation];
+	  [scanner scanUpToString: @"=" intoString: NULL];
+	  if ([scanner scanString: @"=" intoString: NULL] && ![scanner isAtEnd])
+	    {
+	      unichar ch = [string characterAtIndex:[scanner scanLocation]];
+	      if (ch == '\"')
+		value = [self parseString: scanner];
+	      else if (ch == '{')
+		value = [self parseKeyValue: scanner];
+	      else if (ch == '[')
+		value = [self parseArray: scanner];
+	    }
+	  if ([scanner scanLocation] == before)
+	    {
+	      /* Malformed input: stop rather than loop forever. */
+	      elementEnd = YES;
+	    }
+	}
 
       if (![scanner isAtEnd] && [string characterAtIndex:[scanner scanLocation]] == ',')
 	{
@@ -384,7 +405,7 @@
       if(debuggerStarted == NO)
 	{
 	  [NOTIFICATION_CENTER postNotificationName:PCDBDebuggerStartedNotification
-	   object: nil];
+	   object: self];
 	  debuggerStarted = YES;
 	}
       return PCDBPromptRecord;
@@ -427,7 +448,9 @@
 	      fileName = [bkpDict objectForKey:@"fullname"];
 	      lineNum = [bkpDict objectForKey:@"line"];
 	      number = [bkpDict objectForKey:@"number"];
-	      if (fileName != nil && lineNum != nil)
+	      [debugger recordSymbolicBreakpoint:bkpDict];
+	      if (fileName != nil && lineNum != nil
+		  && [debugger isLineBreakpointRecord:bkpDict])
 		{
 		  [debugger recordBreakpointNumber:number
 					      file:fileName
@@ -489,27 +512,12 @@
       if ([dictionaryName isEqualToString:@"stopped"])
 	{
 	  [debugger setStatus:@"Stopped"];
-	  if ([dict objectForKey:@"reason"] != nil)
-	    {
-	      NSDictionary *frameDict;
-	      NSString *fileName;
-	      NSString *lineNum;
-
-	      frameDict = [dict objectForKey:@"frame"];
-	      fileName = [frameDict objectForKey:@"fullname"];
-	      lineNum = [frameDict objectForKey:@"line"];
-	      if (fileName != nil && lineNum != nil)
-		{
-		  [debugger setLastFileNameParsed: fileName];
-		  [debugger setLastLineNumberParsed: [lineNum intValue]];
-		  [debugger updateEditor];
-		}
-	      else
-		{
-		  [debugger setLastFileNameParsed: nil];
-		  [debugger setLastLineNumberParsed: NSNotFound];
-		}
-	    }
+	  [debugger debuggerDidStop:dict];
+	}
+      else if ([dictionaryName isEqualToString:@"running"])
+	{
+	  [debugger setStatus:@"Running"];
+	  [debugger debuggerDidResume];
 	}
       return PCDBAsyncExecRecord;
     }
@@ -595,6 +603,10 @@
 	    {
 	      [stringScanner scanString:@"," intoString:NULL];
 	      dict = [self parseKeyValue:stringScanner];
+	      if ([[dict objectForKey:@"stack"] isKindOfClass:[NSArray class]])
+		{
+		  [debugger setStackFrames:[dict objectForKey:@"stack"]];
+		}
 	      if ([dict objectForKey:@"bkpt"] != nil)
 		{
 		  NSDictionary *bkpDict;
@@ -606,7 +618,9 @@
 		  fileName = [bkpDict objectForKey:@"fullname"];
 		  lineNum = [bkpDict objectForKey:@"line"];
 		  number = [bkpDict objectForKey:@"number"];
-		  if (fileName != nil && lineNum != nil)
+		  [debugger recordSymbolicBreakpoint:bkpDict];
+		  if (fileName != nil && lineNum != nil
+		      && [debugger isLineBreakpointRecord:bkpDict])
 		    {
 		      [debugger recordBreakpointNumber:number
 						  file:fileName
@@ -632,6 +646,14 @@
       [stringScanner scanString: @"error" intoString: &result];
       if(result != nil)
 	{
+	  NSDictionary *dict;
+
+	  [stringScanner scanString:@"," intoString:NULL];
+	  dict = [self parseKeyValue:stringScanner];
+	  if ([[dict objectForKey:@"msg"] length])
+	    {
+	      [self logString:[dict objectForKey:@"msg"] newLine:YES withColor:errorColor];
+	    }
 	  [debugger setStatus: @"Error"];
 	  return PCDBResultRecord;
 	}
@@ -824,9 +846,21 @@
  */
 - (void) taskDidTerminate: (NSNotification *)notif
 {
+  if ([notif object] != task)
+    {
+      return;
+    }
+  [NOTIFICATION_CENTER removeObserver:self name:NSTaskDidTerminateNotification object:task];
   [self logString: [self stopMessage]
 	newLine:YES
         withColor:messageColor];
+  debuggerStarted = NO;
+  [debugger debuggerDidExit];
+}
+
+- (BOOL) isRunning
+{
+  return task != nil && [task isRunning];
 }
 
 /**
@@ -1095,7 +1129,9 @@
           NSString *methodName;
 
           methodName = [bp objectForKey:PCBreakMethod];
-          bpString = [NSString stringWithFormat:@"-interpreter-exec console \"break %@\"\n", methodName];
+          methodName = [methodName stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
+          methodName = [methodName stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+          bpString = [NSString stringWithFormat:@"-break-insert -f \"%@\"\n", methodName];
         }
       else
         {
@@ -1114,8 +1150,8 @@
 
 - (void) debuggerSetup
 {
-  NSString *command = @"-gdb-set confirm off\n";
-  
-  [self putString: command];
+  [self putString: @"-gdb-set confirm off\n"];
+  /* Breakpoints in libraries that are not loaded yet resolve at load time. */
+  [self putString: @"-gdb-set breakpoint pending on\n"];
 }
 @end

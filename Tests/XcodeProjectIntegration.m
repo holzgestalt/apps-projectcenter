@@ -8,6 +8,7 @@
 #import <ProjectCenter/PCProjectBrowser.h>
 #import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCFileManager.h>
+#import "Framework/PCNavigators.h"
 #include <gtk/gtk.h>
 #include <gdk/x11/gdkx.h>
 #include <cairo-xlib.h>
@@ -360,6 +361,127 @@ int main(int argc, char **argv)
       Check([[[builder valueForKey:@"statusField"] stringValue] rangeOfString:@"succeeded"].location != NSNotFound, @"integrated build script succeeded");
       NSString *executable = [[root stringByAppendingPathComponent:@"../../build/EditGlyphData/EditGlyphData.app/EditGlyphData"] stringByStandardizingPath];
       Check([[[project projectLauncher] executablePath] isEqual:executable], @"configured debugger executable");
+
+      /* Debugger: breakpoints in Xcode's per-user data, sidebar tabs, a
+       * session that stops at a line breakpoint and an exception breakpoint. */
+      const char *debugTarget = getenv("PC_DEBUG_TARGET");
+      if (debugTarget)
+        {
+          NSString *target = [NSString stringWithUTF8String:debugTarget];
+          NSString *targetSource = [NSString stringWithUTF8String:getenv("PC_DEBUG_TARGET_SOURCE")];
+          NSString *userData = [bundle stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"xcuserdata/%@.xcuserdatad", NSUserName()]];
+          NSString *store = [userData stringByAppendingPathComponent:@"ProjectCenter/Breakpoints.plist"];
+          BOOL hadUserData = [[NSFileManager defaultManager] fileExistsAtPath:userData];
+          NSArray *previous = [project breakpoints];
+          PCBreakpointNavigator *breakpointsTab = [projectWindow breakpointNavigator];
+          PCDebugNavigator *debugTab = [projectWindow debugNavigator];
+          NSString *delegateFile = [root stringByAppendingPathComponent:@"EditGlyphData/GSAppDelegate.m"];
+          NSUInteger logLine = 0, line = 0;
+
+          for (NSString *text in [[NSString stringWithContentsOfFile:targetSource encoding:NSUTF8StringEncoding error:NULL]
+                                  componentsSeparatedByString:@"\n"])
+            {
+              line++;
+              if ([text rangeOfString:@"NSLog"].location != NSNotFound) logLine = line;
+            }
+          for (NSDictionary *bp in previous)
+            if ([bp objectForKey:@"Symbol"])
+              [project setSymbolicBreakpoint:[bp objectForKey:@"Symbol"] kind:[bp objectForKey:@"Kind"] enabled:NO];
+            else
+              [project setBreakpointForFile:[project absolutePathForBreakpointFile:[bp objectForKey:@"File"]]
+                                       line:[[bp objectForKey:@"Line"] unsignedIntegerValue] enabled:NO];
+
+          Check([projectWindow selectedNavigatorIndex] == 0 && [[[project projectBrowser] view] window] == window, @"navigator tabs start on the project");
+          [projectWindow selectNavigatorAtIndex:1];
+          Check([projectWindow selectedNavigatorIndex] == 1 && [[breakpointsTab view] window] == window, @"breakpoints tab shows in the sidebar");
+          [project setBreakpointForFile:delegateFile line:20 enabled:YES];
+          [[NSNotificationCenter defaultCenter] postNotificationName:PCProjectBreakpointNotification
+            object:[NSDictionary dictionaryWithObjectsAndKeys:delegateFile, @"File", [NSNumber numberWithInt:20], @"Line", [NSNumber numberWithBool:YES], @"Enabled", nil]];
+          Check([[NSFileManager defaultManager] fileExistsAtPath:store], @"breakpoints stored in xcuserdata");
+          Check(![[NSFileManager defaultManager] fileExistsAtPath:[root stringByAppendingPathComponent:@"Breakpoints.plist"]], @"source tree stays free of breakpoint files");
+          NSArray *rows = [breakpointsTab rootItems];
+          Check([rows count] == 1 && [[[rows objectAtIndex:0] title] isEqual:@"GSAppDelegate.m"]
+                && [[[[[rows objectAtIndex:0] children] objectAtIndex:0] title] hasPrefix:@"Line 20"], @"breakpoints tab lists file breakpoints by file");
+          NSOutlineView *bpOutline = [breakpointsTab outlineView];
+          [bpOutline selectRowIndexes:[NSIndexSet indexSetWithIndex:1] byExtendingSelection:NO];
+          [breakpointsTab removeSelectedBreakpoint:nil];
+          Check(![project hasBreakpointForFile:delegateFile line:20] && [[breakpointsTab rootItems] count] == 0, @"breakpoints tab deletes a breakpoint");
+
+          [breakpointsTab addExceptionBreakpoint:nil];
+          Check([project hasSymbolicBreakpoint:@"objc_exception_throw"]
+                && [[[[breakpointsTab rootItems] objectAtIndex:0] title] isEqual:@"Objective-C Exception"], @"exception breakpoint in the breakpoints tab");
+          [project setBreakpointForFile:targetSource line:logLine enabled:YES];
+
+          NSMutableDictionary *dict = (NSMutableDictionary *)[project projectDict];
+          id configured = [[dict objectForKey:@"XCODE_Executable"] retain];
+          [dict setObject:target forKey:@"XCODE_Executable"];
+          PCProjectLauncher *launcher = [project projectLauncher];
+          [projectWindow performSelector:@selector(toolbarRun:) withObject:nil];
+          Check([launcher isDebugging] && [launcher debugger] != nil, @"Run starts a debug session");
+          Check([[[launcher debugger] debugAreaView] window] == window && [projectWindow isBottomAreaVisible], @"debug console and controls in the bottom area");
+          NSDate *until = [NSDate dateWithTimeIntervalSinceNow:30];
+          while ([[debugTab frames] count] == 0 && [until timeIntervalSinceNow] > 0) PumpEvents(0.1);
+          NSArray *frames = [debugTab frames];
+          Check([frames count] > 0, @"stopped at the line breakpoint");
+          Check([projectWindow selectedNavigatorIndex] == 2, @"debug tab opens when the program pauses");
+          NSDictionary *top = [frames objectAtIndex:[debugTab selectedFrameIndex]];
+          Check([[top objectForKey:@"Function"] isEqual:@"main"] && [[top objectForKey:@"Line"] unsignedIntegerValue] == logLine, @"line breakpoint frame selected");
+          Check([[[[project projectEditor] activeEditor] path] isEqual:targetSource], @"editor shows the paused line");
+
+          [[launcher debugger] continueExecution:nil];
+          until = [NSDate dateWithTimeIntervalSinceNow:30];
+          BOOL atException = NO;
+          while (!atException && [until timeIntervalSinceNow] > 0)
+            {
+              PumpEvents(0.1);
+              for (NSDictionary *frame in [debugTab frames])
+                if ([[frame objectForKey:@"Function"] isEqual:@"objc_exception_throw"]) atException = YES;
+            }
+          Check(atException, @"exception breakpoint stops in objc_exception_throw");
+          frames = [debugTab frames];
+          Check([[[frames valueForKey:@"Function"] componentsJoinedByString:@" "] rangeOfString:@"Raise"].location != NSNotFound, @"traceback includes the raising function");
+          PCNavigatorItem *thread = [[debugTab rootItems] objectAtIndex:0];
+          Check([[thread title] hasSuffix:@"Objective-C exception"] && [[thread children] count] == [frames count], @"debug tab shows the thread and its frames");
+          NSUInteger raiseIndex = [[frames valueForKey:@"Function"] indexOfObject:@"Raise"];
+          NSOutlineView *stack = [debugTab outlineView];
+          [stack selectRowIndexes:[NSIndexSet indexSetWithIndex:[stack rowForItem:[[thread children] objectAtIndex:raiseIndex]]] byExtendingSelection:NO];
+          PumpEvents(0.3);
+          Check([[[[project projectEditor] activeEditor] path] isEqual:targetSource], @"selecting a frame shows its source");
+
+          const char *debugPreview = getenv("PC_DEBUG_PREVIEW");
+          if (debugPreview)
+            {
+              PumpEvents(0.5);
+              GtkWindow *host = GTK4NativeHostForWindow(window);
+              GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(host));
+              Display *display = gdk_x11_display_get_xdisplay(gdk_surface_get_display(surface));
+              Window xid = gdk_x11_surface_get_xid(surface);
+              XWindowAttributes attributes; XGetWindowAttributes(display, xid, &attributes);
+              cairo_surface_t *capture = cairo_xlib_surface_create(display, xid, attributes.visual, attributes.width, attributes.height);
+              Check(cairo_surface_write_to_png(capture, debugPreview) == CAIRO_STATUS_SUCCESS, @"debugger screenshot");
+              cairo_surface_destroy(capture);
+            }
+          [launcher performStop];
+          until = [NSDate dateWithTimeIntervalSinceNow:15];
+          while ([launcher isDebugging] && [until timeIntervalSinceNow] > 0) PumpEvents(0.1);
+          Check(![launcher isDebugging], @"Stop ends the debug session");
+
+          if (configured) [dict setObject:configured forKey:@"XCODE_Executable"]; else [dict removeObjectForKey:@"XCODE_Executable"];
+          [configured release];
+          [project setSymbolicBreakpoint:@"objc_exception_throw" kind:PCBreakpointKindException enabled:NO];
+          [project setBreakpointForFile:targetSource line:logLine enabled:NO];
+          for (NSDictionary *bp in previous)
+            if ([bp objectForKey:@"Symbol"])
+              [project setSymbolicBreakpoint:[bp objectForKey:@"Symbol"] kind:[bp objectForKey:@"Kind"] enabled:YES];
+            else
+              [project setBreakpointForFile:[project absolutePathForBreakpointFile:[bp objectForKey:@"File"]]
+                                       line:[[bp objectForKey:@"Line"] unsignedIntegerValue] enabled:YES];
+          if (!hadUserData)
+            [[NSFileManager defaultManager] removeItemAtPath:userData error:NULL];
+          [projectWindow selectNavigatorAtIndex:0];
+        }
+
       [manager closeProject:project];
       Check([[manager loadedProjects] count] == 0, @"close removes imported project");
       for (NSString *file in protected)

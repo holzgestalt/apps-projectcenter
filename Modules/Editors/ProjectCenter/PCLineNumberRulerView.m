@@ -56,6 +56,11 @@
            selector:@selector(breakpointDidChange:)
                name:PCProjectBreakpointNotification
              object:nil];
+      [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(debuggerStateDidChange:)
+               name:PCDebuggerStateDidChangeNotification
+             object:nil];
     }
 
   return self;
@@ -291,6 +296,47 @@
   [self setNeedsDisplay:YES];
 }
 
+- (NSUInteger)executionLine
+{
+  return _executionLine;
+}
+
+/* The debugger's current frame is marked in its file, as in Xcode. */
+- (void)debuggerStateDidChange:(NSNotification *)notification
+{
+  NSDictionary *info = [notification userInfo];
+  NSString *file = [info objectForKey:@"File"];
+  NSString *path = [self _filePath];
+  NSUInteger line = 0;
+
+  if ([[info objectForKey:@"State"] isEqual:PCDebuggerStateStopped]
+      && file != nil && path != nil
+      && [[file stringByStandardizingPath] isEqual:[path stringByStandardizingPath]])
+    {
+      line = [[info objectForKey:@"Line"] unsignedIntegerValue];
+    }
+  if (line != _executionLine)
+    {
+      _executionLine = line;
+      [self setNeedsDisplay:YES];
+    }
+}
+
+static void PCDrawBreakpointTag(NSRect rect, NSColor *fill)
+{
+  NSBezierPath *tag = [NSBezierPath bezierPath];
+  CGFloat tip = NSHeight(rect) / 2.0;
+
+  [tag moveToPoint:NSMakePoint(NSMinX(rect), NSMinY(rect))];
+  [tag lineToPoint:NSMakePoint(NSMaxX(rect) - tip, NSMinY(rect))];
+  [tag lineToPoint:NSMakePoint(NSMaxX(rect), NSMidY(rect))];
+  [tag lineToPoint:NSMakePoint(NSMaxX(rect) - tip, NSMaxY(rect))];
+  [tag lineToPoint:NSMakePoint(NSMinX(rect), NSMaxY(rect))];
+  [tag closePath];
+  [fill set];
+  [tag fill];
+}
+
 - (void)drawHashMarksAndLabelsInRect:(NSRect)rect
 {
   NSLayoutManager *layoutManager;
@@ -404,15 +450,31 @@
         }
 
       markerY = NSMinY(glyphRect) + inset.height - NSMinY(visibleRect);
+      /* Xcode: a blue tag across the gutter for a breakpoint, a green one
+       * for the line where the program is paused. */
       if ([_breakpoints containsObject:[NSNumber numberWithUnsignedInteger:lineNumber]])
         {
-          NSRect markerRect;
+          PCDrawBreakpointTag(NSMakeRect(1.0, markerY + 1.0, NSMaxX(bounds) - 2.0,
+                                         NSHeight(glyphRect) - 2.0),
+                              [NSColor colorWithCalibratedRed:0.20 green:0.47 blue:0.85 alpha:1.0]);
+          if (_showsLineNumbers)
+            {
+              NSMutableDictionary *white = [[_attributes mutableCopy] autorelease];
+              NSString *number = [NSString stringWithFormat:@"%lu", (unsigned long)lineNumber];
+              NSSize size;
 
-          markerRect = NSMakeRect(5.0, markerY + 2.0, 8.0, 8.0);
-          [[NSColor redColor] set];
-          NSRectFill(markerRect);
-          [[NSColor blackColor] set];
-          NSFrameRect(markerRect);
+              [white setObject:[NSColor whiteColor] forKey:NSForegroundColorAttributeName];
+              size = [number sizeWithAttributes:white];
+              [number drawAtPoint:NSMakePoint(NSMaxX(bounds) - size.width - 5.0,
+                                              NSMinY(glyphRect) + inset.height - NSMinY(visibleRect))
+                   withAttributes:white];
+            }
+        }
+      if (lineNumber == _executionLine)
+        {
+          PCDrawBreakpointTag(NSMakeRect(1.0, markerY + 3.0, PCBreakpointGutterWidth - 2.0,
+                                         MAX(4.0, NSHeight(glyphRect) - 6.0)),
+                              [NSColor colorWithCalibratedRed:0.30 green:0.70 blue:0.30 alpha:1.0]);
         }
 
       lineNumber++;

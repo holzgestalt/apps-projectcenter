@@ -66,6 +66,7 @@
 - (void)performRun;
 - (void)performDebug;
 - (void)performStop;
+- (id<CodeDebugger>)debugger;
 
 - (void)debug:(id)sender;
 - (void)run:(id)sender;

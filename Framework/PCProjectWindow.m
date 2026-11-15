@@ -37,6 +37,7 @@
 #import <ProjectCenter/PCProjectLauncher.h>
 #import <ProjectCenter/PCProjectLoadedFiles.h>
 #import <ProjectCenter/PCProjectInspector.h>
+#import "PCNavigators.h"
 
 #import <Protocols/Preferences.h>
 #import <Protocols/CodeEditorView.h>
@@ -49,6 +50,7 @@
 
 @interface PCProjectWindow (Layout)
 - (void)_createToolbar;
+- (void)_createNavigatorArea;
 - (void)_setBottomAreaVisible:(BOOL)visible;
 - (void)_showInBottomArea:(NSView *)view;
 - (void)resizeContentSubviews;
@@ -90,6 +92,99 @@
   [h_split addSubview:contentSplit];
   RELEASE(contentSplit);
   [self resizeHorizontalSubiewsWithOldSize:NSZeroSize];
+}
+
+// ============================================================================
+// ==== Navigators
+// ============================================================================
+
+- (void)_createNavigatorArea
+{
+  NSRect frame = NSMakeRect(0, 0, 240, 400);
+  NSArray *images = [NSArray arrayWithObjects:@"GSNavigatorProjectTemplate",
+    @"GSNavigatorBreakpointsTemplate", @"GSNavigatorDebugTemplate", nil];
+  NSArray *labels = [NSArray arrayWithObjects:@"Project", @"Breakpoints", @"Debug", nil];
+  NSArray *views;
+  NSInteger i;
+
+  navigatorArea = [[NSView alloc] initWithFrame:frame];
+  [navigatorArea setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+
+  navigatorSelector = [[[NSSegmentedControl alloc] initWithFrame:
+    NSMakeRect(8, NSHeight(frame) - 30, 120, 24)] autorelease];
+  [navigatorSelector setSegmentCount:[images count]];
+  for (i = 0; i < [images count]; i++)
+    {
+      [navigatorSelector setImage:[NSImage imageNamed:[images objectAtIndex:i]] forSegment:i];
+      [navigatorSelector setWidth:36 forSegment:i];
+      [[navigatorSelector cell] setToolTip:[labels objectAtIndex:i] forSegment:i];
+    }
+  [[navigatorSelector cell] setTrackingMode:NSSegmentSwitchTrackingSelectOne];
+  [navigatorSelector setSelectedSegment:0];
+  [navigatorSelector setTarget:self];
+  [navigatorSelector setAction:@selector(navigatorSelectorChanged:)];
+  [navigatorSelector setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
+  [navigatorArea addSubview:navigatorSelector];
+
+  navigatorTabs = [[[NSTabView alloc] initWithFrame:
+    NSMakeRect(0, 0, NSWidth(frame), NSHeight(frame) - 36)] autorelease];
+  [navigatorTabs setTabViewType:NSNoTabsNoBorder];
+  [navigatorTabs setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  breakpointNavigator = [[PCBreakpointNavigator alloc] initWithProject:project];
+  debugNavigator = [[PCDebugNavigator alloc] initWithProject:project];
+  views = [NSArray arrayWithObjects:[[project projectBrowser] view],
+    [breakpointNavigator view], [debugNavigator view], nil];
+  for (i = 0; i < [views count]; i++)
+    {
+      NSTabViewItem *item = [[[NSTabViewItem alloc] initWithIdentifier:[labels objectAtIndex:i]] autorelease];
+      [item setLabel:[labels objectAtIndex:i]];
+      [item setView:[views objectAtIndex:i]];
+      [navigatorTabs addTabViewItem:item];
+    }
+  [navigatorArea addSubview:navigatorTabs];
+
+  [[NSNotificationCenter defaultCenter] addObserver:self
+    selector:@selector(debuggerStateDidChange:)
+        name:PCDebuggerStateDidChangeNotification object:nil];
+}
+
+- (void)navigatorSelectorChanged:(id)sender
+{
+  [self selectNavigatorAtIndex:[navigatorSelector selectedSegment]];
+}
+
+- (void)selectNavigatorAtIndex:(NSInteger)index
+{
+  if (index < 0 || index >= [navigatorTabs numberOfTabViewItems]) return;
+  if ([navigatorSelector selectedSegment] != index)
+    [navigatorSelector setSelectedSegment:index];
+  [navigatorTabs selectTabViewItemAtIndex:index];
+}
+
+- (NSInteger)selectedNavigatorIndex
+{
+  return [navigatorTabs indexOfTabViewItem:[navigatorTabs selectedTabViewItem]];
+}
+
+- (id)breakpointNavigator { return breakpointNavigator; }
+- (id)debugNavigator { return debugNavigator; }
+
+- (void)debuggerStateDidChange:(NSNotification *)aNotif
+{
+  if ([aNotif object] != [[project projectLauncher] debugger])
+    {
+      return;
+    }
+  /* Like Xcode: show the call stack whenever the program pauses. */
+  if ([[[aNotif userInfo] objectForKey:@"State"] isEqual:PCDebuggerStateStopped])
+    {
+      [self selectNavigatorAtIndex:2];
+    }
+}
+
+- (void)showDebugArea:(NSView *)view
+{
+  [self _showInBottomArea:view];
 }
 
 // ============================================================================
@@ -187,8 +282,8 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 
 - (void)toolbarRun:(id)sender
 {
-  [self showProjectLaunch:self];
-  [[project projectLauncher] performRun];
+  /* Like Xcode, Run starts the program under the debugger. */
+  [[project projectLauncher] performDebug];
 }
 
 - (void)toolbarStop:(id)sender
@@ -264,9 +359,10 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   [v_split setDelegate:self];
 
   /*
-   * File Browser
+   * Navigators: project files, breakpoints and the debugger's call stack
    */
-  browserView = [[project projectBrowser] view];
+  [self _createNavigatorArea];
+  browserView = navigatorArea;
   [v_split addSubview:browserView];
   
   /*
@@ -404,6 +500,9 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   [[projectWindow toolbar] setDelegate:nil];
   [projectWindow close];
   RELEASE(bottomView);
+  RELEASE(navigatorArea);
+  RELEASE(breakpointNavigator);
+  RELEASE(debugNavigator);
   RELEASE(toolbarView);
   RELEASE(statusLine);
 

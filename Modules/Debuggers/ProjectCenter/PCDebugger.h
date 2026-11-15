@@ -51,6 +51,22 @@ extern NSString *PCDBDebuggerStartedNotification;
   NSMutableArray *breakpoints;
   NSMutableDictionary *breakpointNumbers;
   id <PCDebuggerWrapperProtocol> debuggerWrapper;
+
+  /* Integrated session in the project window */
+  id             project;        // not retained
+  NSView         *debugAreaView;
+  NSButton       *continueButton;
+  NSButton       *stepOverButton;
+  NSButton       *stepIntoButton;
+  NSButton       *stepOutButton;
+  NSTextField    *stateField;
+  NSMutableDictionary *symbolNumbers;
+  NSArray        *frames;
+  NSUInteger     selectedFrame;
+  NSString       *stopReason;
+  NSString       *state;
+  BOOL           runWhenReady;
+  BOOL           exitPosted;
 }
 
 - (id <PCDebuggerWrapperProtocol>)debuggerWrapper;
@@ -73,5 +89,13 @@ extern NSString *PCDBDebuggerStartedNotification;
 			   file:(NSString *)file
 			   line:(NSUInteger)line;
 - (void)removeBreakpointNumber:(NSString *)number;
+
+/* Called by the debugger wrapper */
+- (void)debuggerDidStop:(NSDictionary *)info;
+- (void)debuggerDidResume;
+- (void)debuggerDidExit;
+- (void)setStackFrames:(NSArray *)miFrames;
+- (void)recordSymbolicBreakpoint:(NSDictionary *)bkpt;
+- (BOOL)isLineBreakpointRecord:(NSDictionary *)bkpt;
 
 @end

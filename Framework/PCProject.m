@@ -58,6 +58,12 @@ NSString
 *PCProjectDictDidSaveNotification = @"PCProjectDictDidSaveNotification";
 NSString 
 *PCProjectBreakpointNotification = @"PCProjectBreakpointNotification";
+NSString *PCDebuggerStateDidChangeNotification = @"PCDebuggerStateDidChangeNotification";
+NSString *PCDebuggerStateRunning = @"Running";
+NSString *PCDebuggerStateStopped = @"Stopped";
+NSString *PCDebuggerStateExited = @"Exited";
+NSString *PCBreakpointKindException = @"Exception";
+NSString *PCBreakpointKindSymbol = @"Symbol";
 static NSString *PCProjectBreakpointsFileName = @"Breakpoints.plist";
 
 static NSArray *
@@ -1877,6 +1883,17 @@ PCResourceArrayFromProjectValue(id value)
 
 - (NSString *)_breakpointsFilePath
 {
+  NSString *xcodeProject = [projectDict objectForKey:@"XCODE_PROJECT_PATH"];
+
+  /* Like Xcode's own breakpoints: per user, inside the project's xcuserdata,
+   * which version control normally ignores. The source tree stays clean. */
+  if ([xcodeProject length])
+    {
+      NSString *userData = [NSString stringWithFormat:@"xcuserdata/%@.xcuserdatad/ProjectCenter",
+                                     NSUserName()];
+      return [[xcodeProject stringByAppendingPathComponent:userData]
+               stringByAppendingPathComponent:PCProjectBreakpointsFileName];
+    }
   return [projectPath stringByAppendingPathComponent:PCProjectBreakpointsFileName];
 }
 
@@ -1988,7 +2005,8 @@ PCResourceArrayFromProjectValue(id value)
 
   if (![fm fileExistsAtPath:directory isDirectory:&isDir])
     {
-      if (![fm createDirectoryAtPath:directory attributes:nil])
+      if (![fm createDirectoryAtPath:directory withIntermediateDirectories:YES
+                          attributes:nil error:NULL])
 	{
 	  return NO;
 	}
@@ -2067,6 +2085,81 @@ PCResourceArrayFromProjectValue(id value)
     }
 
   [self _writeBreakpoints:newBreakpoints];
+}
+
+- (NSArray *)symbolicBreakpoints
+{
+  NSMutableArray *result = [NSMutableArray array];
+
+  for (NSDictionary *bp in [self breakpoints])
+    {
+      if ([bp isKindOfClass:[NSDictionary class]]
+          && [[bp objectForKey:@"Symbol"] isKindOfClass:[NSString class]])
+        {
+          [result addObject:bp];
+        }
+    }
+  return result;
+}
+
+- (BOOL)hasSymbolicBreakpoint:(NSString *)symbol
+{
+  for (NSDictionary *bp in [self symbolicBreakpoints])
+    {
+      if ([[bp objectForKey:@"Symbol"] isEqualToString:symbol])
+        {
+          return YES;
+        }
+    }
+  return NO;
+}
+
+- (void)setSymbolicBreakpoint:(NSString *)symbol kind:(NSString *)kind enabled:(BOOL)enabled
+{
+  NSMutableArray *newBreakpoints = [NSMutableArray array];
+  BOOL found = NO;
+
+  symbol = [symbol stringByTrimmingCharactersInSet:
+    [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+  if ([symbol length] == 0)
+    {
+      return;
+    }
+  if (kind == nil)
+    {
+      kind = PCBreakpointKindSymbol;
+    }
+
+  for (NSDictionary *bp in [self breakpoints])
+    {
+      if ([[bp objectForKey:@"Symbol"] isEqual:symbol])
+        {
+          found = YES;
+          if (!enabled)
+            {
+              continue;
+            }
+        }
+      [newBreakpoints addObject:bp];
+    }
+  if (enabled == found)
+    {
+      return;
+    }
+  if (enabled)
+    {
+      [newBreakpoints addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+        symbol, @"Symbol", kind, @"Kind", nil]];
+    }
+  [self _writeBreakpoints:newBreakpoints];
+
+  [[NSNotificationCenter defaultCenter]
+    postNotificationName:PCProjectBreakpointNotification
+                  object:[NSDictionary dictionaryWithObjectsAndKeys:
+                    symbol, @"Symbol",
+                    kind, @"Kind",
+                    [NSNumber numberWithBool:enabled], @"Enabled",
+                    nil]];
 }
 
 - (NSString *)absolutePathForBreakpointFile:(NSString *)file

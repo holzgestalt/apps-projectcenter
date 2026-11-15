@@ -59,6 +59,8 @@
 
 - (void) terminate;
 
+- (BOOL) isRunning;
+
 - (void) interrupt;
 
 - (void) putString: (NSString *)string;

@@ -42,6 +42,18 @@ extern NSString *PCProjectDictDidChangeNotification;
 extern NSString *PCProjectDictDidSaveNotification;
 extern NSString *PCProjectBreakpointNotification;
 
+/* Posted by a debugger session (object: the id<CodeDebugger>). userInfo:
+ * State (Running, Stopped, Exited), and when stopped Frames (array of
+ * {Level, Function, File, Line}), SelectedFrame (index), Reason. */
+extern NSString *PCDebuggerStateDidChangeNotification;
+extern NSString *PCDebuggerStateRunning;
+extern NSString *PCDebuggerStateStopped;
+extern NSString *PCDebuggerStateExited;
+
+/* Kinds of symbolic breakpoints. */
+extern NSString *PCBreakpointKindException;
+extern NSString *PCBreakpointKindSymbol;
+
 @interface PCProject : NSObject
 {
   PCProjectManager     *projectManager; 
@@ -204,7 +216,12 @@ extern NSString *PCProjectBreakpointNotification;
 @interface PCProject (Breakpoints)
 
 // Breakpoints are stored project-locally using paths relative to projectPath.
+// Xcode projects keep them with Xcode's per-user data in the .xcodeproj.
+// File breakpoints are {File, Line}; symbolic ones are {Symbol, Kind}.
 - (NSArray *)breakpoints;
+- (NSArray *)symbolicBreakpoints;
+- (BOOL)hasSymbolicBreakpoint:(NSString *)symbol;
+- (void)setSymbolicBreakpoint:(NSString *)symbol kind:(NSString *)kind enabled:(BOOL)enabled;
 - (BOOL)canSetBreakpointForFile:(NSString *)file line:(NSUInteger)line;
 - (BOOL)hasBreakpointForFile:(NSString *)file line:(NSUInteger)line;
 - (void)setBreakpointForFile:(NSString *)file line:(NSUInteger)line enabled:(BOOL)enabled;

@@ -30,6 +30,7 @@
 #import <ProjectCenter/PCProject.h>
 #import <ProjectCenter/PCProjectManager.h>
 #import <ProjectCenter/PCProjectLauncher.h>
+#import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCBundleManager.h>
 #import <ProjectCenter/PCButton.h>
 #import <ProjectCenter/PCLogController.h>
@@ -174,6 +175,11 @@ enum {
 #ifdef DEVELOPMENT
   NSLog (@"PCProjectLauncher: dealloc");
 #endif
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  if ([debugger isDebugging])
+    {
+      [debugger stopDebugging];
+    }
   RELEASE (componentView);
   RELEASE (textAttributes);
   RELEASE (debugger);
@@ -299,7 +305,7 @@ enum {
     }
   else if (_isDebugging)
     {
-      [debugButton performClick:self];
+      [debugger stopDebugging];
     }
 }
 
@@ -307,7 +313,26 @@ enum {
 {
   if (!_isRunning && !_isDebugging)
     {
-      [debugButton performClick:self];
+      [self debug:self];
+    }
+}
+
+- (id<CodeDebugger>)debugger
+{
+  return debugger;
+}
+
+- (void)debuggerStateDidChange:(NSNotification *)aNotif
+{
+  if ([aNotif object] != debugger)
+    {
+      return;
+    }
+  if ([[[aNotif userInfo] objectForKey:@"State"] isEqual:PCDebuggerStateExited])
+    {
+      _isDebugging = NO;
+      [debugButton setState:NSOffState];
+      [runButton setEnabled:YES];
     }
 }
 
@@ -359,22 +384,36 @@ enum {
     }
     
 
-  // Debugger
+  // Debugger: one session per run, shown in the project window.
+  if (_isDebugging)
+    {
+      [[project projectWindow] showDebugArea:[debugger debugAreaView]];
+      return;
+    }
+  if (debugger)
+    {
+      [[NSNotificationCenter defaultCenter] removeObserver:self
+        name:PCDebuggerStateDidChangeNotification object:debugger];
+      DESTROY(debugger);
+    }
+  debugger = [bundleManager objectForBundleType: @"debugger"
+                                       protocol: @protocol(CodeDebugger)
+                                       fileName: [executablePath stringByDeletingLastPathComponent]];
   if (nil == debugger)
     {
-      debugger = [bundleManager objectForBundleType: @"debugger"
-					   protocol: @protocol(CodeDebugger)
-					   fileName: [executablePath stringByDeletingLastPathComponent]];
-      [debugger debugExecutableAtPath: executablePath
-			 withDebugger: gdbPath];
+      NSLog(@"No debugger module found");
+      [debugButton setState:NSOffState];
+      return;
     }
-  else
-    {
-      [debugger show];
-    }
-
-  if (nil == debugger)
-    NSLog(@"No debugger module found");
+  [[NSNotificationCenter defaultCenter] addObserver:self
+    selector:@selector(debuggerStateDidChange:)
+        name:PCDebuggerStateDidChangeNotification object:debugger];
+  _isDebugging = YES;
+  [debugButton setState:NSOnState];
+  [runButton setEnabled:NO];
+  [[project projectWindow] showDebugArea:[debugger debugAreaView]];
+  [debugger setProject:project];
+  [debugger runExecutableAtPath:executablePath withDebugger:gdbPath];
 
   // turn debug button off...
   // [debugButton setState:NSOffState];

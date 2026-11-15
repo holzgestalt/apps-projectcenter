@@ -58,6 +58,11 @@
   NSSplitView *v_split;
 
   NSBox       *customView;
+  NSView      *navigatorArea;    // tab selector above the navigators
+  NSSegmentedControl *navigatorSelector;
+  NSTabView   *navigatorTabs;
+  id          breakpointNavigator;
+  id          debugNavigator;
   NSSplitView *contentSplit;   // editor above the collapsible bottom area
   NSBox       *bottomView;     // build or run output
   CGFloat     bottomHeight;
@@ -91,6 +96,12 @@
 - (void)showProjectLaunch:(id)sender;
 - (void)showProjectEditor:(id)sender;
 - (void)toggleNavigator:(id)sender;
+- (void)showDebugArea:(NSView *)view;
+/* Sidebar tabs, as in Xcode: project, breakpoints, debug (call stack). */
+- (void)selectNavigatorAtIndex:(NSInteger)index;
+- (NSInteger)selectedNavigatorIndex;
+- (id)breakpointNavigator;
+- (id)debugNavigator;
 - (void)toggleBottomArea:(id)sender;
 - (BOOL)isNavigatorVisible;
 - (BOOL)isBottomAreaVisible;

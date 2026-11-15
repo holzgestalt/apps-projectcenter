@@ -45,6 +45,12 @@ Images/Build.tiff \
 Images/GSBuildTemplate.tiff \
 Images/GSBottomPaneTemplate.tiff \
 Images/GSInspectorPaneTemplate.tiff \
+Images/GSStepOverTemplate.tiff \
+Images/GSStepIntoTemplate.tiff \
+Images/GSStepOutTemplate.tiff \
+Images/GSNavigatorProjectTemplate.tiff \
+Images/GSNavigatorBreakpointsTemplate.tiff \
+Images/GSNavigatorDebugTemplate.tiff \
 Images/Clean.tiff \
 Images/Debug.tiff \
 Images/Files.tiff \

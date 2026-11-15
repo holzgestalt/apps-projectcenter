@@ -54,6 +54,26 @@
 
 - (void) startDebugger;
 
+// ===========================================================================
+// ==== Integrated debugging (project window)
+// ===========================================================================
+
+/* The project whose breakpoints and sources the session uses. */
+- (void)setProject:(id)project;
+/* Console and step controls for the project window's bottom area. */
+- (NSView *)debugAreaView;
+/* Start the debugger and run the executable without a separate window. */
+- (void)runExecutableAtPath:(NSString *)filePath withDebugger:(NSString *)debuggerPath;
+- (void)stopDebugging;
+- (BOOL)isDebugging;
+/* Make the frame at index the debugger's current frame and show its source. */
+- (void)selectFrameAtIndex:(NSUInteger)index;
+- (void)continueExecution:(id)sender;
+- (void)pauseExecution:(id)sender;
+- (void)stepOver:(id)sender;
+- (void)stepInto:(id)sender;
+- (void)stepOut:(id)sender;
+
 @end
 
 #endif

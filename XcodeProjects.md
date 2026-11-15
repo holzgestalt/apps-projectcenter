@@ -42,6 +42,35 @@ application targets, select one with `TargetName` below. Framework/tool-only
 projects, `.xcworkspace`, scheme selection, build-setting expansion, Swift
 packages and Xcode project editing are not implemented.
 
+## Debugging
+
+Run (toolbar) starts the program under gdb, like Xcode; Stop ends the session.
+The bottom area shows the debug bar (continue/pause, step over, step into,
+step out) above the gdb console, where gdb commands can also be typed.
+
+The sidebar has three tabs, selected with the icons above it:
+
+- **Project**: the project's files.
+- **Breakpoints**: all breakpoints. File breakpoints are grouped by file and
+  show their source line; selecting one opens it in the editor. Use **+** to
+  add an Objective-C exception breakpoint (`objc_exception_throw`) or a
+  symbolic breakpoint (a function or method such as `-[NSView setFrame:]`),
+  and **−** to delete the selected breakpoint.
+- **Debug**: while the program is paused, the call stack of the stopped thread.
+  The tab opens automatically when the program pauses. The first frame with
+  the project's own code is selected and shown in the editor; select another
+  frame to inspect it.
+
+Click the editor's gutter to set or remove a breakpoint on a line. A blue tag
+marks a breakpoint and a green marker the line where the program is paused.
+For Xcode projects, breakpoints are stored per user in
+`<Name>.xcodeproj/xcuserdata/<user>.xcuserdatad/ProjectCenter/Breakpoints.plist`,
+next to Xcode's own per-user data, which version control normally ignores.
+Xcode's own breakpoint files are not read.
+
+The debugger needs gdb (Preferences → Build → Debugger, default `/usr/bin/gdb`)
+and a build with debug information.
+
 ## GNUstep build and debug integration
 
 Reading an Xcode project does not supply Apple's SDKs or translate its build
@@ -83,4 +112,5 @@ bash scripts/test-projectcenter-xcode.sh --integration
 Run from the workspace root. The integration test uses Xvfb and GNUstep's user
 defaults. It opens EditGlyphData, checks duplicate-open handling and resource
 paths, verifies save leaves the original project/build files unchanged, checks
-the configured executable, and closes the project.
+the configured executable, debugs a small test program (line and exception
+breakpoints, call stack, frame selection, Stop) and closes the project.
