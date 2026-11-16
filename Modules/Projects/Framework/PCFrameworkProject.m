@@ -1,27 +1,27 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2005-2023 Free Software Foundation
+ Copyright (C) 2005-2023 Free Software Foundation
 
-   Authors: Serg Stoyan
-            Riccardo Mottola
+ Authors: Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCMakefileFactory.h>
@@ -40,34 +40,34 @@
 - (id)init
 {
   if ((self = [super init]))
-    {
-      rootKeys = [[NSArray arrayWithObjects: 
-	PCClasses,
-	PCHeaders,
-	PCOtherSources,
-	PCOtherResources,
-	PCSubprojects,
-	PCDocuFiles,
-	PCSupportingFiles,
-	PCLibraries,
-	PCNonProject,
-	nil] retain];
+  {
+    rootKeys = [[NSArray arrayWithObjects:
+                 PCClasses,
+                 PCHeaders,
+                 PCOtherSources,
+                 PCOtherResources,
+                 PCSubprojects,
+                 PCDocuFiles,
+                 PCSupportingFiles,
+                 PCLibraries,
+                 PCNonProject,
+                 nil] retain];
 
-      rootCategories = [[NSArray arrayWithObjects:
-	@"Classes",
-	@"Headers",
-	@"Other Sources",
-	@"Other Resources",
-	@"Subprojects",
-	@"Documentation",
-	@"Supporting Files",
-	@"Libraries",
-	@"Non Project Files",
-	nil] retain];
+    rootCategories = [[NSArray arrayWithObjects:
+                       @"Classes",
+                       @"Headers",
+                       @"Other Sources",
+                       @"Other Resources",
+                       @"Subprojects",
+                       @"Documentation",
+                       @"Supporting Files",
+                       @"Libraries",
+                       @"Non Project Files",
+                       nil] retain];
 
-      rootEntries = [[NSDictionary 
-	dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
-    }
+    rootEntries = [[NSDictionary
+                    dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
+  }
 
   return self;
 }
@@ -96,12 +96,12 @@
 
 - (PCProject *)createProjectAt:(NSString *)path withOption:projOption
 {
-//  PCFileManager *pcfm = [PCFileManager defaultManager];
+  //  PCFileManager *pcfm = [PCFileManager defaultManager];
   PCFileCreator *pcfc = [PCFileCreator sharedCreator];
   NSBundle      *projectBundle = nil;
   NSString      *_file = nil;
   NSString      *_2file = nil;
-//  NSString      *_resourcePath;
+  //  NSString      *_resourcePath;
 
   NSAssert(path,@"No valid project path provided!");
 
@@ -114,9 +114,9 @@
   [self setProjectPath:path];
   [self setProjectName:[path lastPathComponent]];
   if ([[projectName pathExtension] isEqualToString:@"subproj"])
-    {
-      projectName = [projectName stringByDeletingPathExtension];
-    }
+  {
+    projectName = [projectName stringByDeletingPathExtension];
+  }
   [projectDict setObject:projectName forKey:PCProjectName];
   [projectDict setObject:[NSUserDefaults userLanguages] forKey:PCUserLanguages];
 
@@ -125,7 +125,7 @@
   // $PROJECTNAME$.m
   _file = [NSString stringWithFormat:@"%@", projectName];
   _2file = [NSString stringWithFormat:@"%@.m", projectName];
-  [pcfc createFileOfType:ObjCClass 
+  [pcfc createFileOfType:ObjCClass
                     path:[path stringByAppendingPathComponent:_file]
                  project:self];
   [projectDict setObject:[NSArray arrayWithObjects:_2file,nil]
@@ -142,7 +142,7 @@
   [[PCMakefileFactory sharedFactory] createPostambleForProject:self];
 
   // Resources
-//  _resourcePath = [path stringByAppendingPathComponent:@"Resources"];
+  //  _resourcePath = [path stringByAppendingPathComponent:@"Resources"];
 
   // Save the project to disc
   [self writeMakefile];
@@ -158,9 +158,9 @@
 - (void)addFiles:(NSArray *)files forKey:(NSString *)type notify:(BOOL)yn
 {
   if ([type isEqualToString:PCHeaders])
-    {
-      [super addFiles:files forKey:PCPublicHeaders notify:NO];
-    }
+  {
+    [super addFiles:files forKey:PCPublicHeaders notify:NO];
+  }
 
   [super addFiles:files forKey:type notify:YES];
 }
@@ -171,18 +171,18 @@
   BOOL     success = NO;
   BOOL     isPublicHeader = YES;
 
-  isPublicHeader = 
-    [[projectDict objectForKey:PCPublicHeaders] containsObject:fromFile];
+  isPublicHeader =
+  [[projectDict objectForKey:PCPublicHeaders] containsObject:fromFile];
 
   success = [super renameFile:fromFile toFile:toFile];
 
   if (success && [category isEqualToString:[super categoryForKey:PCHeaders]])
+  {
+    if (isPublicHeader == NO)
     {
-      if (isPublicHeader == NO)
-	{
-	  [self setHeaderFile:toFile public:NO];
-	}
+      [self setHeaderFile:toFile public:NO];
     }
+  }
 
   return success;
 }
@@ -194,7 +194,7 @@
 - (BOOL)writeMakefile
 {
   PCMakefileFactory *mf = [PCMakefileFactory sharedFactory];
-  NSUInteger        i,count; 
+  NSUInteger        i,count;
   NSString          *mfl = nil;
   NSData            *mfd = nil;
   NSString          *key = nil;
@@ -218,36 +218,36 @@
 
   // Subprojects
   if ([[projectDict objectForKey:PCSubprojects] count] > 0)
-    {
-      [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
-    }
+  {
+    [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
+  }
 
   // Resources
   count = [[self resourceFileKeys] count];
   resources = [[NSMutableArray alloc] initWithCapacity:1];
   // Gather all resource files into one array
   for (i = 0; i < count; i++)
-    {
-      key = [[self resourceFileKeys] objectAtIndex:i];
-      
-      [resources addObjectsFromArray:[projectDict objectForKey:key]];
-    }
+  {
+    key = [[self resourceFileKeys] objectAtIndex:i];
+
+    [resources addObjectsFromArray:[projectDict objectForKey:key]];
+  }
   // Remove localized resource files from gathered array
   localizedResources = [projectDict objectForKey:PCLocalizedResources];
   for (i = [resources count]; i > 0; i--)
+  {
+    if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
     {
-      if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
-	{
-	  [resources removeObjectAtIndex:i-1];
-	}
+      [resources removeObjectAtIndex:i-1];
     }
+  }
   [mf appendResources:resources inDir:@"Resources"];
   [resources release];
 
   // Localization
   [mf appendLocalizedResources:localizedResources
-		  forLanguages:[projectDict objectForKey:PCUserLanguages]];
-  
+                  forLanguages:[projectDict objectForKey:PCUserLanguages]];
+
   // Sources
   [self appendPublicHeaders:mf];
   [mf appendClasses:[projectDict objectForKey:PCClasses]];
@@ -255,19 +255,19 @@
 
   // AutoGSDoc
   [self appendGSDoc:mf];
-  
+
   // Tail
   [self appendTail:mf];
 
   // Write the new file to disc!
   mfl = [projectPath stringByAppendingPathComponent:@"GNUmakefile"];
-  if ((mfd = [mf encodedMakefile])) 
+  if ((mfd = [mf encodedMakefile]))
+  {
+    if ([mfd writeToFile:mfl atomically:YES])
     {
-      if ([mfd writeToFile:mfl atomically:YES]) 
-	{
-	  return YES;
-	}
+      return YES;
     }
+  }
 
   return NO;
 }
@@ -276,16 +276,16 @@
 {
   [mff appendString:@"\n#\n# Framework\n#\n"];
   [mff appendString:[NSString stringWithFormat:@"VERSION = %@\n",
-    [projectDict objectForKey:PCRelease]]];
+                     [projectDict objectForKey:PCRelease]]];
   [mff appendString:
-	 [NSString stringWithFormat:@"PACKAGE_NAME = %@\n", projectName]];
+   [NSString stringWithFormat:@"PACKAGE_NAME = %@\n", projectName]];
   [mff appendString:[NSString stringWithFormat:@"FRAMEWORK_NAME = %@\n",
-    projectName]];
-  [mff appendString:[NSString 
-    stringWithFormat:@"%@_CURRENT_VERSION_NAME = %@\n",
-    projectName, [projectDict objectForKey:PCRelease]]];
-  [mff appendString:[NSString 
-    stringWithFormat:@"%@_DEPLOY_WITH_CURRENT_VERSION = yes\n", projectName]];
+                     projectName]];
+  [mff appendString:[NSString
+                     stringWithFormat:@"%@_CURRENT_VERSION_NAME = %@\n",
+                     projectName, [projectDict objectForKey:PCRelease]]];
+  [mff appendString:[NSString
+                     stringWithFormat:@"%@_DEPLOY_WITH_CURRENT_VERSION = yes\n", projectName]];
 }
 
 - (void)appendPublicHeaders:(PCMakefileFactory *)mff
@@ -293,37 +293,37 @@
   NSArray *array = [projectDict objectForKey:PCPublicHeaders];
 
   if (array == nil || [array count] == 0)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [mff appendString:@"\n\n#\n# Public headers (will be installed)\n#\n"];
 
-  [mff appendString:[NSString stringWithFormat:@"%@_HEADER_FILES = ", 
+  [mff appendString:[NSString stringWithFormat:@"%@_HEADER_FILES = ",
                      projectName]];
 
   if (array && [array count])
-    {
-      NSString     *tmp;
-      NSEnumerator *enumerator = [array objectEnumerator];
+  {
+    NSString     *tmp;
+    NSEnumerator *enumerator = [array objectEnumerator];
 
-      while ((tmp = [enumerator nextObject])) 
-	{
-	  [mff appendString:[NSString stringWithFormat:@"\\\n%@ ",tmp]];
-	}
+    while ((tmp = [enumerator nextObject]))
+    {
+      [mff appendString:[NSString stringWithFormat:@"\\\n%@ ",tmp]];
     }
+  }
 }
 
 - (void)appendGSDoc:(PCMakefileFactory *)mff
 {
   [mff appendString:@"\n#\n# AutoGSDoc\n#\n"];
   [mff appendString: [NSString stringWithFormat:@"DOCUMENT_NAME = %@\n\n", projectName]];
-  [mff appendString: [NSString stringWithFormat:@"%@_AGSDOC_FILES = %@.gsdoc \\\n", 
-			       projectName, projectName]];
-  [mff appendString: [NSString stringWithFormat:@"\t$(%@_HEADER_FILES) \\\n", 
-                              projectName]];
-  [mff appendString: [NSString stringWithFormat:@"\t$(%@_OBJC_FILES) \\\n", 
-                              projectName]];
+  [mff appendString: [NSString stringWithFormat:@"%@_AGSDOC_FILES = %@.gsdoc \\\n",
+                      projectName, projectName]];
+  [mff appendString: [NSString stringWithFormat:@"\t$(%@_HEADER_FILES) \\\n",
+                      projectName]];
+  [mff appendString: [NSString stringWithFormat:@"\t$(%@_OBJC_FILES) \\\n",
+                      projectName]];
   [mff appendString: [NSString stringWithFormat:@"\n\n%@_AGSDOC_FLAGS += -MakeFrames YES\n", projectName]];
 }
 
@@ -349,30 +349,30 @@
 - (NSView *)projectAttributesView
 {
   if (projectAttributesView == nil)
+  {
+    if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
     {
-      if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
-	{
-	  NSLog(@"PCFrameworkProject: error loading Inspector NIB!");
-	  return nil;
-	}
-      [projectAttributesView retain];
-      [self updateInspectorValues:nil];
+      NSLog(@"PCFrameworkProject: error loading Inspector NIB!");
+      return nil;
     }
+    [projectAttributesView retain];
+    [self updateInspectorValues:nil];
+  }
 
   return projectAttributesView;
 }
 
-- (void)updateInspectorValues:(NSNotification *)aNotif 
+- (void)updateInspectorValues:(NSNotification *)aNotif
 {
-  [principalClassField 
-    setStringValue:[projectDict objectForKey:PCPrincipalClass]];
+  [principalClassField
+   setStringValue:[projectDict objectForKey:PCPrincipalClass]];
 }
 
 - (void)setPrincipalClass:(id)sender
 {
   [self setProjectDictObject:[principalClassField stringValue]
                       forKey:PCPrincipalClass
-		      notify:YES];
+                      notify:YES];
 }
 
 

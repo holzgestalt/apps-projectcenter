@@ -1,25 +1,25 @@
 /*
-**  PCDebugger.m
-**
-**  Copyright (c) 2008-2021
-**
-**  Author: Gregory Casamento <greg.casamento@gmail.com>
-**          Riccardo Mottola <rm@gnu.org>>
-**
-**  This program is free software; you can redistribute it and/or modify
-**  it under the terms of the GNU General Public License as published by
-**  the Free Software Foundation; either version 2 of the License, or
-**  (at your option) any later version.
-**
-**  This program is distributed in the hope that it will be useful,
-**  but WITHOUT ANY WARRANTY; without even the implied warranty of
-**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**  GNU General Public License for more details.
-**
-**  You should have received a copy of the GNU General Public License
-**  along with this program; if not, write to the Free Software
-**  Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
-*/
+ **  PCDebugger.m
+ **
+ **  Copyright (c) 2008-2021
+ **
+ **  Author: Gregory Casamento <greg.casamento@gmail.com>
+ **          Riccardo Mottola <rm@gnu.org>>
+ **
+ **  This program is free software; you can redistribute it and/or modify
+ **  it under the terms of the GNU General Public License as published by
+ **  the Free Software Foundation; either version 2 of the License, or
+ **  (at your option) any later version.
+ **
+ **  This program is distributed in the hope that it will be useful,
+ **  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ **  GNU General Public License for more details.
+ **
+ **  You should have received a copy of the GNU General Public License
+ **  along with this program; if not, write to the Free Software
+ **  Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
+ */
 
 #ifdef	__MINGW32__
 #undef _WIN32_WINNT
@@ -80,57 +80,57 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 + (void) initialize
 {
   if (self == [PCDebugger class])
-    {
-      NSBundle	*bundle;
-      NSString	*path;
+  {
+    NSBundle	*bundle;
+    NSString	*path;
 
-      bundle = [NSBundle bundleForClass: self];
-      path = [bundle pathForImageResource: @"go_button"];
-      if (path != nil)
-	{
-	  goImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"pause_button"];
-      if (path != nil)
-	{
-	  pauseImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"continue_button"];
-      if (path != nil)
-	{
-	  continueImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"restart_button"];
-      if (path != nil)
-	{
-	  restartImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"next_button"];
-      if (path != nil)
-	{
-	  nextImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"stepin_button"];
-      if (path != nil)
-	{
-	  stepInImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"stepout_button"];
-      if (path != nil)
-	{
-	  stepOutImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"up_button"];
-      if (path != nil)
-	{
-	  upImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
-      path = [bundle pathForImageResource: @"down_button"];
-      if (path != nil)
-	{
-	  downImage = [[NSImage alloc] initWithContentsOfFile: path];
-	}
+    bundle = [NSBundle bundleForClass: self];
+    path = [bundle pathForImageResource: @"go_button"];
+    if (path != nil)
+    {
+      goImage = [[NSImage alloc] initWithContentsOfFile: path];
     }
+    path = [bundle pathForImageResource: @"pause_button"];
+    if (path != nil)
+    {
+      pauseImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+    path = [bundle pathForImageResource: @"continue_button"];
+    if (path != nil)
+    {
+      continueImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+    path = [bundle pathForImageResource: @"restart_button"];
+    if (path != nil)
+    {
+      restartImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+    path = [bundle pathForImageResource: @"next_button"];
+    if (path != nil)
+    {
+      nextImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+    path = [bundle pathForImageResource: @"stepin_button"];
+    if (path != nil)
+    {
+      stepInImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+    path = [bundle pathForImageResource: @"stepout_button"];
+    if (path != nil)
+    {
+      stepOutImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+    path = [bundle pathForImageResource: @"up_button"];
+    if (path != nil)
+    {
+      upImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+    path = [bundle pathForImageResource: @"down_button"];
+    if (path != nil)
+    {
+      downImage = [[NSImage alloc] initWithContentsOfFile: path];
+    }
+  }
 }
 
 - (NSFont *)consoleFont
@@ -154,43 +154,43 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 - (id) init
 {
   if((self = [super init]) != nil)
+  {
+    // initialization here...
+    if([NSBundle loadNibNamed: @"PCDebugger" owner: self] == NO)
     {
-      // initialization here...
-      if([NSBundle loadNibNamed: @"PCDebugger" owner: self] == NO)
-	{
-	  return nil;
-	}
-
-      [(PCDebuggerView *)debuggerView setDebugger:self];
-      debuggerWrapper = [[GDBWrapper alloc] init];
-      [debuggerWrapper setTextView:debuggerView];
-      [debuggerWrapper setDebugger:self];
-      [debuggerView setFont: [self consoleFont]];
-
-      subProcessId = 0;
-      lastInfoParsed = nil;
-      lastFileNameParsed = nil;
-      lastLineNumberParsed = NSNotFound;
-
-      breakpoints = nil;
-      breakpointNumbers = [[NSMutableDictionary alloc] init];
-      symbolNumbers = [[NSMutableDictionary alloc] init];
-      state = [PCDebuggerStateExited copy];
-
-      [[NSNotificationCenter defaultCenter] addObserver: self
-       selector: @selector(handleNotification:)
-       name: PCDBDebuggerStartedNotification
-       object: debuggerWrapper];
-      [[NSNotificationCenter defaultCenter] addObserver:self
-       selector:@selector(handleBreakpointNotification:)
-       name:PCProjectBreakpointNotification
-       object:nil];
+      return nil;
     }
+
+    [(PCDebuggerView *)debuggerView setDebugger:self];
+    debuggerWrapper = [[GDBWrapper alloc] init];
+    [debuggerWrapper setTextView:debuggerView];
+    [debuggerWrapper setDebugger:self];
+    [debuggerView setFont: [self consoleFont]];
+
+    subProcessId = 0;
+    lastInfoParsed = nil;
+    lastFileNameParsed = nil;
+    lastLineNumberParsed = NSNotFound;
+
+    breakpoints = nil;
+    breakpointNumbers = [[NSMutableDictionary alloc] init];
+    symbolNumbers = [[NSMutableDictionary alloc] init];
+    state = [PCDebuggerStateExited copy];
+
+    [[NSNotificationCenter defaultCenter] addObserver: self
+                                             selector: @selector(handleNotification:)
+                                                 name: PCDBDebuggerStartedNotification
+                                               object: debuggerWrapper];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleBreakpointNotification:)
+                                                 name:PCProjectBreakpointNotification
+                                               object:nil];
+  }
   return self;
 }
 
 -(void) debugExecutableAtPath: (NSString *)filePath
-		 withDebugger: (NSString *)debugger
+                 withDebugger: (NSString *)debugger
 {
   ASSIGN(executablePath,filePath);
   [debuggerWrapper setDebuggerPath: debugger];
@@ -208,9 +208,9 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 - (void) startDebugger
 {
   [debuggerView runProgram: executablePath
-	inCurrentDirectory: [executablePath stringByDeletingLastPathComponent]
-		logStandardError: YES];
-  
+        inCurrentDirectory: [executablePath stringByDeletingLastPathComponent]
+          logStandardError: YES];
+
 }
 
 - (void) initBreakpoints
@@ -226,44 +226,44 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   savedBreakpoints = [project breakpoints];
   e = [savedBreakpoints objectEnumerator];
   while ((savedBreakpoint = [e nextObject]) != nil)
+  {
+    NSString *fileName;
+    NSNumber *lineNumber;
+    NSDictionary *bp;
+
+    fileName = [project absolutePathForBreakpointFile:
+                [savedBreakpoint objectForKey:@"File"]];
+    lineNumber = [savedBreakpoint objectForKey:@"Line"];
+    if (fileName == nil || lineNumber == nil ||
+        ![project canSetBreakpointForFile:fileName
+                                     line:[lineNumber unsignedIntegerValue]])
     {
-      NSString *fileName;
-      NSNumber *lineNumber;
-      NSDictionary *bp;
-
-      fileName = [project absolutePathForBreakpointFile:
-	[savedBreakpoint objectForKey:@"File"]];
-      lineNumber = [savedBreakpoint objectForKey:@"Line"];
-      if (fileName == nil || lineNumber == nil ||
-	  ![project canSetBreakpointForFile:fileName
-				       line:[lineNumber unsignedIntegerValue]])
-        {
-          continue;
-        }
-
-      bp = [NSDictionary dictionaryWithObjectsAndKeys:
-        PCBreakTypeByLine, PCBreakTypeKey,
-        fileName, PCBreakFilename,
-        lineNumber, PCBreakLineNumber,
-        nil];
-      [breakpoints addObject:bp];
+      continue;
     }
+
+    bp = [NSDictionary dictionaryWithObjectsAndKeys:
+          PCBreakTypeByLine, PCBreakTypeKey,
+          fileName, PCBreakFilename,
+          lineNumber, PCBreakLineNumber,
+          nil];
+    [breakpoints addObject:bp];
+  }
   for (NSDictionary *symbolic in [project symbolicBreakpoints])
-    {
-      [breakpoints addObject:[NSDictionary dictionaryWithObjectsAndKeys:
-        PCBreakTypeMethod, PCBreakTypeKey,
-        [symbolic objectForKey:@"Symbol"], PCBreakMethod,
-        nil]];
-    }
+  {
+    [breakpoints addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                            PCBreakTypeMethod, PCBreakTypeKey,
+                            [symbolic objectForKey:@"Symbol"], PCBreakMethod,
+                            nil]];
+  }
   /* CRUDE EXAMPLES * TODO FIXME *
-  NSDictionary *dP;
-  NSLog(@"initing breakpoints");
+   NSDictionary *dP;
+   NSLog(@"initing breakpoints");
 
-  dP = [NSDictionary dictionaryWithObjectsAndKeys: PCBreakTypeMethod, PCBreakTypeKey, @"[NSException raise]", PCBreakMethod, nil];
-  //  [breakpoints addObject:dP];
-  dP = [NSDictionary dictionaryWithObjectsAndKeys: PCBreakTypeByLine, PCBreakTypeKey, @"AppController.m", PCBreakFilename, [NSNumber numberWithInt:100], PCBreakLineNumber, nil];
-  [breakpoints addObject:dP];
-  */ 
+   dP = [NSDictionary dictionaryWithObjectsAndKeys: PCBreakTypeMethod, PCBreakTypeKey, @"[NSException raise]", PCBreakMethod, nil];
+   //  [breakpoints addObject:dP];
+   dP = [NSDictionary dictionaryWithObjectsAndKeys: PCBreakTypeByLine, PCBreakTypeKey, @"AppController.m", PCBreakFilename, [NSNumber numberWithInt:100], PCBreakLineNumber, nil];
+   [breakpoints addObject:dP];
+   */
   [debuggerWrapper setBreakpoints:breakpoints];
 }
 
@@ -277,10 +277,10 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   [self debuggerSetup];
   [self initBreakpoints];
   if (runWhenReady)
-    {
-      runWhenReady = NO;
-      [self go:self];
-    }
+  {
+    runWhenReady = NO;
+    [self go:self];
+  }
 }
 
 - (void)handleBreakpointNotification:(NSNotification *)notification
@@ -294,98 +294,98 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 
   info = [notification object];
   if (![info isKindOfClass:[NSDictionary class]])
-    {
-      return;
-    }
+  {
+    return;
+  }
   if ([[info objectForKey:@"FromDebugger"] boolValue])
-    {
-      return;
-    }
+  {
+    return;
+  }
   if ([[info objectForKey:@"Symbol"] isKindOfClass:[NSString class]])
-    {
-      NSString *symbol = [info objectForKey:@"Symbol"];
-      BOOL on = [[info objectForKey:@"Enabled"] boolValue];
+  {
+    NSString *symbol = [info objectForKey:@"Symbol"];
+    BOOL on = [[info objectForKey:@"Enabled"] boolValue];
 
-      if (![debuggerWrapper debuggerStarted])
-        {
-          return;
-        }
-      if (on)
-        {
-          [debuggerWrapper setBreakpoints:[NSArray arrayWithObject:
-            [NSDictionary dictionaryWithObjectsAndKeys:
-              PCBreakTypeMethod, PCBreakTypeKey, symbol, PCBreakMethod, nil]]];
-        }
-      else if ([symbolNumbers objectForKey:symbol])
-        {
-          [debuggerWrapper putString:[NSString stringWithFormat:@"-break-delete %@\n",
-            [symbolNumbers objectForKey:symbol]]];
-          [symbolNumbers removeObjectForKey:symbol];
-        }
+    if (![debuggerWrapper debuggerStarted])
+    {
       return;
     }
+    if (on)
+    {
+      [debuggerWrapper setBreakpoints:[NSArray arrayWithObject:
+                                       [NSDictionary dictionaryWithObjectsAndKeys:
+                                        PCBreakTypeMethod, PCBreakTypeKey, symbol, PCBreakMethod, nil]]];
+    }
+    else if ([symbolNumbers objectForKey:symbol])
+    {
+      [debuggerWrapper putString:[NSString stringWithFormat:@"-break-delete %@\n",
+                                  [symbolNumbers objectForKey:symbol]]];
+      [symbolNumbers removeObjectForKey:symbol];
+    }
+    return;
+  }
 
   fileName = [info objectForKey:@"File"];
   lineNumber = [info objectForKey:@"Line"];
   enabled = [info objectForKey:@"Enabled"];
   if (![fileName isKindOfClass:[NSString class]] ||
       ![lineNumber isKindOfClass:[NSNumber class]])
+  {
+    return;
+  }
+  enableBreakpoint = (enabled == nil || [enabled boolValue]);
+  if (enableBreakpoint)
+  {
+    PCProject *project;
+
+    project = [self _project];
+    if (project != nil &&
+        ![project canSetBreakpointForFile:fileName
+                                     line:[lineNumber unsignedIntegerValue]])
     {
       return;
     }
-  enableBreakpoint = (enabled == nil || [enabled boolValue]);
-  if (enableBreakpoint)
-    {
-      PCProject *project;
-
-      project = [self _project];
-      if (project != nil &&
-	  ![project canSetBreakpointForFile:fileName
-				       line:[lineNumber unsignedIntegerValue]])
-	{
-	  return;
-	}
-    }
+  }
 
   bp = [NSDictionary dictionaryWithObjectsAndKeys:
-    PCBreakTypeByLine, PCBreakTypeKey,
-    AUTORELEASE([fileName copy]), PCBreakFilename,
-    lineNumber, PCBreakLineNumber,
-    nil];
+        PCBreakTypeByLine, PCBreakTypeKey,
+        AUTORELEASE([fileName copy]), PCBreakFilename,
+        lineNumber, PCBreakLineNumber,
+        nil];
   if (breakpoints == nil)
-    {
-      breakpoints = [[NSMutableArray alloc] init];
-    }
+  {
+    breakpoints = [[NSMutableArray alloc] init];
+  }
 
   if (enableBreakpoint)
+  {
+    if (![breakpoints containsObject:bp])
     {
-      if (![breakpoints containsObject:bp])
-	{
-	  [breakpoints addObject:bp];
-	}
-      if ([debuggerWrapper debuggerStarted])
-	{
-	  [debuggerWrapper setBreakpoints:[NSArray arrayWithObject:bp]];
-	}
+      [breakpoints addObject:bp];
     }
+    if ([debuggerWrapper debuggerStarted])
+    {
+      [debuggerWrapper setBreakpoints:[NSArray arrayWithObject:bp]];
+    }
+  }
   else
+  {
+    [breakpoints removeObject:bp];
+    if ([debuggerWrapper debuggerStarted])
     {
-      [breakpoints removeObject:bp];
-      if ([debuggerWrapper debuggerStarted])
-	{
-	  NSString *command;
+      NSString *command;
 
-	  command = [NSString stringWithFormat:
-	    @"-interpreter-exec console \"clear %@:%@\"\n",
-	    fileName, lineNumber];
-	  [debuggerWrapper putString:command];
-	}
+      command = [NSString stringWithFormat:
+                 @"-interpreter-exec console \"clear %@:%@\"\n",
+                 fileName, lineNumber];
+      [debuggerWrapper putString:command];
     }
+  }
 }
 
 - (void)recordBreakpointNumber:(NSString *)number
-			   file:(NSString *)file
-			   line:(NSUInteger)line
+                          file:(NSString *)file
+                          line:(NSUInteger)line
 {
   NSDictionary *bp;
   PCProject *project;
@@ -393,47 +393,47 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   if (![number isKindOfClass:[NSString class]] ||
       ![file isKindOfClass:[NSString class]] ||
       line == 0)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   project = [self _project];
   if (project != nil && ![project canSetBreakpointForFile:file line:line])
-    {
-      [debuggerWrapper putString:
-	[NSString stringWithFormat:@"-break-delete %@\n", number]];
-      return;
-    }
+  {
+    [debuggerWrapper putString:
+     [NSString stringWithFormat:@"-break-delete %@\n", number]];
+    return;
+  }
 
   bp = [NSDictionary dictionaryWithObjectsAndKeys:
-    PCBreakTypeByLine, PCBreakTypeKey,
-    AUTORELEASE([file copy]), PCBreakFilename,
-    [NSNumber numberWithUnsignedInteger:line], PCBreakLineNumber,
-    nil];
+        PCBreakTypeByLine, PCBreakTypeKey,
+        AUTORELEASE([file copy]), PCBreakFilename,
+        [NSNumber numberWithUnsignedInteger:line], PCBreakLineNumber,
+        nil];
 
   [breakpointNumbers setObject:bp forKey:number];
   if (breakpoints == nil)
-    {
-      breakpoints = [[NSMutableArray alloc] init];
-    }
+  {
+    breakpoints = [[NSMutableArray alloc] init];
+  }
   if (![breakpoints containsObject:bp])
-    {
-      [breakpoints addObject:bp];
-    }
+  {
+    [breakpoints addObject:bp];
+  }
 
   if (project != nil)
-    {
-      [project setBreakpointForFile:file line:line enabled:YES];
-    }
+  {
+    [project setBreakpointForFile:file line:line enabled:YES];
+  }
 
   [[NSNotificationCenter defaultCenter]
-    postNotificationName:PCProjectBreakpointNotification
-                  object:[NSDictionary dictionaryWithObjectsAndKeys:
-                    file, @"File",
-                    [NSNumber numberWithUnsignedInteger:line], @"Line",
-                    [NSNumber numberWithBool:YES], @"Enabled",
-                    [NSNumber numberWithBool:YES], @"FromDebugger",
-                    nil]];
+   postNotificationName:PCProjectBreakpointNotification
+   object:[NSDictionary dictionaryWithObjectsAndKeys:
+           file, @"File",
+           [NSNumber numberWithUnsignedInteger:line], @"Line",
+           [NSNumber numberWithBool:YES], @"Enabled",
+           [NSNumber numberWithBool:YES], @"FromDebugger",
+           nil]];
 }
 
 - (void)removeBreakpointNumber:(NSString *)number
@@ -444,49 +444,49 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   PCProject *project;
 
   if (![number isKindOfClass:[NSString class]])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   bp = RETAIN([breakpointNumbers objectForKey:number]);
   if (bp == nil)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   file = RETAIN([bp objectForKey:PCBreakFilename]);
   line = RETAIN([bp objectForKey:PCBreakLineNumber]);
   if (![file isKindOfClass:[NSString class]] ||
       ![line isKindOfClass:[NSNumber class]])
-    {
-      [breakpointNumbers removeObjectForKey:number];
-      [breakpoints removeObject:bp];
-      RELEASE(file);
-      RELEASE(line);
-      RELEASE(bp);
-      return;
-    }
+  {
+    [breakpointNumbers removeObjectForKey:number];
+    [breakpoints removeObject:bp];
+    RELEASE(file);
+    RELEASE(line);
+    RELEASE(bp);
+    return;
+  }
 
   [breakpointNumbers removeObjectForKey:number];
   if (breakpoints != nil)
-    {
-      [breakpoints removeObject:bp];
-    }
+  {
+    [breakpoints removeObject:bp];
+  }
 
   project = [self _project];
   if (project != nil)
-    {
-      [project setBreakpointForFile:file line:[line unsignedIntegerValue] enabled:NO];
-    }
+  {
+    [project setBreakpointForFile:file line:[line unsignedIntegerValue] enabled:NO];
+  }
 
   [[NSNotificationCenter defaultCenter]
-    postNotificationName:PCProjectBreakpointNotification
-                  object:[NSDictionary dictionaryWithObjectsAndKeys:
-                    file, @"File",
-                    line, @"Line",
-                    [NSNumber numberWithBool:NO], @"Enabled",
-                    [NSNumber numberWithBool:YES], @"FromDebugger",
-                    nil]];
+   postNotificationName:PCProjectBreakpointNotification
+   object:[NSDictionary dictionaryWithObjectsAndKeys:
+           file, @"File",
+           line, @"Line",
+           [NSNumber numberWithBool:NO], @"Enabled",
+           [NSNumber numberWithBool:YES], @"FromDebugger",
+           nil]];
 
   RELEASE(file);
   RELEASE(line);
@@ -505,11 +505,11 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   /* Symbolic breakpoints also resolve to a file and line; only those set
    * on a line belong in the editor gutter. */
   if ([location isKindOfClass:[NSString class]] && [location length])
-    {
-      NSRange colon = [location rangeOfString:@":" options:NSBackwardsSearch];
-      return colon.location != NSNotFound
-        && [[location substringFromIndex:NSMaxRange(colon)] intValue] > 0;
-    }
+  {
+    NSRange colon = [location rangeOfString:@":" options:NSBackwardsSearch];
+    return colon.location != NSNotFound
+    && [[location substringFromIndex:NSMaxRange(colon)] intValue] > 0;
+  }
   return YES;
 }
 
@@ -519,14 +519,14 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   NSString *location = [bkpt objectForKey:@"original-location"];
 
   if (![location isKindOfClass:[NSString class]])
-    {
-      location = [bkpt objectForKey:@"pending"];
-    }
+  {
+    location = [bkpt objectForKey:@"pending"];
+  }
   if ([number isKindOfClass:[NSString class]] && [location isKindOfClass:[NSString class]]
       && ![self isLineBreakpointRecord:bkpt])
-    {
-      [symbolNumbers setObject:number forKey:location];
-    }
+  {
+    [symbolNumbers setObject:number forKey:location];
+  }
 }
 
 - (void)_postState:(NSString *)newState info:(NSDictionary *)extra
@@ -535,14 +535,14 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 
   ASSIGN(state, newState);
   if (extra)
-    {
-      [info addEntriesFromDictionary:extra];
-    }
+  {
+    [info addEntriesFromDictionary:extra];
+  }
   [self _updateControls];
   [[NSNotificationCenter defaultCenter]
-    postNotificationName:PCDebuggerStateDidChangeNotification
-                  object:self
-                userInfo:info];
+   postNotificationName:PCDebuggerStateDidChangeNotification
+   object:self
+   userInfo:info];
 }
 
 - (NSDictionary *)_stoppedInfo
@@ -553,14 +553,14 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   [info setObject:(frames ? frames : [NSArray array]) forKey:@"Frames"];
   [info setObject:[NSNumber numberWithUnsignedInteger:selectedFrame] forKey:@"SelectedFrame"];
   if (stopReason)
-    {
-      [info setObject:stopReason forKey:@"Reason"];
-    }
+  {
+    [info setObject:stopReason forKey:@"Reason"];
+  }
   if ([frame objectForKey:@"File"])
-    {
-      [info setObject:[frame objectForKey:@"File"] forKey:@"File"];
-      [info setObject:[frame objectForKey:@"Line"] forKey:@"Line"];
-    }
+  {
+    [info setObject:[frame objectForKey:@"File"] forKey:@"File"];
+    [info setObject:[frame objectForKey:@"Line"] forKey:@"Line"];
+  }
   return info;
 }
 
@@ -572,9 +572,9 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 - (PCProject *)_project
 {
   if (project)
-    {
-      return project;
-    }
+  {
+    return project;
+  }
   return [[(PCAppController *)[NSApp delegate] projectManager] rootActiveProject];
 }
 
@@ -583,38 +583,38 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   NSString *reason = [info objectForKey:@"reason"];
 
   if ([reason hasPrefix:@"exited"])
-    {
-      /* The program ended: end the session as well. */
-      [self setSubProcessId:0];
-      [debuggerWrapper putString:@"-gdb-exit\n"];
-      return;
-    }
+  {
+    /* The program ended: end the session as well. */
+    [self setSubProcessId:0];
+    [debuggerWrapper putString:@"-gdb-exit\n"];
+    return;
+  }
   if ([reason isEqual:@"breakpoint-hit"])
+  {
+    NSString *number = [info objectForKey:@"bkptno"];
+    reason = @"Breakpoint";
+    for (NSString *symbol in symbolNumbers)
     {
-      NSString *number = [info objectForKey:@"bkptno"];
-      reason = @"Breakpoint";
-      for (NSString *symbol in symbolNumbers)
-        {
-          if ([[symbolNumbers objectForKey:symbol] isEqual:number])
-            {
-              reason = [symbol isEqual:@"objc_exception_throw"]
-                ? @"Objective-C exception" : symbol;
-            }
-        }
+      if ([[symbolNumbers objectForKey:symbol] isEqual:number])
+      {
+        reason = [symbol isEqual:@"objc_exception_throw"]
+        ? @"Objective-C exception" : symbol;
+      }
     }
+  }
   else if ([reason isEqual:@"signal-received"])
-    {
-      reason = [NSString stringWithFormat:@"%@",
-        [info objectForKey:@"signal-name"] ? [info objectForKey:@"signal-name"] : @"Signal"];
-    }
+  {
+    reason = [NSString stringWithFormat:@"%@",
+              [info objectForKey:@"signal-name"] ? [info objectForKey:@"signal-name"] : @"Signal"];
+  }
   else if ([reason isEqual:@"end-stepping-range"] || [reason isEqual:@"function-finished"])
-    {
-      reason = @"Step";
-    }
+  {
+    reason = @"Step";
+  }
   else if (reason == nil)
-    {
-      reason = @"Paused";
-    }
+  {
+    reason = @"Paused";
+  }
   ASSIGN(stopReason, reason);
   [debuggerWrapper putString:@"-stack-list-frames\n"];
 }
@@ -628,9 +628,9 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 - (void)debuggerDidExit
 {
   if (exitPosted)
-    {
-      return;
-    }
+  {
+    return;
+  }
   exitPosted = YES;
   DESTROY(frames);
   [self setSubProcessId:0];
@@ -645,40 +645,40 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   NSUInteger firstProject = NSNotFound;
 
   for (NSDictionary *frame in miFrames)
-    {
-      NSMutableDictionary *entry = [NSMutableDictionary dictionary];
-      NSString *function = [frame objectForKey:@"func"];
-      NSString *file = [frame objectForKey:@"fullname"];
-      NSString *line = [frame objectForKey:@"line"];
+  {
+    NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+    NSString *function = [frame objectForKey:@"func"];
+    NSString *file = [frame objectForKey:@"fullname"];
+    NSString *line = [frame objectForKey:@"line"];
 
-      if (![frame isKindOfClass:[NSDictionary class]])
-        {
-          continue;
-        }
-      [entry setObject:[NSNumber numberWithInteger:[[frame objectForKey:@"level"] integerValue]]
-                forKey:@"Level"];
-      [entry setObject:(function ? function : ([frame objectForKey:@"addr"] ? [frame objectForKey:@"addr"] : @"??"))
-                forKey:@"Function"];
-      if (file && line && [[NSFileManager defaultManager] fileExistsAtPath:file])
-        {
-          [entry setObject:file forKey:@"File"];
-          [entry setObject:[NSNumber numberWithInteger:[line integerValue]] forKey:@"Line"];
-          if (firstSource == NSNotFound)
-            {
-              firstSource = [list count];
-            }
-          if (firstProject == NSNotFound
-              && [[project projectBrowser] categoryPathForFilePath:file] != nil)
-            {
-              firstProject = [list count];
-            }
-        }
-      [list addObject:entry];
+    if (![frame isKindOfClass:[NSDictionary class]])
+    {
+      continue;
     }
+    [entry setObject:[NSNumber numberWithInteger:[[frame objectForKey:@"level"] integerValue]]
+              forKey:@"Level"];
+    [entry setObject:(function ? function : ([frame objectForKey:@"addr"] ? [frame objectForKey:@"addr"] : @"??"))
+              forKey:@"Function"];
+    if (file && line && [[NSFileManager defaultManager] fileExistsAtPath:file])
+    {
+      [entry setObject:file forKey:@"File"];
+      [entry setObject:[NSNumber numberWithInteger:[line integerValue]] forKey:@"Line"];
+      if (firstSource == NSNotFound)
+      {
+        firstSource = [list count];
+      }
+      if (firstProject == NSNotFound
+          && [[project projectBrowser] categoryPathForFilePath:file] != nil)
+      {
+        firstProject = [list count];
+      }
+    }
+    [list addObject:entry];
+  }
   ASSIGN(frames, list);
   /* Like Xcode, show the first frame with the project's own code. */
   selectedFrame = firstProject != NSNotFound ? firstProject
-    : (firstSource != NSNotFound ? firstSource : 0);
+  : (firstSource != NSNotFound ? firstSource : 0);
   [self _postState:PCDebuggerStateStopped info:[self _stoppedInfo]];
   [self selectFrameAtIndex:selectedFrame];
 }
@@ -688,29 +688,29 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
   NSDictionary *frame;
 
   if (![state isEqual:PCDebuggerStateStopped] || index >= [frames count])
-    {
-      return;
-    }
+  {
+    return;
+  }
   frame = [frames objectAtIndex:index];
   if (index != selectedFrame)
-    {
-      selectedFrame = index;
-      [debuggerWrapper putString:[NSString stringWithFormat:@"-stack-select-frame %@\n",
-        [frame objectForKey:@"Level"]]];
-      [self _postState:PCDebuggerStateStopped info:[self _stoppedInfo]];
-    }
+  {
+    selectedFrame = index;
+    [debuggerWrapper putString:[NSString stringWithFormat:@"-stack-select-frame %@\n",
+                                [frame objectForKey:@"Level"]]];
+    [self _postState:PCDebuggerStateStopped info:[self _stoppedInfo]];
+  }
   else if ([[frame objectForKey:@"Level"] integerValue] != 0)
-    {
-      [debuggerWrapper putString:[NSString stringWithFormat:@"-stack-select-frame %@\n",
-        [frame objectForKey:@"Level"]]];
-    }
+  {
+    [debuggerWrapper putString:[NSString stringWithFormat:@"-stack-select-frame %@\n",
+                                [frame objectForKey:@"Level"]]];
+  }
   if ([frame objectForKey:@"File"])
-    {
-      PCProjectEditor *editor = [[self _project] projectEditor];
-      id<CodeEditor> codeEditor = [editor openEditorForFilePath:[frame objectForKey:@"File"]
-                                                       windowed:NO];
-      [codeEditor scrollToLineNumber:[[frame objectForKey:@"Line"] unsignedIntegerValue]];
-    }
+  {
+    PCProjectEditor *editor = [[self _project] projectEditor];
+    id<CodeEditor> codeEditor = [editor openEditorForFilePath:[frame objectForKey:@"File"]
+                                                     windowed:NO];
+    [codeEditor scrollToLineNumber:[[frame objectForKey:@"Line"] unsignedIntegerValue]];
+  }
 }
 
 - (BOOL)isDebugging
@@ -732,12 +732,12 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 - (void)stopDebugging
 {
   if (subProcessId != 0)
-    {
+  {
 #ifndef __MINGW32__
-      kill(subProcessId, SIGKILL);
+    kill(subProcessId, SIGKILL);
 #endif
-      subProcessId = 0;
-    }
+    subProcessId = 0;
+  }
   [debuggerWrapper putString:@"-gdb-exit\n"];
   [self performSelector:@selector(_terminateDebugger) withObject:nil afterDelay:2.0];
 }
@@ -745,25 +745,25 @@ NSString *PCDBDebuggerStartedNotification = @"PCDBDebuggerStartedNotification";
 - (void)_terminateDebugger
 {
   if ([debuggerWrapper isRunning])
-    {
-      [debuggerWrapper terminate];
-    }
+  {
+    [debuggerWrapper terminate];
+  }
 }
 
 - (void)continueExecution:(id)sender
 {
   if ([state isEqual:PCDebuggerStateStopped])
-    {
-      [self continue:sender];
-    }
+  {
+    [self continue:sender];
+  }
 }
 
 - (void)pauseExecution:(id)sender
 {
   if ([state isEqual:PCDebuggerStateRunning])
-    {
-      [self interrupt];
-    }
+  {
+    [self interrupt];
+  }
 }
 
 - (void)_continueOrPause:(id)sender
@@ -818,9 +818,9 @@ static NSButton *DebugBarButton(NSString *image, NSString *toolTip, SEL action, 
   NSView *bar;
 
   if (debugAreaView)
-    {
-      return debugAreaView;
-    }
+  {
+    return debugAreaView;
+  }
   debugAreaView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 600, 220)];
   [debugAreaView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
@@ -954,41 +954,41 @@ static NSButton *DebugBarButton(NSString *image, NSString *toolTip, SEL action, 
   if (lastFileNameParsed != nil &&
       lastLineNumberParsed != NSNotFound &&
       lastLineNumberParsed > 0)
-    {
-      [em gotoFile:lastFileNameParsed
-            atLine:lastLineNumberParsed];
-    }
+  {
+    [em gotoFile:lastFileNameParsed
+          atLine:lastLineNumberParsed];
+  }
 }
 
 // kill process
 - (void) interrupt
 {
   if(subProcessId != 0)
-    {
+  {
 #ifndef	__MINGW32__
-      kill(subProcessId,SIGINT);
+    kill(subProcessId,SIGINT);
 #else
-      HANDLE proc;
+    HANDLE proc;
 
-      proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)subProcessId);
-      if (proc == NULL)
-        {
-          DWORD lastError = GetLastError();
-          NSLog(@"error opening process %lu", (unsigned long)lastError);
-          return;
-        }
-      if (DebugBreakProcess(proc))
-        {
-          DWORD lastError = GetLastError();
-          NSLog(@"error sending break %lu", (unsigned long)lastError);
-        }
-      else
-        {
-          NSLog(@"break sent successfully");
-        }
-      CloseHandle(proc);
-#endif
+    proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)subProcessId);
+    if (proc == NULL)
+    {
+      DWORD lastError = GetLastError();
+      NSLog(@"error opening process %lu", (unsigned long)lastError);
+      return;
     }
+    if (DebugBreakProcess(proc))
+    {
+      DWORD lastError = GetLastError();
+      NSLog(@"error sending break %lu", (unsigned long)lastError);
+    }
+    else
+    {
+      NSLog(@"break sent successfully");
+    }
+    CloseHandle(proc);
+#endif
+  }
 }
 
 // action methods for toolbar...
@@ -1025,22 +1025,22 @@ static NSButton *DebugBarButton(NSString *image, NSString *toolTip, SEL action, 
 
 - (void) stepInto: (id) sender
 {
-  [debuggerWrapper putString: @"-exec-step\n"];  
+  [debuggerWrapper putString: @"-exec-step\n"];
 }
 
 - (void) stepOut: (id) sender
 {
-  [debuggerWrapper putString: @"-exec-finish\n"];  
+  [debuggerWrapper putString: @"-exec-finish\n"];
 }
 
 - (void) up: (id) sender
 {
-  [debuggerWrapper putString: @"-interpreter-exec console \"up\"\n"];  
+  [debuggerWrapper putString: @"-interpreter-exec console \"up\"\n"];
 }
 
 - (void) down: (id) sender
 {
-  [debuggerWrapper putString: @"-interpreter-exec console \"down\"\n"];  
+  [debuggerWrapper putString: @"-interpreter-exec console \"down\"\n"];
 }
 
 // Status..
@@ -1081,123 +1081,123 @@ static NSButton *DebugBarButton(NSString *image, NSString *toolTip, SEL action, 
 willBeInsertedIntoToolbar: (BOOL)flag
 {
   NSToolbarItem *toolbarItem = AUTORELEASE([[NSToolbarItem alloc]
-					     initWithItemIdentifier: itemIdentifier]);
+                                            initWithItemIdentifier: itemIdentifier]);
 
   if([itemIdentifier isEqual: @"GoItem"])
-    {
-      [toolbarItem setLabel: @"Go"];
-      [toolbarItem setImage: goImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(go:)];     
-      [toolbarItem setTag: 0];
-    }
+  {
+    [toolbarItem setLabel: @"Go"];
+    [toolbarItem setImage: goImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(go:)];
+    [toolbarItem setTag: 0];
+  }
   else if([itemIdentifier isEqual: @"PauseItem"])
-    {
-      [toolbarItem setLabel: @"Pause"];
-      [toolbarItem setImage: pauseImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(pause:)];     
-      [toolbarItem setTag: 1];
-    }
+  {
+    [toolbarItem setLabel: @"Pause"];
+    [toolbarItem setImage: pauseImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(pause:)];
+    [toolbarItem setTag: 1];
+  }
   else if([itemIdentifier isEqual: @"ContinueItem"])
-    {
-      [toolbarItem setLabel: @"Continue"];
-      [toolbarItem setImage: continueImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(continue:)];     
-      [toolbarItem setTag: 1];
-    }
+  {
+    [toolbarItem setLabel: @"Continue"];
+    [toolbarItem setImage: continueImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(continue:)];
+    [toolbarItem setTag: 1];
+  }
   else if([itemIdentifier isEqual: @"RestartItem"])
-    {
-      [toolbarItem setLabel: @"Restart"];
-      [toolbarItem setImage: restartImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(restart:)];     
-      [toolbarItem setTag: 2];
-    }
+  {
+    [toolbarItem setLabel: @"Restart"];
+    [toolbarItem setImage: restartImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(restart:)];
+    [toolbarItem setTag: 2];
+  }
   else if([itemIdentifier isEqual: @"NextItem"])
-    {
-      [toolbarItem setLabel: @"Next"];
-      [toolbarItem setImage: nextImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(next:)];     
-      [toolbarItem setTag: 3];
-    }
+  {
+    [toolbarItem setLabel: @"Next"];
+    [toolbarItem setImage: nextImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(next:)];
+    [toolbarItem setTag: 3];
+  }
   else if([itemIdentifier isEqual: @"StepIntoItem"])
-    {
-      [toolbarItem setLabel: @"Step Into"];
-      [toolbarItem setImage: stepInImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(stepInto:)];     
-      [toolbarItem setTag: 4];
-    }
+  {
+    [toolbarItem setLabel: @"Step Into"];
+    [toolbarItem setImage: stepInImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(stepInto:)];
+    [toolbarItem setTag: 4];
+  }
   else if([itemIdentifier isEqual: @"StepOutItem"])
-    {
-      [toolbarItem setLabel: @"Step Out"];
-      [toolbarItem setImage: stepOutImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(stepOut:)];     
-      [toolbarItem setTag: 5];
-    }
+  {
+    [toolbarItem setLabel: @"Step Out"];
+    [toolbarItem setImage: stepOutImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(stepOut:)];
+    [toolbarItem setTag: 5];
+  }
   else if([itemIdentifier isEqual: @"UpItem"])
-    {
-      [toolbarItem setLabel: @"Up"];
-      [toolbarItem setImage: upImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(up:)];     
-      [toolbarItem setTag: 6];
-    }
+  {
+    [toolbarItem setLabel: @"Up"];
+    [toolbarItem setImage: upImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(up:)];
+    [toolbarItem setTag: 6];
+  }
   else if([itemIdentifier isEqual: @"DownItem"])
-    {
-      [toolbarItem setLabel: @"Down"];
-      [toolbarItem setImage: downImage];
-      [toolbarItem setTarget: self];
-      [toolbarItem setAction: @selector(down:)];     
-      [toolbarItem setTag: 7];
-    }
+  {
+    [toolbarItem setLabel: @"Down"];
+    [toolbarItem setImage: downImage];
+    [toolbarItem setTarget: self];
+    [toolbarItem setAction: @selector(down:)];
+    [toolbarItem setTag: 7];
+  }
 
   return toolbarItem;
 }
 
 - (NSArray*) toolbarAllowedItemIdentifiers: (NSToolbar*)toolbar
 {
-  return [NSArray arrayWithObjects: @"GoItem", 
-		  @"PauseItem", 
-		  @"ContinueItem", 
-		  @"RestartItem", 
-		  @"NextItem", 
-		  @"StepIntoItem", 
-		  @"StepOutItem", 
-		  @"UpItem", 
-		  @"DownItem", 
-		  nil];
+  return [NSArray arrayWithObjects: @"GoItem",
+          @"PauseItem",
+          @"ContinueItem",
+          @"RestartItem",
+          @"NextItem",
+          @"StepIntoItem",
+          @"StepOutItem",
+          @"UpItem",
+          @"DownItem",
+          nil];
 }
 
 - (NSArray*) toolbarDefaultItemIdentifiers: (NSToolbar*)toolbar
-{ 
-  return [NSArray arrayWithObjects: @"GoItem", 
-		  @"PauseItem", 
-		  @"ContinueItem", 
-		  @"RestartItem", 
-		  @"NextItem", 
-		  @"StepIntoItem", 
-		  @"StepOutItem", 
-		  @"UpItem", 
-		  @"DownItem", 
-		  nil];
+{
+  return [NSArray arrayWithObjects: @"GoItem",
+          @"PauseItem",
+          @"ContinueItem",
+          @"RestartItem",
+          @"NextItem",
+          @"StepIntoItem",
+          @"StepOutItem",
+          @"UpItem",
+          @"DownItem",
+          nil];
 }
 
 - (NSArray*) toolbarSelectableItemIdentifiers: (NSToolbar*)toolbar
-{ 
-  return [NSArray arrayWithObjects: @"GoItem", 
-		  @"PauseItem", 
-		  @"ContinueItem", 
-		  @"RestartItem", 
-		  @"NextItem", 
-		  @"StepIntoItem", 
-		  @"StepOutItem", 
-		  @"UpItem", 
-		  @"DownItem", 
-		  nil];
+{
+  return [NSArray arrayWithObjects: @"GoItem",
+          @"PauseItem",
+          @"ContinueItem",
+          @"RestartItem",
+          @"NextItem",
+          @"StepIntoItem",
+          @"StepOutItem",
+          @"UpItem",
+          @"DownItem",
+          nil];
 }
 @end

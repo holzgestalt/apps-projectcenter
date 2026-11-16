@@ -1,24 +1,24 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2001-2021 Free Software Foundation
+ Copyright (C) 2001-2021 Free Software Foundation
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCLogController.h>
 #import <ProjectCenter/PCFileManager.h>
@@ -45,15 +45,15 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
   BOOL          isDir = NO;
 
   while ((name = [enumerator nextObject]) != nil)
+  {
+    if ([[name pathExtension] isEqualToString:@"pcproj"]
+        && [fm fileExistsAtPath:[path stringByAppendingPathComponent:name]
+                    isDirectory:&isDir]
+        && isDir)
     {
-      if ([[name pathExtension] isEqualToString:@"pcproj"]
-	  && [fm fileExistsAtPath:[path stringByAppendingPathComponent:name]
-		      isDirectory:&isDir]
-	  && isDir)
-	{
-	  return YES;
-	}
+      return YES;
     }
+  }
 
   return NO;
 }
@@ -69,17 +69,17 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
 - (id)init
 {
   if ((self = [super init]))
-    {
-      infoController = [[PCInfoController alloc] init];
-      // Temporary workaround to initialize defaults values
-      prefController = [PCPrefController sharedPCPreferences];
-      logController  = [PCLogController sharedLogController];
+  {
+    infoController = [[PCInfoController alloc] init];
+    // Temporary workaround to initialize defaults values
+    prefController = [PCPrefController sharedPCPreferences];
+    logController  = [PCLogController sharedLogController];
 
-      // It's our entry point to Framework
-      projectManager = [[PCProjectManager alloc] init];
-      [projectManager setDelegate:self];
-      [projectManager setPrefController:prefController];
-    }
+    // It's our entry point to Framework
+    projectManager = [[PCProjectManager alloc] init];
+    [projectManager setDelegate:self];
+    [projectManager setPrefController:prefController];
+  }
 
   return self;
 }
@@ -142,30 +142,30 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
 
   fileName = [fileName stringByExpandingTildeInPath];
   if (![fileName isAbsolutePath])
-    {
-      NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
-      fileName = [cwd stringByAppendingPathComponent: fileName];
-    }
+  {
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    fileName = [cwd stringByAppendingPathComponent: fileName];
+  }
   fileName = [fileName stringByStandardizingPath];
   pcProject = [fileName stringByAppendingPathComponent:@"PC.project"];
 
   isProject = ([[fileName pathExtension] isEqualToString:@"pcproj"] == YES
                || [[fileName pathExtension] isEqualToString:@"xcodeproj"] == YES
                || [[fileName lastPathComponent] isEqualToString:@"project.pbxproj"] == YES
-	       || [[fileName pathExtension] isEqualToString:@"project"] == YES
-	       || ([fm fileExistsAtPath:fileName isDirectory:&isDir] && isDir
-		   && (([fm fileExistsAtPath:pcProject isDirectory:&pcProjectIsDir]
-			&& !pcProjectIsDir)
-		       || PCDirectoryContainsProjectWrapper(fm, fileName))));
+               || [[fileName pathExtension] isEqualToString:@"project"] == YES
+               || ([fm fileExistsAtPath:fileName isDirectory:&isDir] && isDir
+                   && (([fm fileExistsAtPath:pcProject isDirectory:&pcProjectIsDir]
+                        && !pcProjectIsDir)
+                       || PCDirectoryContainsProjectWrapper(fm, fileName))));
 
-  if (isProject) 
-    {
-      return ([projectManager openProjectAt: fileName makeActive: YES] != nil);
-    }
+  if (isProject)
+  {
+    return ([projectManager openProjectAt: fileName makeActive: YES] != nil);
+  }
   else
-    {
-      [projectManager openFileAtPath:fileName];
-    }
+  {
+    [projectManager openFileAtPath:fileName];
+  }
 
   return YES;
 }
@@ -177,41 +177,41 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
 - (void)applicationDidFinishLaunching:(NSNotification *)notification
 {
   if ([prefController boolForKey:DisplayLog])
-    {
-      [logController showPanel];
-    }
+  {
+    [logController showPanel];
+  }
 
-  [logController 
-    logMessage:NSLocalizedString(@"Loading additional subsystems...", @"When loaded additional bundles") withTag:INFO sender:self];
+  [logController
+   logMessage:NSLocalizedString(@"Loading additional subsystems...", @"When loaded additional bundles") withTag:INFO sender:self];
 
-  [[NSNotificationCenter defaultCenter] 
-    postNotificationName:PCAppDidInitNotification
-                  object:nil];
+  [[NSNotificationCenter defaultCenter]
+   postNotificationName:PCAppDidInitNotification
+   object:nil];
 
   if (NSInterfaceStyleForKey(@"NSMenuInterfaceStyle", nil) ==
       NSWindows95InterfaceStyle)
+  {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:
+                      @"PCExample"];
+
+    if ([fm fileExistsAtPath: path])
     {
-      NSFileManager *fm = [NSFileManager defaultManager];
-      NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:
-					 @"PCExample"];
-
-      if ([fm fileExistsAtPath: path])
-	{
-	  [projectManager openProjectAt: path makeActive: YES];
-	}
-      else
-	{
-	  PCProject *project;
-
-	  project = [projectManager createProjectOfType: @"Application"
-			   path: [NSHomeDirectory() stringByAppendingPathComponent: @"PCExample"]];
-
-	  [[projectManager loadedProjects] setObject: project
-					      forKey: [project projectPath]];
-	  [projectManager setActiveProject:project];
-	  [[project projectWindow] orderFront: self];
-	}
+      [projectManager openProjectAt: path makeActive: YES];
     }
+    else
+    {
+      PCProject *project;
+
+      project = [projectManager createProjectOfType: @"Application"
+                                               path: [NSHomeDirectory() stringByAppendingPathComponent: @"PCExample"]];
+
+      [[projectManager loadedProjects] setObject: project
+                                          forKey: [project projectPath]];
+      [projectManager setActiveProject:project];
+      [[project projectWindow] orderFront: self];
+    }
+  }
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(id)sender
@@ -221,32 +221,32 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
   if ([prefController boolForKey:PromptOnQuit] &&
       NSInterfaceStyleForKey(@"NSMenuInterfaceStyle", nil) !=
       NSWindows95InterfaceStyle)
-    {
-      if (NSRunAlertPanel(@"Quit",
-			  @"Do you really want to quit ProjectCenter?",
-			  @"Cancel", @"Quit", nil))
-	{
-	  return NSTerminateLater;
-	}
-
-    }
-
-  // Save projects unconditionally if preferences tells that
-  if ([prefController boolForKey:SaveOnQuit])
-    {
-      if(![projectManager saveAllProjects])
-        quit = NSTerminateLater;
-    }
-
-  // Close ProjectManager (projects, editors, etc.)
-  if ((quit == NO) || ([projectManager close] == NO))
+  {
+    if (NSRunAlertPanel(@"Quit",
+                        @"Do you really want to quit ProjectCenter?",
+                        @"Cancel", @"Quit", nil))
     {
       return NSTerminateLater;
     }
 
+  }
+
+  // Save projects unconditionally if preferences tells that
+  if ([prefController boolForKey:SaveOnQuit])
+  {
+    if(![projectManager saveAllProjects])
+      quit = NSTerminateLater;
+  }
+
+  // Close ProjectManager (projects, editors, etc.)
+  if ((quit == NO) || ([projectManager close] == NO))
+  {
+    return NSTerminateLater;
+  }
+
   [[NSNotificationCenter defaultCenter]
-    postNotificationName:PCAppWillTerminateNotification
-                  object:nil];
+   postNotificationName:PCAppWillTerminateNotification
+   object:nil];
 
   return NSTerminateNow;
 }
@@ -264,47 +264,47 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
   NSLog(@"--- Application WILL terminate");
 #endif
 
-  if ([prefController boolForKey:DeleteCacheWhenQuitting]) 
+  if ([prefController boolForKey:DeleteCacheWhenQuitting])
+  {
+    fm = [NSFileManager defaultManager];
+    pcfm = [PCFileManager defaultManager];
+
+    rootBuildDir = [prefController stringForKey:RootBuildDirectory];
+    rootBuildDirList = [fm directoryContentsAtPath:rootBuildDir];
+
+    enumerator = [rootBuildDirList objectEnumerator];
+    while ((buildItem = [enumerator nextObject]))
     {
-      fm = [NSFileManager defaultManager];
-      pcfm = [PCFileManager defaultManager];
-
-      rootBuildDir = [prefController stringForKey:RootBuildDirectory];
-      rootBuildDirList = [fm directoryContentsAtPath:rootBuildDir];
-
-      enumerator = [rootBuildDirList objectEnumerator];
-      while ((buildItem = [enumerator nextObject]))
-	{
-	  if([[buildItem pathExtension] isEqualToString:@"build"])
-	    {
-	      NSLog(@"Remove build directory %@/%@",
-		    rootBuildDir, buildItem);
-	      [pcfm removeFile:buildItem
-		 fromDirectory:rootBuildDir removeDirsIfEmpty:YES];
-	    }
-	}
-
+      if([[buildItem pathExtension] isEqualToString:@"build"])
+      {
+        NSLog(@"Remove build directory %@/%@",
+              rootBuildDir, buildItem);
+        [pcfm removeFile:buildItem
+           fromDirectory:rootBuildDir removeDirsIfEmpty:YES];
+      }
     }
+
+  }
 
   //--- Cleanup
   if (doConnection)
-    {
-      [doConnection invalidate];
-      RELEASE(doConnection);
-    }
+  {
+    [doConnection invalidate];
+    RELEASE(doConnection);
+  }
 
   if (NSInterfaceStyleForKey(@"NSMenuInterfaceStyle", nil) ==
       NSWindows95InterfaceStyle)
-    {
-      NSFileManager *fm = [NSFileManager defaultManager];
-      NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:
-					 @"PCExample"];
+  {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:
+                      @"PCExample"];
 
-      if ([fm fileExistsAtPath: path])
-	{
-	  [fm removeFileAtPath: path handler: nil];
-	}
+    if ([fm fileExistsAtPath: path])
+    {
+      [fm removeFileAtPath: path handler: nil];
     }
+  }
 
   RELEASE(infoController);
   RELEASE(prefController);

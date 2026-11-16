@@ -10,9 +10,9 @@ static void Raise(void)
 int main(int argc, char **argv)
 {
   @autoreleasepool
-    {
-      NSLog(@"debug target started");
-      Raise();
-    }
+  {
+    NSLog(@"debug target started");
+    Raise();
+  }
   return 0;
 }

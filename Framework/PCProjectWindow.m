@@ -1,28 +1,28 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2023 Free Software Foundation
+ Copyright (C) 2000-2023 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
-	    Riccardo Mottola
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCButton.h>
@@ -103,7 +103,7 @@
 {
   NSRect frame = NSMakeRect(0, 0, 240, 400);
   NSArray *images = [NSArray arrayWithObjects:@"GSNavigatorProjectTemplate",
-    @"GSNavigatorBreakpointsTemplate", @"GSNavigatorDebugTemplate", nil];
+                     @"GSNavigatorBreakpointsTemplate", @"GSNavigatorDebugTemplate", nil];
   NSArray *labels = [NSArray arrayWithObjects:@"Project", @"Breakpoints", @"Debug", nil];
   NSArray *views;
   NSInteger i;
@@ -112,14 +112,14 @@
   [navigatorArea setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   navigatorSelector = [[[NSSegmentedControl alloc] initWithFrame:
-    NSMakeRect(8, NSHeight(frame) - 30, 120, 24)] autorelease];
+                        NSMakeRect(8, NSHeight(frame) - 30, 120, 24)] autorelease];
   [navigatorSelector setSegmentCount:[images count]];
   for (i = 0; i < [images count]; i++)
-    {
-      [navigatorSelector setImage:[NSImage imageNamed:[images objectAtIndex:i]] forSegment:i];
-      [navigatorSelector setWidth:36 forSegment:i];
-      [[navigatorSelector cell] setToolTip:[labels objectAtIndex:i] forSegment:i];
-    }
+  {
+    [navigatorSelector setImage:[NSImage imageNamed:[images objectAtIndex:i]] forSegment:i];
+    [navigatorSelector setWidth:36 forSegment:i];
+    [[navigatorSelector cell] setToolTip:[labels objectAtIndex:i] forSegment:i];
+  }
   [[navigatorSelector cell] setTrackingMode:NSSegmentSwitchTrackingSelectOne];
   [navigatorSelector setSelectedSegment:0];
   [navigatorSelector setTarget:self];
@@ -128,25 +128,25 @@
   [navigatorArea addSubview:navigatorSelector];
 
   navigatorTabs = [[[NSTabView alloc] initWithFrame:
-    NSMakeRect(0, 0, NSWidth(frame), NSHeight(frame) - 36)] autorelease];
+                    NSMakeRect(0, 0, NSWidth(frame), NSHeight(frame) - 36)] autorelease];
   [navigatorTabs setTabViewType:NSNoTabsNoBorder];
   [navigatorTabs setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   breakpointNavigator = [[PCBreakpointNavigator alloc] initWithProject:project];
   debugNavigator = [[PCDebugNavigator alloc] initWithProject:project];
   views = [NSArray arrayWithObjects:[[project projectBrowser] view],
-    [breakpointNavigator view], [debugNavigator view], nil];
+           [breakpointNavigator view], [debugNavigator view], nil];
   for (i = 0; i < [views count]; i++)
-    {
-      NSTabViewItem *item = [[[NSTabViewItem alloc] initWithIdentifier:[labels objectAtIndex:i]] autorelease];
-      [item setLabel:[labels objectAtIndex:i]];
-      [item setView:[views objectAtIndex:i]];
-      [navigatorTabs addTabViewItem:item];
-    }
+  {
+    NSTabViewItem *item = [[[NSTabViewItem alloc] initWithIdentifier:[labels objectAtIndex:i]] autorelease];
+    [item setLabel:[labels objectAtIndex:i]];
+    [item setView:[views objectAtIndex:i]];
+    [navigatorTabs addTabViewItem:item];
+  }
   [navigatorArea addSubview:navigatorTabs];
 
   [[NSNotificationCenter defaultCenter] addObserver:self
-    selector:@selector(debuggerStateDidChange:)
-        name:PCDebuggerStateDidChangeNotification object:nil];
+                                           selector:@selector(debuggerStateDidChange:)
+                                               name:PCDebuggerStateDidChangeNotification object:nil];
 }
 
 - (void)navigatorSelectorChanged:(id)sender
@@ -173,26 +173,26 @@
 - (void)debuggerStateDidChange:(NSNotification *)aNotif
 {
   if ([aNotif object] != [[project projectLauncher] debugger])
-    {
-      return;
-    }
+  {
+    return;
+  }
   /* Like Xcode: show the call stack whenever the program pauses. */
   if ([[[aNotif userInfo] objectForKey:@"State"] isEqual:PCDebuggerStateStopped])
-    {
-      [self selectNavigatorAtIndex:2];
-    }
+  {
+    [self selectNavigatorAtIndex:2];
+  }
 }
 
 - (void)showProjectOverview
 {
   if (![[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"])
-    {
-      return;
-    }
+  {
+    return;
+  }
   if (xcodeProjectEditor == nil)
-    {
-      xcodeProjectEditor = [[PCXcodeProjectEditor alloc] initWithProject:project];
-    }
+  {
+    xcodeProjectEditor = [[PCXcodeProjectEditor alloc] initWithProject:project];
+  }
   [xcodeProjectEditor reload];
   [self setCustomContentView:[xcodeProjectEditor view]];
 }
@@ -233,16 +233,16 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar
 {
   return [NSArray arrayWithObjects:PCToolbarRun, PCToolbarStop, PCToolbarBuild,
-    PCToolbarClean, PCToolbarFind, PCToolbarNavigator,
-    PCToolbarBottomArea, PCToolbarInspector, NSToolbarFlexibleSpaceItemIdentifier,
-    NSToolbarSpaceItemIdentifier, NSToolbarSeparatorItemIdentifier, nil];
+          PCToolbarClean, PCToolbarFind, PCToolbarNavigator,
+          PCToolbarBottomArea, PCToolbarInspector, NSToolbarFlexibleSpaceItemIdentifier,
+          NSToolbarSpaceItemIdentifier, NSToolbarSeparatorItemIdentifier, nil];
 }
 
 - (NSArray *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar
 {
   return [NSArray arrayWithObjects:PCToolbarRun, PCToolbarStop, PCToolbarBuild,
-    NSToolbarFlexibleSpaceItemIdentifier, PCToolbarNavigator,
-    PCToolbarBottomArea, PCToolbarInspector, nil];
+          NSToolbarFlexibleSpaceItemIdentifier, PCToolbarNavigator,
+          PCToolbarBottomArea, PCToolbarInspector, nil];
 }
 
 - (NSToolbarItem *)toolbar:(NSToolbar *)toolbar
@@ -250,15 +250,15 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
  willBeInsertedIntoToolbar:(BOOL)flag
 {
   NSDictionary *items = [NSDictionary dictionaryWithObjectsAndKeys:
-    @[@"Run", @"Run the application", @"toolbarRun:", @"NSTouchBarPlayTemplate"], PCToolbarRun,
-    @[@"Stop", @"Stop the running build or application", @"toolbarStop:", @"NSTouchBarRecordStopTemplate"], PCToolbarStop,
-    @[@"Build", @"Build the project", @"toolbarBuild:", @"GSBuildTemplate"], PCToolbarBuild,
-    @[@"Clean", @"Clean the project", @"toolbarClean:", @"NSTouchBarDeleteTemplate"], PCToolbarClean,
-    @[@"Find", @"Find in project", @"toolbarFind:", @"NSTouchBarSearchTemplate"], PCToolbarFind,
-    @[@"Navigator", @"Hide or show the navigator", @"toggleNavigator:", @"NSTouchBarSidebarTemplate"], PCToolbarNavigator,
-    @[@"Debug Area", @"Hide or show build and run output", @"toggleBottomArea:", @"GSBottomPaneTemplate"], PCToolbarBottomArea,
-    @[@"Inspector", @"Show the project inspector", @"showProjectInspector:", @"GSInspectorPaneTemplate"], PCToolbarInspector,
-    nil];
+                         @[@"Run", @"Run the application", @"toolbarRun:", @"NSTouchBarPlayTemplate"], PCToolbarRun,
+                         @[@"Stop", @"Stop the running build or application", @"toolbarStop:", @"NSTouchBarRecordStopTemplate"], PCToolbarStop,
+                         @[@"Build", @"Build the project", @"toolbarBuild:", @"GSBuildTemplate"], PCToolbarBuild,
+                         @[@"Clean", @"Clean the project", @"toolbarClean:", @"NSTouchBarDeleteTemplate"], PCToolbarClean,
+                         @[@"Find", @"Find in project", @"toolbarFind:", @"NSTouchBarSearchTemplate"], PCToolbarFind,
+                         @[@"Navigator", @"Hide or show the navigator", @"toggleNavigator:", @"NSTouchBarSidebarTemplate"], PCToolbarNavigator,
+                         @[@"Debug Area", @"Hide or show build and run output", @"toggleBottomArea:", @"GSBottomPaneTemplate"], PCToolbarBottomArea,
+                         @[@"Inspector", @"Show the project inspector", @"showProjectInspector:", @"GSInspectorPaneTemplate"], PCToolbarInspector,
+                         nil];
   NSArray *description = [items objectForKey:identifier];
   if (!description) return nil;
   NSToolbarItem *item = [[[NSToolbarItem alloc] initWithItemIdentifier:identifier] autorelease];
@@ -329,16 +329,16 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   [launchButton setToolTip:@"Project Launcher"];
   [launchButton setImage:IMAGE(@"Run")];
   if (![project isExecutable])
-    {
-      [launchButton setEnabled:NO];
-    }
+  {
+    [launchButton setEnabled:NO];
+  }
 
   [loadedFilesButton setToolTip:@"Loaded Files"];
   [loadedFilesButton setImage:IMAGE(@"Files")];
   if (![prefs boolForKey:UseTearOffWindows])
-    {
-      [loadedFilesButton setEnabled:NO];
-    }
+  {
+    [loadedFilesButton setEnabled:NO];
+  }
 
   [findButton setToolTip:@"Project Finder"];
   [findButton setImage:IMAGE(@"Find")];
@@ -351,7 +351,7 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   [fileIcon updateIcon];
 
   [statusLine setStringValue:@""];
-    
+
   /*
    * Horizontal split view
    */
@@ -384,14 +384,14 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   [self _createNavigatorArea];
   browserView = navigatorArea;
   [v_split addSubview:browserView];
-  
+
   /*
    * LoadedFiles
    */
   if (![prefs boolForKey:UseTearOffWindows])
-    {
-      [self showProjectLoadedFiles:self];
-    }
+  {
+    [self showProjectLoadedFiles:self];
+  }
 
   [h_split addSubview:v_split];
   RELEASE(v_split);
@@ -399,105 +399,105 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   /*
    * Custom view
    * View where non-separated Builder, Launcher, Editor goes.
-   */ 
+   */
   [self _createCustomView];
 }
 
-- (id)initWithProject:(PCProject *)owner 
+- (id)initWithProject:(PCProject *)owner
 {
   if ((self = [super init]))
+  {
+    NSDictionary *pcWindows;
+    NSString     *windowFrame;
+
+    project = owner;
+    _isToolbarVisible = YES;
+    _splitViewsRestored = NO;
+
+    if (projectWindow == nil)
     {
-      NSDictionary *pcWindows;
-      NSString     *windowFrame;
-
-      project = owner;
-      _isToolbarVisible = YES;
-      _splitViewsRestored = NO;
-
-      if (projectWindow == nil)
-	{
-	  if ([NSBundle loadNibNamed:@"ProjectWindow" owner:self] == NO)
-	    {
-	      PCLogError(self, @"error loading ProjectWindow NIB file!");
-	      return nil;
-	    }
-	}
-      [self setTitle];
-      
-      // Window
-      [projectWindow setFrameAutosaveName:@"ProjectWindow"];
-
-      pcWindows = [[project projectDict] objectForKey:PCWindows];
-      windowFrame = [pcWindows objectForKey:@"ProjectWindow"];
-//      PCLogInfo(self, @"window frame %@", windowFrame);
-      if (windowFrame != nil)
-	{
-	  PCLogStatus(self, @"PCProjectWindow: set frame from project");
-	  [projectWindow setFrameFromString:windowFrame];
-	}
-      else if (![projectWindow setFrameUsingName: @"ProjectWindow"])
-	{
-	  [projectWindow center];
-	}
-	
-      // Toolbar
-      if ([[pcWindows objectForKey:@"ShowToolbar"] isEqualToString:@"NO"])
-	{
-	  [self toggleToolbar];
-	}
-
-      // Project dictionary
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector(projectDictDidChange:)
-	       name:PCProjectDictDidChangeNotification
-	     object:nil];
-
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector(projectDictDidSave:)
-	       name:PCProjectDictDidSaveNotification
-	     object:nil];
-
-      // Active project changing
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector(activeProjectDidChange:)
-	       name:PCActiveProjectDidChangeNotification
-	     object:nil];
-	     
-      // ProjectCenter preferences
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector(preferencesDidChange:)
-	       name:PCPreferencesDidChangeNotification
-	     object:nil];
-	     
-      // Track Browser selection changes for file icon updates
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector (browserDidSetPath:)
-	       name:PCBrowserDidSetPathNotification
-	     object:[project projectBrowser]];
-
-      // Editor changes
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector (editorDidChange:)
-	       name:PCEditorDidChangeNotification
-	     object:nil];
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector (editorDidSave:)
-	       name:PCEditorDidSaveNotification
-	     object:nil];
-      [[NSNotificationCenter defaultCenter] 
-	addObserver:self
-	   selector:@selector (editorDidRevert:)
-	       name:PCEditorDidRevertNotification
-	     object:nil];
+      if ([NSBundle loadNibNamed:@"ProjectWindow" owner:self] == NO)
+      {
+        PCLogError(self, @"error loading ProjectWindow NIB file!");
+        return nil;
+      }
     }
-  
+    [self setTitle];
+
+    // Window
+    [projectWindow setFrameAutosaveName:@"ProjectWindow"];
+
+    pcWindows = [[project projectDict] objectForKey:PCWindows];
+    windowFrame = [pcWindows objectForKey:@"ProjectWindow"];
+    //      PCLogInfo(self, @"window frame %@", windowFrame);
+    if (windowFrame != nil)
+    {
+      PCLogStatus(self, @"PCProjectWindow: set frame from project");
+      [projectWindow setFrameFromString:windowFrame];
+    }
+    else if (![projectWindow setFrameUsingName: @"ProjectWindow"])
+    {
+      [projectWindow center];
+    }
+
+    // Toolbar
+    if ([[pcWindows objectForKey:@"ShowToolbar"] isEqualToString:@"NO"])
+    {
+      [self toggleToolbar];
+    }
+
+    // Project dictionary
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(projectDictDidChange:)
+     name:PCProjectDictDidChangeNotification
+     object:nil];
+
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(projectDictDidSave:)
+     name:PCProjectDictDidSaveNotification
+     object:nil];
+
+    // Active project changing
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(activeProjectDidChange:)
+     name:PCActiveProjectDidChangeNotification
+     object:nil];
+
+    // ProjectCenter preferences
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(preferencesDidChange:)
+     name:PCPreferencesDidChangeNotification
+     object:nil];
+
+    // Track Browser selection changes for file icon updates
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector (browserDidSetPath:)
+     name:PCBrowserDidSetPathNotification
+     object:[project projectBrowser]];
+
+    // Editor changes
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector (editorDidChange:)
+     name:PCEditorDidChangeNotification
+     object:nil];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector (editorDidSave:)
+     name:PCEditorDidSaveNotification
+     object:nil];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector (editorDidRevert:)
+     name:PCEditorDidRevertNotification
+     object:nil];
+  }
+
   return self;
 }
 
@@ -507,8 +507,8 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   NSString *path = [[project projectPath] stringByAbbreviatingWithTildeInPath];
   NSString *language = [[project projectDict] objectForKey:PCLanguage];
 
-  [projectWindow 
-    setTitle:[NSString stringWithFormat:@"%@ - %@ [%@]",name,path,language]];
+  [projectWindow
+   setTitle:[NSString stringWithFormat:@"%@ - %@ [%@]",name,path,language]];
 }
 
 - (void)dealloc
@@ -547,9 +547,9 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)setCustomContentView:(NSView *)subview
 {
   if (!customView)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [customView setContentView:subview];
   [customView display];
@@ -572,29 +572,29 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   PCProject          *rootActiveProject;
 
   rootActiveProject = [[project projectManager] rootActiveProject];
-  
-//  NSLog(@"ProjectWindow showProjectBuild: componentView RC:%i", 
-//	[view retainCount]);
+
+  //  NSLog(@"ProjectWindow showProjectBuild: componentView RC:%i",
+  //	[view retainCount]);
 
   if ([prefs boolForKey:UseTearOffWindows])
+  {
+    if ([bottomView contentView] == view)
     {
-      if ([bottomView contentView] == view)
-	{
-	  [self _setBottomAreaVisible:NO];
-	}
-      if (rootActiveProject == project)
-	{
-	  [buildPanel orderFront:nil];
-	}
+      [self _setBottomAreaVisible:NO];
     }
+    if (rootActiveProject == project)
+    {
+      [buildPanel orderFront:nil];
+    }
+  }
   else
+  {
+    if ((rootActiveProject == project) && [buildPanel isVisible])
     {
-      if ((rootActiveProject == project) && [buildPanel isVisible])
-	{
-	  [buildPanel close];
-	}
-      [self _showInBottomArea:view];
+      [buildPanel close];
     }
+    [self _showInBottomArea:view];
+  }
 }
 
 - (void)showProjectLaunch:(id)sender
@@ -607,21 +607,21 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   launchPanel = [[project projectManager] launchPanel];
 
   if ([prefs boolForKey:UseTearOffWindows])
+  {
+    if ([bottomView contentView] == view)
     {
-      if ([bottomView contentView] == view)
-	{
-	  [self _setBottomAreaVisible:NO];
-	}
-      [launchPanel orderFront:nil];
+      [self _setBottomAreaVisible:NO];
     }
+    [launchPanel orderFront:nil];
+  }
   else
+  {
+    if ([launchPanel isVisible])
     {
-      if ([launchPanel isVisible])
-	{
-	  [launchPanel close];
-	}
-      [self _showInBottomArea:view];
+      [launchPanel close];
     }
+    [self _showInBottomArea:view];
+  }
 }
 
 - (void)showProjectLoadedFiles:(id)sender
@@ -633,32 +633,32 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 
   rootActiveProject = [[project projectManager] rootActiveProject];
   componentView = (NSScrollView *)[[project projectLoadedFiles] componentView];
-      
-//  PCLogInfo(self, @"showProjectLoadedFiles");
+
+  //  PCLogInfo(self, @"showProjectLoadedFiles");
 
   if ([prefs boolForKey:UseTearOffWindows])
+  {
+    [componentView setBorderType:NSNoBorder];
+    [componentView removeFromSuperview];
+    if (rootActiveProject == project)
     {
-      [componentView setBorderType:NSNoBorder];
-      [componentView removeFromSuperview];
-      if (rootActiveProject == project)
-	{
-	  [panel orderFront:nil];
-	}
-      [v_split adjustSubviews];
+      [panel orderFront:nil];
     }
+    [v_split adjustSubviews];
+  }
   else
+  {
+    if ((rootActiveProject == project) && panel && [panel isVisible])
     {
-      if ((rootActiveProject == project) && panel && [panel isVisible])
-	{
-	  [panel close];
-	}
-
-      [componentView setBorderType:NSBezelBorder];
-      // Preserve width of view in panel
-//      [componentView setFrame:NSMakeRect(0,0,128,130)];
-      [v_split addSubview:componentView];
-      [v_split adjustSubviews];
+      [panel close];
     }
+
+    [componentView setBorderType:NSBezelBorder];
+    // Preserve width of view in panel
+    //      [componentView setFrame:NSMakeRect(0,0,128,130)];
+    [v_split addSubview:componentView];
+    [v_split adjustSubviews];
+  }
 }
 
 - (void)showProjectInspector:(id)sender
@@ -676,14 +676,14 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 {
   if (visible == [self isBottomAreaVisible]) return;
   if (visible)
-    {
-      [contentSplit addSubview:bottomView];
-    }
+  {
+    [contentSplit addSubview:bottomView];
+  }
   else
-    {
-      bottomHeight = [bottomView frame].size.height;
-      [bottomView removeFromSuperview];
-    }
+  {
+    bottomHeight = [bottomView frame].size.height;
+    [bottomView removeFromSuperview];
+  }
   [self resizeContentSubviews];
   [contentSplit setNeedsDisplay:YES];
 }
@@ -702,17 +702,17 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)toggleBottomArea:(id)sender
 {
   if ([self isBottomAreaVisible])
-    {
-      [self _setBottomAreaVisible:NO];
-    }
+  {
+    [self _setBottomAreaVisible:NO];
+  }
   else if ([[[bottomView contentView] subviews] count])
-    {
-      [self _setBottomAreaVisible:YES];
-    }
+  {
+    [self _setBottomAreaVisible:YES];
+  }
   else
-    {
-      [self showProjectBuild:self];
-    }
+  {
+    [self showProjectBuild:self];
+  }
 }
 
 - (BOOL)isNavigatorVisible
@@ -723,15 +723,15 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)toggleNavigator:(id)sender
 {
   if ([self isNavigatorVisible])
-    {
-      RETAIN(v_split);
-      [v_split removeFromSuperview];
-    }
+  {
+    RETAIN(v_split);
+    [v_split removeFromSuperview];
+  }
   else
-    {
-      [h_split addSubview:v_split positioned:NSWindowBelow relativeTo:contentSplit];
-      RELEASE(v_split);
-    }
+  {
+    [h_split addSubview:v_split positioned:NSWindowBelow relativeTo:contentSplit];
+    RELEASE(v_split);
+  }
   [self resizeHorizontalSubiewsWithOldSize:NSZeroSize];
   [h_split setNeedsDisplay:YES];
 }
@@ -757,12 +757,12 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   NSDictionary *notifObject = [aNotif object];
   PCProject    *changedProject = [notifObject objectForKey:@"Project"];
 
-  if (changedProject != project 
+  if (changedProject != project
       && changedProject != [project activeSubproject])
-    {
-      return;
-    }
-    
+  {
+    return;
+  }
+
   [self setTitle];
 
   // TODO: if window isn't visible and "edited" attribute set, after ordering
@@ -774,29 +774,29 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)projectDictDidSave:(NSNotification *)aNotif
 {
   PCProject *savedProject = [aNotif object];
-  
-  if (savedProject != project 
+
+  if (savedProject != project
       && savedProject != [project activeSubproject]
       && [savedProject superProject] != [project activeSubproject])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [projectWindow setDocumentEdited:NO];
 }
 
-- (void)activeProjectDidChange:(NSNotification *)aNotif 
+- (void)activeProjectDidChange:(NSNotification *)aNotif
 {
-/*  PCProject *activeProject = [aNotif object];
-  
-  if (activeProject != project 
-      && activeProject != [project activeSubproject]
-      && [activeProject superProject] != [project activeSubproject])
-    {
-      return;
-    }
+  /*  PCProject *activeProject = [aNotif object];
 
-  [self makeKeyWindow];*/
+   if (activeProject != project
+   && activeProject != [project activeSubproject]
+   && [activeProject superProject] != [project activeSubproject])
+   {
+   return;
+   }
+
+   [self makeKeyWindow];*/
 }
 
 // TODO: Review determining of tear-off panels. Current implementation
@@ -806,55 +806,55 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)preferencesDidChange:(NSNotification *)aNotif
 {
   id <PCPreferences> prefs = [aNotif object];
- 
+
   NSLog(@"ProjectWindow: Preferences did change");
 
-/*  if ([[project projectManager] rootActiveProject] != project)
-    {
-      return;
-    }*/
+  /*  if ([[project projectManager] rootActiveProject] != project)
+   {
+   return;
+   }*/
 
   if ([prefs boolForKey:UseTearOffWindows])
+  {
+    // Project Build
+    if ([[[project projectBuilder] componentView] window] == projectWindow)
     {
-      // Project Build 
-      if ([[[project projectBuilder] componentView] window] == projectWindow)
-	{
-	  [self showProjectBuild:self];
-	}
-      // Project Launch
-      if ([[[project projectLauncher] componentView] window] == projectWindow)
-	{
-	  [self showProjectLaunch:self];
-	}
-      // Loaded Files
-      if ([[v_split subviews] count] == 2)
-	{
-	  [self showProjectLoadedFiles:self];
-	}
-      [loadedFilesButton setEnabled:YES];
+      [self showProjectBuild:self];
     }
+    // Project Launch
+    if ([[[project projectLauncher] componentView] window] == projectWindow)
+    {
+      [self showProjectLaunch:self];
+    }
+    // Loaded Files
+    if ([[v_split subviews] count] == 2)
+    {
+      [self showProjectLoadedFiles:self];
+    }
+    [loadedFilesButton setEnabled:YES];
+  }
   else
+  {
+    NSPanel *buildPanel = [[project projectManager] buildPanel];
+    NSPanel *launchPanel = [[project projectManager] launchPanel];
+
+    // Project Build
+    if ([buildPanel isVisible] == YES)
     {
-      NSPanel *buildPanel = [[project projectManager] buildPanel];
-      NSPanel *launchPanel = [[project projectManager] launchPanel];
-      
-      // Project Build 
-      if ([buildPanel isVisible] == YES)
-	{
-	  [self showProjectBuild:self];
-	}
-      // Project Launch
-      if ([launchPanel isVisible] == YES)
-	{
-	  [self showProjectLaunch:self];
-	}
-      // Loaded Files
-      if ([[v_split subviews] count] == 1)
-	{
-	  [self showProjectLoadedFiles:self];
-	}
-      [loadedFilesButton setEnabled:NO];
+      [self showProjectBuild:self];
     }
+    // Project Launch
+    if ([launchPanel isVisible] == YES)
+    {
+      [self showProjectLaunch:self];
+    }
+    // Loaded Files
+    if ([[v_split subviews] count] == 1)
+    {
+      [self showProjectLoadedFiles:self];
+    }
+    [loadedFilesButton setEnabled:NO];
+  }
 }
 
 - (void)browserDidSetPath:(NSNotification *)aNotif
@@ -862,21 +862,21 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   PCProjectBrowser *browser = [aNotif object];
 
   if (browser != [project projectBrowser])
-    {
-      return;
-    }
-  
+  {
+    return;
+  }
+
   [fileIcon updateIcon];
 }
 
 - (void)editorDidChange:(NSNotification *)aNotif
 {
   id<CodeEditor> editor = [aNotif object];
-  
+
   if ([editor editorManager] != [project projectEditor])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [fileIcon updateIcon];
 }
@@ -884,11 +884,11 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)editorDidSave:(NSNotification *)aNotif
 {
   id<CodeEditor> editor = [aNotif object];
-  
+
   if ([editor editorManager] != [project projectEditor])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [fileIcon updateIcon];
 }
@@ -896,11 +896,11 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)editorDidRevert:(NSNotification *)aNotif
 {
   id<CodeEditor> editor = [aNotif object];
-  
+
   if ([editor editorManager] != [project projectEditor])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [fileIcon updateIcon];
 }
@@ -916,8 +916,8 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 
 - (void)makeKeyAndOrderFront:(id)sender
 {
-//  PCLogInfo(self, @"makeKeyAndOrderFront % @ sender: %@", [projectWindow title], [sender className]);
-//  NSLog(@"makeKeyAndOrderFront %@ sender: %@", [projectWindow title], [sender className]);
+  //  PCLogInfo(self, @"makeKeyAndOrderFront % @ sender: %@", [projectWindow title], [sender className]);
+  //  NSLog(@"makeKeyAndOrderFront %@ sender: %@", [projectWindow title], [sender className]);
   [projectWindow makeKeyAndOrderFront:self];
 }
 
@@ -929,9 +929,9 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)orderFront:(id)sender
 {
   if (projectWindow)
-    {
-      [projectWindow orderFront:sender];
-    }
+  {
+    [projectWindow orderFront:sender];
+  }
 }
 
 - (void)center
@@ -950,7 +950,7 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   [projectWindow performClose:sender];
 }
 
-- (BOOL)isDocumentEdited 
+- (BOOL)isDocumentEdited
 {
   return [projectWindow isDocumentEdited];
 }
@@ -971,35 +971,35 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 - (void)windowDidBecomeKey:(NSNotification *)aNotification
 {
   [projectWindow makeMainWindow];
-//  [projectWindow makeFirstResponder:(NSResponder *)firstResponder];
+  //  [projectWindow makeFirstResponder:(NSResponder *)firstResponder];
 
-/*  PCLogInfo(self, @"windowDidBecomeKey: activeSubproject %@",
-	    [[project activeSubproject] projectName]);*/
+  /*  PCLogInfo(self, @"windowDidBecomeKey: activeSubproject %@",
+   [[project activeSubproject] projectName]);*/
 
   if ([[project projectManager] rootActiveProject] != project)
+  {
+    if ([project activeSubproject] != nil)
     {
-      if ([project activeSubproject] != nil)
-	{
-	  [[project projectManager] 
-	    setActiveProject:[project activeSubproject]];
-	}
-      else
-	{
-	  [[project projectManager] setActiveProject:project];
-	}
+      [[project projectManager]
+       setActiveProject:[project activeSubproject]];
     }
+    else
+    {
+      [[project projectManager] setActiveProject:project];
+    }
+  }
 
   // Workaround
   if ([projectWindow isDocumentEdited])
-    {
-      [projectWindow setDocumentEdited:NO];
-      [projectWindow setDocumentEdited:YES];
-    }
+  {
+    [projectWindow setDocumentEdited:NO];
+    [projectWindow setDocumentEdited:YES];
+  }
 }
 
 - (void)windowDidResignKey:(NSNotification *)aNotification
 {
-//  [projectWindow makeFirstResponder:nil];
+  //  [projectWindow makeFirstResponder:nil];
 }
 
 - (void)windowDidBecomeMain:(NSNotification *)aNotification
@@ -1021,9 +1021,9 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 
   responder = [window firstResponder];
   if ([responder conformsToProtocol: @protocol(CodeEditorView)])
-    {
-      return [[responder editor] windowWillReturnUndoManager: window];
-    }
+  {
+    return [[responder editor] windowWillReturnUndoManager: window];
+  }
   return nil;
 }
 
@@ -1037,10 +1037,10 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   NSSize size = [v_split bounds].size;
   NSArray *views = [v_split subviews];
   if ([views count] < 2)
-    {
-      [browserView setFrame:NSMakeRect(0,0,size.width,size.height)];
-      return;
-    }
+  {
+    [browserView setFrame:NSMakeRect(0,0,size.width,size.height)];
+    return;
+  }
   NSView *loaded = [views objectAtIndex:1];
   CGFloat divider = [v_split dividerThickness];
   CGFloat loadedHeight = [loaded frame].size.height;
@@ -1058,11 +1058,11 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   if (!v_split || !contentSplit) return;
   NSSize size = [h_split bounds].size;
   if (![self isNavigatorVisible])
-    {
-      [contentSplit setFrame:NSMakeRect(0,0,size.width,size.height)];
-      [self resizeContentSubviews];
-      return;
-    }
+  {
+    [contentSplit setFrame:NSMakeRect(0,0,size.width,size.height)];
+    [self resizeContentSubviews];
+    return;
+  }
   CGFloat divider = [h_split dividerThickness];
   CGFloat width = [v_split frame].size.width;
   if (width <= 0) width = 240;
@@ -1080,10 +1080,10 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   if (!contentSplit || !customView) return;
   NSSize size = [contentSplit bounds].size;
   if (![self isBottomAreaVisible])
-    {
-      [customView setFrame:NSMakeRect(0,0,size.width,size.height)];
-      return;
-    }
+  {
+    [customView setFrame:NSMakeRect(0,0,size.width,size.height)];
+    return;
+  }
   CGFloat divider = [contentSplit dividerThickness];
   CGFloat height = [bottomView frame].size.height;
   if (height <= 0 || [bottomView frame].size.width <= 0) height = bottomHeight;
@@ -1109,17 +1109,17 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
  resizeSubviewsWithOldSize:(NSSize)oldSize
 {
   if (sender == contentSplit)
-    {
-      [self resizeContentSubviews];
-    }
+  {
+    [self resizeContentSubviews];
+  }
   else if (sender == v_split)
-    {
-      [self resizeVerticalSubiewsWithOldSize:oldSize];
-    }
+  {
+    [self resizeVerticalSubiewsWithOldSize:oldSize];
+  }
   else
-    {
-      [self resizeHorizontalSubiewsWithOldSize:oldSize];
-    }
+  {
+    [self resizeHorizontalSubiewsWithOldSize:oldSize];
+  }
 
   return;
 }

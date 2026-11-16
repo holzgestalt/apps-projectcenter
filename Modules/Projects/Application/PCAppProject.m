@@ -1,28 +1,28 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2001-2022 Free Software Foundation
+ Copyright (C) 2001-2022 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
-	    Riccardo Mottola
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCMakefileFactory.h>
 #import <ProjectCenter/PCProjectBrowser.h>
@@ -41,40 +41,40 @@
 - (id)init
 {
   if ((self = [super init]))
-    {
-      rootKeys = [[NSArray arrayWithObjects: 
-	PCClasses,
-        PCHeaders,
-        PCOtherSources,
-        PCInterfaces,
-        PCImages,
-        PCOtherResources,
-        PCSubprojects,
-        PCDocuFiles,
-        PCSupportingFiles,
-        PCLibraries,
-        PCNonProject,
-        nil] retain];
+  {
+    rootKeys = [[NSArray arrayWithObjects:
+                 PCClasses,
+                 PCHeaders,
+                 PCOtherSources,
+                 PCInterfaces,
+                 PCImages,
+                 PCOtherResources,
+                 PCSubprojects,
+                 PCDocuFiles,
+                 PCSupportingFiles,
+                 PCLibraries,
+                 PCNonProject,
+                 nil] retain];
 
-      rootCategories = [[NSArray arrayWithObjects: 
-  	@"Classes",
-    	@"Headers",
-      	@"Other Sources",
-	@"Interfaces",
-	@"Images",
-	@"Other Resources",
-	@"Subprojects",
-	@"Documentation",
-//      @"Context Help",
-	@"Supporting Files",
-//      @"Frameworks",
-	@"Libraries",
-	@"Non Project Files",
-	nil] retain];
-      
-      rootEntries = [[NSDictionary 
-	dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
-    }
+    rootCategories = [[NSArray arrayWithObjects:
+                       @"Classes",
+                       @"Headers",
+                       @"Other Sources",
+                       @"Interfaces",
+                       @"Images",
+                       @"Other Resources",
+                       @"Subprojects",
+                       @"Documentation",
+                       //      @"Context Help",
+                       @"Supporting Files",
+                       //      @"Frameworks",
+                       @"Libraries",
+                       @"Non Project Files",
+                       nil] retain];
+
+    rootEntries = [[NSDictionary
+                    dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
+  }
 
   return self;
 }
@@ -82,10 +82,10 @@
 - (void)loadInfoFile
 {
   if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"])
-    {
-      infoDict = [[NSMutableDictionary alloc] init];
-      return;
-    }
+  {
+    infoDict = [[NSMutableDictionary alloc] init];
+    return;
+  }
   PCFileManager  *pcfm = [PCFileManager defaultManager];
   NSMutableArray *otherRes = nil;
   NSString       *oldFile = @"Info-gnustep.plist";
@@ -96,32 +96,32 @@
   infoFile = [NSString stringWithFormat:@"%@Info.plist",projectName];
   infoFilePath = [projectPath stringByAppendingPathComponent:infoFile];
 
-  // Old project with info file Info-gnustep.plist located in Resources 
+  // Old project with info file Info-gnustep.plist located in Resources
   // directory. Move it to parent directory and replace it in PCOtherResources.
   otherRes = [[projectDict objectForKey:PCOtherResources] mutableCopy];
   if ([otherRes containsObject:oldFile])
-    {
-      oldFilePath = [self dirForCategoryKey:PCOtherResources];
-      oldFilePath = [oldFilePath stringByAppendingPathComponent:oldFile];
-      
-      [pcfm copyFile:oldFilePath toFile:infoFilePath];
-      [pcfm removeFileAtPath:oldFilePath removeDirsIfEmpty:YES];
+  {
+    oldFilePath = [self dirForCategoryKey:PCOtherResources];
+    oldFilePath = [oldFilePath stringByAppendingPathComponent:oldFile];
 
-      [otherRes removeObject:oldFile];
-      [otherRes addObject:infoFile];
-      [self setProjectDictObject:otherRes forKey:PCSupportingFiles notify:NO];
-      RELEASE(otherRes);
-    }
+    [pcfm copyFile:oldFilePath toFile:infoFilePath];
+    [pcfm removeFileAtPath:oldFilePath removeDirsIfEmpty:YES];
+
+    [otherRes removeObject:oldFile];
+    [otherRes addObject:infoFile];
+    [self setProjectDictObject:otherRes forKey:PCSupportingFiles notify:NO];
+    RELEASE(otherRes);
+  }
 
   if ([[NSFileManager defaultManager] fileExistsAtPath:infoFilePath])
-    {
-      infoDict = 
-	[[NSMutableDictionary alloc] initWithContentsOfFile:infoFilePath];
-    }
+  {
+    infoDict =
+    [[NSMutableDictionary alloc] initWithContentsOfFile:infoFilePath];
+  }
   else
-    {
-      infoDict = [[NSMutableDictionary alloc] init];
-    }
+  {
+    infoDict = [[NSMutableDictionary alloc] init];
+  }
 }
 
 - (void)dealloc
@@ -169,13 +169,13 @@
   [self setProjectName: [path lastPathComponent]];
 
   if ([[projectName pathExtension] isEqualToString:@"subproj"])
-    {
-      projectName = [projectName stringByDeletingPathExtension];
-    }
+  {
+    projectName = [projectName stringByDeletingPathExtension];
+  }
 
   [projectDict setObject:projectName forKey:PCProjectName];
   [projectDict setObject:[[NSCalendarDate date] description]
-		  forKey:PCCreationDate];
+                  forKey:PCCreationDate];
   [projectDict setObject:NSFullUserName() forKey:PCProjectCreator];
   [projectDict setObject:NSFullUserName() forKey:PCProjectMaintainer];
   [projectDict setObject:[NSUserDefaults userLanguages] forKey:PCUserLanguages];
@@ -183,12 +183,12 @@
   // Copy the project files to the provided path
   _file = [projBundle pathForResource:@"main" ofType:@"m"];
   _2file = [path stringByAppendingPathComponent:
-		     [NSString stringWithFormat:@"%@_main.m", projectName]];
+            [NSString stringWithFormat:@"%@_main.m", projectName]];
   [pcfm copyFile:_file toFile:_2file];
   [pcfc replaceTagsInFileAtPath:_2file withProject:self];
-  [projectDict 
-    setObject:[NSArray arrayWithObjects:[_2file lastPathComponent],nil]
-       forKey:PCOtherSources];
+  [projectDict
+   setObject:[NSArray arrayWithObjects:[_2file lastPathComponent],nil]
+   forKey:PCOtherSources];
 
   _file = [projBundle pathForResource:@"AppController" ofType:@"m"];
   _2file = [path stringByAppendingPathComponent:@"AppController.m"];
@@ -210,36 +210,36 @@
   _resourcePath = [path stringByAppendingPathComponent:@"Resources"];
 
   if ([projOption isEqualToString: PCProjectInterfaceGorm])
-    {
-      // Main NIB (Gorm)
-      _file = [projBundle pathForResource:@"Main" ofType:@"gorm"];
-      mainNibFile = [NSString stringWithFormat:@"%@.gorm", projectName];
-      mainNibFile = [_resourcePath stringByAppendingPathComponent:mainNibFile];
-      [pcfm copyFile:_file toFile:mainNibFile];
-        
-      [projectDict setObject:[mainNibFile lastPathComponent]
-                      forKey:PCMainInterfaceFile];
-      [projectDict setObject:[NSArray arrayWithObjects:[mainNibFile lastPathComponent], nil] 
-                      forKey:PCInterfaces];
-    }
-  else if ([projOption isEqualToString: PCProjectInterfaceRenaissance])
-    {
-      // Renaissance
-      _file = [projBundle pathForResource:@"Main" ofType:@"gsmarkup"];
-      _2file = [_resourcePath stringByAppendingPathComponent:@"Main.gsmarkup"];
-      [pcfm copyFile:_file toFile:_2file];
-      _file = [projBundle pathForResource:@"MainMenu-GNUstep" ofType:@"gsmarkup"];
-      _2file = [_resourcePath 
-                 stringByAppendingPathComponent:@"MainMenu-GNUstep.gsmarkup"];
-      [pcfm copyFile:_file toFile:_2file];
-      _file = [projBundle pathForResource:@"MainMenu-OSX" ofType:@"gsmarkup"];
-      _2file = [_resourcePath 
-                 stringByAppendingPathComponent:@"MainMenu-OSX.gsmarkup"];
-      [pcfm copyFile:_file toFile:_2file];
+  {
+    // Main NIB (Gorm)
+    _file = [projBundle pathForResource:@"Main" ofType:@"gorm"];
+    mainNibFile = [NSString stringWithFormat:@"%@.gorm", projectName];
+    mainNibFile = [_resourcePath stringByAppendingPathComponent:mainNibFile];
+    [pcfm copyFile:_file toFile:mainNibFile];
 
-      [projectDict setObject:[NSArray arrayWithObjects:@"Main.gsmarkup", @"MainMenu-GNUstep.gsmarkup", @"MainMenu-OSX.gsmarkup", nil]
-                      forKey:PCInterfaces];
-    }
+    [projectDict setObject:[mainNibFile lastPathComponent]
+                    forKey:PCMainInterfaceFile];
+    [projectDict setObject:[NSArray arrayWithObjects:[mainNibFile lastPathComponent], nil]
+                    forKey:PCInterfaces];
+  }
+  else if ([projOption isEqualToString: PCProjectInterfaceRenaissance])
+  {
+    // Renaissance
+    _file = [projBundle pathForResource:@"Main" ofType:@"gsmarkup"];
+    _2file = [_resourcePath stringByAppendingPathComponent:@"Main.gsmarkup"];
+    [pcfm copyFile:_file toFile:_2file];
+    _file = [projBundle pathForResource:@"MainMenu-GNUstep" ofType:@"gsmarkup"];
+    _2file = [_resourcePath
+              stringByAppendingPathComponent:@"MainMenu-GNUstep.gsmarkup"];
+    [pcfm copyFile:_file toFile:_2file];
+    _file = [projBundle pathForResource:@"MainMenu-OSX" ofType:@"gsmarkup"];
+    _2file = [_resourcePath
+              stringByAppendingPathComponent:@"MainMenu-OSX.gsmarkup"];
+    [pcfm copyFile:_file toFile:_2file];
+
+    [projectDict setObject:[NSArray arrayWithObjects:@"Main.gsmarkup", @"MainMenu-GNUstep.gsmarkup", @"MainMenu-OSX.gsmarkup", nil]
+                    forKey:PCInterfaces];
+  }
 
   // Info-gnustep.plist
   _file = [projBundle pathForResource:@"Info" ofType:@"gnustep"];
@@ -247,11 +247,11 @@
   [infoDict setObject:projectName forKey:@"ApplicationName"];
   [infoDict setObject:projectName forKey:@"NSExecutable"];
   if (mainNibFile)
-    [infoDict setObject:[mainNibFile lastPathComponent] 
+    [infoDict setObject:[mainNibFile lastPathComponent]
                  forKey:@"NSMainNibFile"];
   [infoDict setObject:[projectDict objectForKey:PCPrincipalClass]
-    forKey:@"NSPrincipalClass"];
-  
+               forKey:@"NSPrincipalClass"];
+
   // most probably empty
   if ([projectDict objectForKey:PCBundleIdentifier])
     [infoDict setObject:[projectDict objectForKey:PCBundleIdentifier] forKey:@"CFBundleIdentifier"];
@@ -307,44 +307,44 @@
   NSString       *appIcon = [projectDict objectForKey:PCAppIcon];
 
   if (!files || !key)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   // Check for main NIB file
   if ([key isEqualToString:PCInterfaces] && [files containsObject:mainNibFile])
+  {
+    int ret;
+    ret = NSRunAlertPanel(@"Remove",
+                          @"You've selected to remove main interface file.\nDo you still want to remove it?",
+                          @"Remove", @"Leave", nil);
+
+    if (ret == NSAlertAlternateReturn) // Leave
     {
-      int ret;
-      ret = NSRunAlertPanel(@"Remove",
-			    @"You've selected to remove main interface file.\nDo you still want to remove it?",
-			    @"Remove", @"Leave", nil);
-			    
-      if (ret == NSAlertAlternateReturn) // Leave
-	{
-	  [filesToRemove removeObject:mainNibFile];
-	}
-      else
-	{
-	  [self clearMainNib:self];
-	}
+      [filesToRemove removeObject:mainNibFile];
     }
+    else
+    {
+      [self clearMainNib:self];
+    }
+  }
   // Check for application icon files
   else if ([key isEqualToString:PCImages] && [files containsObject:appIcon])
+  {
+    int ret;
+    ret = NSRunAlertPanel(@"Remove",
+                          @"You've selected to remove application icon file.\nDo you still want to remove it?",
+                          @"Remove", @"Leave", nil);
+
+    if (ret == NSAlertAlternateReturn) // Leave
     {
-      int ret;
-      ret = NSRunAlertPanel(@"Remove",
-			    @"You've selected to remove application icon file.\nDo you still want to remove it?",
-			    @"Remove", @"Leave", nil);
-			    
-      if (ret == NSAlertAlternateReturn) // Leave
-	{
-	  [filesToRemove removeObject:appIcon];
-	}
-      else
-	{
-	  [self clearAppIcon:self];
-	}
+      [filesToRemove removeObject:appIcon];
     }
+    else
+    {
+      [self clearAppIcon:self];
+    }
+  }
 
   return [super removeFiles:filesToRemove forKey:key notify:yn];
 }
@@ -358,39 +358,39 @@
   NSString *tf = [toFile copy];
   BOOL     success = NO;
 
-  categoryKey = [self 
-    keyForCategory:[projectBrowser nameOfSelectedRootCategory]];
+  categoryKey = [self
+                 keyForCategory:[projectBrowser nameOfSelectedRootCategory]];
   // Check for main NIB file
-  if ([categoryKey isEqualToString:PCInterfaces] 
+  if ([categoryKey isEqualToString:PCInterfaces]
       && [fromFile isEqualToString:mainNibFile])
+  {
+    [self clearMainNib:self];
+    if ([super renameFile:ff toFile:tf] == YES)
     {
-      [self clearMainNib:self];
-      if ([super renameFile:ff toFile:tf] == YES)
-	{
-	  [self setMainNibWithFileAtPath:
-	    [[self dirForCategoryKey:categoryKey] 
-	      stringByAppendingPathComponent:tf]];
-	  success = YES;
-	}
-    }
-  // Check for application icon files
-  else if ([categoryKey isEqualToString:PCImages] 
-	   && [fromFile isEqualToString:appIcon])
-    {
-      [self clearAppIcon:self];
-      if ([super renameFile:ff toFile:tf] == YES)
-	{
-	  [self setAppIconWithFileAtPath:
-	    [[self dirForCategoryKey:categoryKey] 
-	      stringByAppendingPathComponent:tf]];
-	  success = YES;
-	}
-    }
-  else if ([super renameFile:ff toFile:tf] == YES)
-    {
+      [self setMainNibWithFileAtPath:
+       [[self dirForCategoryKey:categoryKey]
+        stringByAppendingPathComponent:tf]];
       success = YES;
     }
-    
+  }
+  // Check for application icon files
+  else if ([categoryKey isEqualToString:PCImages]
+           && [fromFile isEqualToString:appIcon])
+  {
+    [self clearAppIcon:self];
+    if ([super renameFile:ff toFile:tf] == YES)
+    {
+      [self setAppIconWithFileAtPath:
+       [[self dirForCategoryKey:categoryKey]
+        stringByAppendingPathComponent:tf]];
+      success = YES;
+    }
+  }
+  else if ([super renameFile:ff toFile:tf] == YES)
+  {
+    success = YES;
+  }
+
   [ff release];
   [tf release];
 
@@ -409,23 +409,23 @@
   id             entry = [projectDict objectForKey:PCDocumentTypes];
 
   if ([entry isKindOfClass:[NSDictionary class]])
-    {
-      return [NSArray arrayWithObject:entry];
-    }
+  {
+    return [NSArray arrayWithObject:entry];
+  }
   if (![entry isKindOfClass:[NSArray class]])
-    {
-      return [NSArray array];
-    }
+  {
+    return [NSArray array];
+  }
 
   items = [NSMutableArray array];
   enumerator = [entry objectEnumerator];
   while ((item = [enumerator nextObject]))
+  {
+    if ([item isKindOfClass:[NSDictionary class]])
     {
-      if ([item isKindOfClass:[NSDictionary class]])
-	{
-	  [items addObject:item];
-	}
+      [items addObject:item];
     }
+  }
 
   return items;
 }
@@ -435,21 +435,21 @@
   id entry = [projectDict objectForKey:key];
 
   if (entry == nil)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   if ([entry isKindOfClass:[NSString class]] && [entry isEqualToString:@""])
-    {
-      [infoDict removeObjectForKey:name];
-      return;
-    }
+  {
+    [infoDict removeObjectForKey:name];
+    return;
+  }
 
   if ([entry isKindOfClass:[NSArray class]] && [entry count] <= 0)
-    {
-      [infoDict removeObjectForKey:name];
-      return;
-    }
+  {
+    [infoDict removeObjectForKey:name];
+    return;
+  }
 
   [infoDict setObject:entry forKey:name];
 }
@@ -472,24 +472,24 @@
   [self writeInfoEntry:@"NSExecutable" forKey:PCProjectName];
   [self writeInfoEntry:@"NSIcon" forKey:PCAppIcon];
   if ([[projectDict objectForKey:PCAppType] isEqualToString:@"GORM"])
-    {
-      [self writeInfoEntry:@"NSMainNibFile" forKey:PCMainInterfaceFile];
-      [infoDict removeObjectForKey:@"GSMainMarkupFile"];
-    }
+  {
+    [self writeInfoEntry:@"NSMainNibFile" forKey:PCMainInterfaceFile];
+    [infoDict removeObjectForKey:@"GSMainMarkupFile"];
+  }
   else
-    {
-      [self writeInfoEntry:@"GSMainMarkupFile" forKey:PCMainInterfaceFile];
-      [infoDict removeObjectForKey:@"NSMainNibFile"];
-    }
+  {
+    [self writeInfoEntry:@"GSMainMarkupFile" forKey:PCMainInterfaceFile];
+    [infoDict removeObjectForKey:@"NSMainNibFile"];
+  }
   [self writeInfoEntry:@"NSPrincipalClass" forKey:PCPrincipalClass];
   [self writeInfoEntry:@"GSHelpContentsFile" forKey:PCHelpFile];
   [infoDict setObject:@"Application" forKey:@"NSRole"];
   documentTypes = [self validDocumentTypes];
   [infoDict removeObjectForKey:@"NSTypes"];
   if ([documentTypes count] > 0)
-    {
-      [infoDict setObject:documentTypes forKey:@"NSTypes"];
-    }
+  {
+    [infoDict setObject:documentTypes forKey:@"NSTypes"];
+  }
   [self writeInfoEntry:@"URL" forKey:PCURL];
 
   infoFile = [NSString stringWithFormat:@"%@Info.plist",projectName];
@@ -503,7 +503,7 @@
 {
   if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"]) return YES;
   PCMakefileFactory *mf = [PCMakefileFactory sharedFactory];
-  NSUInteger        i,count; 
+  NSUInteger        i,count;
   NSString          *mfl = nil;
   NSData            *mfd = nil;
   NSString          *key = nil;
@@ -530,35 +530,35 @@
 
   // Subprojects
   if ([[projectDict objectForKey:PCSubprojects] count] > 0)
-    {
-      [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
-    }
+  {
+    [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
+  }
 
   // Resources
   count = [[self resourceFileKeys] count];
   resources = [[NSMutableArray alloc] initWithCapacity:1];
   // Gather all resource files into one array
   for (i = 0; i < count; i++)
-    {
-      key = [[self resourceFileKeys] objectAtIndex:i];
-      
-      [resources addObjectsFromArray:[projectDict objectForKey:key]];
-    }
+  {
+    key = [[self resourceFileKeys] objectAtIndex:i];
+
+    [resources addObjectsFromArray:[projectDict objectForKey:key]];
+  }
   // Remove localized resource files from gathered array
   localizedResources = [projectDict objectForKey:PCLocalizedResources];
   for (i = [resources count]; i > 0; i--)
+  {
+    if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
     {
-      if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
-	{
-	  [resources removeObjectAtIndex:i-1];
-	}
+      [resources removeObjectAtIndex:i-1];
     }
+  }
   [mf appendResources:resources inDir:@"Resources"];
   [resources release];
 
   // Localization
   [mf appendLocalizedResources:localizedResources
-		  forLanguages:[projectDict objectForKey:PCUserLanguages]];
+                  forLanguages:[projectDict objectForKey:PCUserLanguages]];
 
   // Sources
   [mf appendHeaders:[projectDict objectForKey:PCHeaders]];
@@ -570,13 +570,13 @@
 
   // Write the new file to disc!
   mfl = [projectPath stringByAppendingPathComponent:@"GNUmakefile"];
-  if ((mfd = [mf encodedMakefile])) 
+  if ((mfd = [mf encodedMakefile]))
+  {
+    if ([mfd writeToFile:mfl atomically:YES])
     {
-      if ([mfd writeToFile:mfl atomically:YES]) 
-	{
-	  return YES;
-	}
+      return YES;
     }
+  }
 
   return NO;
 }
@@ -587,25 +587,25 @@
 
   [mff appendString:@"\n#\n# Application\n#\n"];
   [mff appendString:[NSString stringWithFormat:@"VERSION = %@\n",
-			      [projectDict objectForKey:PCRelease]]];
+                     [projectDict objectForKey:PCRelease]]];
   [mff appendString:
-	 [NSString stringWithFormat:@"PACKAGE_NAME = %@\n", projectName]];
+   [NSString stringWithFormat:@"PACKAGE_NAME = %@\n", projectName]];
   [mff appendString:
-	 [NSString stringWithFormat:@"APP_NAME = %@\n", projectName]];
-    
+   [NSString stringWithFormat:@"APP_NAME = %@\n", projectName]];
+
   [mff appendString:[NSString stringWithFormat:@"%@_APPLICATION_ICON = %@\n",
-			      projectName, [projectDict objectForKey:PCAppIcon]]];
+                     projectName, [projectDict objectForKey:PCAppIcon]]];
 
   /* FIXME %@_COPY_INTO_DIR needs to be properly reinstantiated
-     as well as %@_STANDARD_INSTALL = no  */
+   as well as %@_STANDARD_INSTALL = no  */
 
   /* set the domain if it was specified */
   if (!(installDomain == nil) && ![installDomain isEqualToString:@""])
-    {
-      [mff appendString:
-	     [NSString stringWithFormat:@"GNUSTEP_INSTALLATION_DOMAIN = %@\n",
-[installDomain uppercaseString]]];
-    }
+  {
+    [mff appendString:
+     [NSString stringWithFormat:@"GNUSTEP_INSTALLATION_DOMAIN = %@\n",
+      [installDomain uppercaseString]]];
+  }
 }
 
 - (void)appendTail:(PCMakefileFactory *)mff

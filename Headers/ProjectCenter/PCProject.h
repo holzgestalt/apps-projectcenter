@@ -1,27 +1,27 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2004 Free Software Foundation
+ Copyright (C) 2000-2004 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #ifndef _PCProject_h_
 #define _PCProject_h_
@@ -56,7 +56,7 @@ extern NSString *PCBreakpointKindSymbol;
 
 @interface PCProject : NSObject
 {
-  PCProjectManager     *projectManager; 
+  PCProjectManager     *projectManager;
   PCProjectWindow      *projectWindow;
   PCProjectBrowser     *projectBrowser;
   PCProjectLoadedFiles *projectLoadedFiles;
@@ -105,7 +105,7 @@ extern NSString *PCBreakpointKindSymbol;
 - (BOOL)assignProjectDict:(NSDictionary *)pDict atPath:(NSString *)pPath;
 //- (BOOL)assignProjectDict:(NSDictionary *)aDict;
 - (BOOL)isValidDictionary:(NSDictionary *)aDict;
-// Validates the project dictionary and inserts missing keys if needed. 
+// Validates the project dictionary and inserts missing keys if needed.
 // It calls isValidDictionary to validate.
 - (void)validateProjectDict;
 - (void)setProjectDictObject:(id)object forKey:(NSString *)key notify:(BOOL)yn;
@@ -183,7 +183,7 @@ extern NSString *PCBreakpointKindSymbol;
 // Remove path from "file" and handle special cases like libraries
 - (NSString *)projectFileFromFile:(NSString *)file forKey:(NSString *)type;
 
-// Returns YES if type is a valid key and file is not contained in the 
+// Returns YES if type is a valid key and file is not contained in the
 // project already
 - (BOOL)doesAcceptFile:(NSString *)file forKey:(NSString *)key;
 

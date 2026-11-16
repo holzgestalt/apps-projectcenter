@@ -1,24 +1,24 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2001-2015 Free Software Foundation
+ Copyright (C) 2001-2015 Free Software Foundation
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCLogController.h>
@@ -35,14 +35,14 @@
 // ===========================================================================
 
 static PCPrefController *_prefCtrllr = nil;
-  
+
 + (PCPrefController *)sharedPCPreferences
 {
   if (!_prefCtrllr)
-    {
-      _prefCtrllr = [[PCPrefController alloc] init];
-    }
-  
+  {
+    _prefCtrllr = [[PCPrefController alloc] init];
+  }
+
   return _prefCtrllr;
 }
 
@@ -50,10 +50,10 @@ static PCPrefController *_prefCtrllr = nil;
 - (id)init
 {
   if (!(self = [super init]))
-    {
-      return nil;
-    }
-    
+  {
+    return nil;
+  }
+
   [self loadPrefsSections];
 
   return self;
@@ -64,7 +64,7 @@ static PCPrefController *_prefCtrllr = nil;
 #ifdef DEVELOPMENT
   NSLog(@"PCPrefController: dealloc");
 #endif
-  
+
   RELEASE(panel);
   [super dealloc];
 }
@@ -86,19 +86,19 @@ static PCPrefController *_prefCtrllr = nil;
   colorSpaceName = [colorComponents objectAtIndex:0];
 
   if ([colorSpaceName isEqualToString:@"White"]) // Treat as WhiteColorSpace
-    {
-      color = [NSColor 
-	colorWithCalibratedWhite:[[colorComponents objectAtIndex:1] floatValue]
-       			   alpha:1.0];
-    }
+  {
+    color = [NSColor
+             colorWithCalibratedWhite:[[colorComponents objectAtIndex:1] floatValue]
+             alpha:1.0];
+  }
   else // Treat as RGBColorSpace
-    {
-      color = [NSColor 
-	colorWithCalibratedRed:[[colorComponents objectAtIndex:1] floatValue]
-			 green:[[colorComponents objectAtIndex:2] floatValue]
-			  blue:[[colorComponents objectAtIndex:3] floatValue]
-			 alpha:1.0];
-    }
+  {
+    color = [NSColor
+             colorWithCalibratedRed:[[colorComponents objectAtIndex:1] floatValue]
+             green:[[colorComponents objectAtIndex:2] floatValue]
+             blue:[[colorComponents objectAtIndex:3] floatValue]
+             alpha:1.0];
+  }
 
   return color;
 }
@@ -109,19 +109,19 @@ static PCPrefController *_prefCtrllr = nil;
 
   colorString = nil;
   if ([[color colorSpaceName] isEqualToString:NSCalibratedWhiteColorSpace])
-    {
-      colorString = [NSString stringWithFormat:@"White %0.1f", 
-		  [color whiteComponent]];
-    }
+  {
+    colorString = [NSString stringWithFormat:@"White %0.1f",
+                   [color whiteComponent]];
+  }
   else
-    {
-      if (![[color colorSpaceName] isEqualToString:NSCalibratedRGBColorSpace])
-	color = [color colorUsingColorSpaceName:NSCalibratedRGBColorSpace];
-      colorString = [NSString stringWithFormat:@"RGB %0.1f %0.1f %0.1f",
-			      [color redComponent], 
-			      [color greenComponent],
-			      [color blueComponent]];
-    }
+  {
+    if (![[color colorSpaceName] isEqualToString:NSCalibratedRGBColorSpace])
+      color = [color colorUsingColorSpaceName:NSCalibratedRGBColorSpace];
+    colorString = [NSString stringWithFormat:@"RGB %0.1f %0.1f %0.1f",
+                   [color redComponent],
+                   [color greenComponent],
+                   [color blueComponent]];
+  }
 
   return colorString;
 }
@@ -136,20 +136,20 @@ static PCPrefController *_prefCtrllr = nil;
 }
 
 - (NSString *)stringForKey:(NSString *)key
-	      defaultValue:(NSString *)defaultValue
+              defaultValue:(NSString *)defaultValue
 {
   NSString *stringValue = [[NSUserDefaults standardUserDefaults]
-			    objectForKey:key];
+                           objectForKey:key];
 
   if (stringValue)
-    {
-      return stringValue;
-    }
+  {
+    return stringValue;
+  }
   else if (defaultValue)
-    {
-      [self setString:defaultValue forKey:key notify:NO];
-      return defaultValue;
-    }
+  {
+    [self setString:defaultValue forKey:key notify:NO];
+    return defaultValue;
+  }
 
   return defaultValue; // returns nil
 }
@@ -163,17 +163,17 @@ static PCPrefController *_prefCtrllr = nil;
       defaultValue:(BOOL)defaultValue
 {
   NSString *stringValue = [[NSUserDefaults standardUserDefaults]
-			    objectForKey:key];
+                           objectForKey:key];
 
   if (stringValue)
-    {
-      return [stringValue boolValue];
-    }
+  {
+    return [stringValue boolValue];
+  }
   else if (defaultValue > 0)
-    {
-      [self setBool:defaultValue forKey:key notify:NO];
-      return defaultValue;
-    }
+  {
+    [self setBool:defaultValue forKey:key notify:NO];
+    return defaultValue;
+  }
 
   return defaultValue; // returns -1
 }
@@ -186,17 +186,17 @@ static PCPrefController *_prefCtrllr = nil;
 - (float)floatForKey:(NSString *)key defaultValue:(float)defaultValue
 {
   NSString *stringValue = [[NSUserDefaults standardUserDefaults]
-			    objectForKey:key];
+                           objectForKey:key];
 
   if (stringValue)
-    {
-      return [stringValue floatValue];
-    }
+  {
+    return [stringValue floatValue];
+  }
   else
-    {
-      [self setFloat:defaultValue forKey:key notify:NO];
-      return defaultValue;
-    }
+  {
+    [self setFloat:defaultValue forKey:key notify:NO];
+    return defaultValue;
+  }
 }
 
 - (NSColor *)colorForKey:(NSString *)key
@@ -205,92 +205,92 @@ static PCPrefController *_prefCtrllr = nil;
 }
 
 - (NSColor *)colorForKey:(NSString *)key
-	    defaultValue:(NSColor *)defaultValue
+            defaultValue:(NSColor *)defaultValue
 {
   NSString *stringValue = [[NSUserDefaults standardUserDefaults]
-			    objectForKey:key];
+                           objectForKey:key];
 
   if (stringValue)
-    {
-      NSColor *color;
+  {
+    NSColor *color;
 
-      color = [self colorFromString:stringValue];
-      return color;
-    }
+    color = [self colorFromString:stringValue];
+    return color;
+  }
   else if (defaultValue)
-    {
-      [self setColor:defaultValue forKey:key notify:NO];
-      return defaultValue;
-    }
+  {
+    [self setColor:defaultValue forKey:key notify:NO];
+    return defaultValue;
+  }
 
   return defaultValue; // returns nil
 }
 
-- (void)setString:(NSString *)stringValue 
-	   forKey:(NSString *)aKey
-	   notify:(BOOL)notify
+- (void)setString:(NSString *)stringValue
+           forKey:(NSString *)aKey
+           notify:(BOOL)notify
 {
   [[NSUserDefaults standardUserDefaults] setObject:stringValue
-					    forKey:aKey];
+                                            forKey:aKey];
 
   if (notify)
-    {
-      [[NSNotificationCenter defaultCenter] 
-	postNotificationName:PCPreferencesDidChangeNotification
-		      object:self];
-    }
+  {
+    [[NSNotificationCenter defaultCenter]
+     postNotificationName:PCPreferencesDidChangeNotification
+     object:self];
+  }
 }
 
 - (void)setBool:(BOOL)boolValue
-	 forKey:(NSString *)aKey
-	 notify:(BOOL)notify
+         forKey:(NSString *)aKey
+         notify:(BOOL)notify
 {
   NSString *stringValue = boolValue ? @"YES" : @"NO";
 
   [[NSUserDefaults standardUserDefaults] setObject:stringValue
-					    forKey:aKey];
+                                            forKey:aKey];
 
   if (notify)
-    {
-      [[NSNotificationCenter defaultCenter] 
-	postNotificationName:PCPreferencesDidChangeNotification
-		      object:self];
-    }
+  {
+    [[NSNotificationCenter defaultCenter]
+     postNotificationName:PCPreferencesDidChangeNotification
+     object:self];
+  }
 }
 
 - (void)setFloat:(float)floatValue
-	  forKey:(NSString *)aKey
-	  notify:(BOOL)notify
+          forKey:(NSString *)aKey
+          notify:(BOOL)notify
 {
   NSString *stringValue = [NSString stringWithFormat:@"%0.1f", floatValue];
 
   [[NSUserDefaults standardUserDefaults] setObject:stringValue
-					    forKey:aKey];
+                                            forKey:aKey];
 
   if (notify)
-    {
-      [[NSNotificationCenter defaultCenter] 
-	postNotificationName:PCPreferencesDidChangeNotification
-		      object:self];
-    }
+  {
+    [[NSNotificationCenter defaultCenter]
+     postNotificationName:PCPreferencesDidChangeNotification
+     object:self];
+  }
 }
 
-- (void)setColor:(NSColor *)color 
-	   forKey:(NSString *)aKey
-	   notify:(BOOL)notify
+- (void)setColor:(NSColor *)color
+          forKey:(NSString *)aKey
+          notify:(BOOL)notify
 {
   NSString *stringValue;
 
   stringValue = [self stringFromColor:color];
   [[NSUserDefaults standardUserDefaults] setObject:stringValue
-					    forKey:aKey];
+                                            forKey:aKey];
 
   if (notify)
-    {
-      [[NSNotificationCenter defaultCenter] 
-	postNotificationName:PCPreferencesDidChangeNotification
-		      object:self];
-    }
+  {
+    [[NSNotificationCenter defaultCenter]
+     postNotificationName:PCPreferencesDidChangeNotification
+     object:self];
+  }
 }
 
 - (void)loadPrefsSections
@@ -307,40 +307,40 @@ static PCPrefController *_prefCtrllr = nil;
   bundlesInfo = [bundleManager infoForBundlesType:@"preferences"];
   enumerator = [[bundlesInfo allKeys] objectEnumerator];
   while ((bundlePath = [enumerator nextObject]))
-    {
-      sectionName = [[bundlesInfo objectForKey:bundlePath] 
-				  objectForKey:@"Name"];
-      section = [bundleManager 
-	objectForBundleWithName:sectionName
-			   type:@"preferences"
-		       protocol:@protocol(PCPrefsSection)];
-      [section initWithPrefController:self];
-      [section readPreferences];
-      [sectionsDict setObject:section forKey:sectionName];
-    }
+  {
+    sectionName = [[bundlesInfo objectForKey:bundlePath]
+                   objectForKey:@"Name"];
+    section = [bundleManager
+               objectForBundleWithName:sectionName
+               type:@"preferences"
+               protocol:@protocol(PCPrefsSection)];
+    [section initWithPrefController:self];
+    [section readPreferences];
+    [sectionsDict setObject:section forKey:sectionName];
+  }
 }
 
 - (void)showPanel:(id)sender
 {
-  if (panel == nil 
+  if (panel == nil
       && [NSBundle loadNibNamed:@"Preferences" owner:self] == NO)
-    {
-      PCLogError(self, @"error loading NIB file!");
-      return;
-    }
+  {
+    PCLogError(self, @"error loading NIB file!");
+    return;
+  }
 
   [panel setFrameAutosaveName:@"Preferences"];
   if (![panel setFrameUsingName: @"Preferences"])
-    {
-      [panel center];
-    }
+  {
+    [panel center];
+  }
 
   [self loadPrefsSections];
 
   // The popup and selected view
   [popupButton removeAllItems];
-  [popupButton addItemsWithTitles:[[sectionsDict allKeys] 
-   	 sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]];
+  [popupButton addItemsWithTitles:[[sectionsDict allKeys]
+                                   sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]];
   [popupButton selectItemAtIndex:0];
   [self popupChanged:popupButton];
 

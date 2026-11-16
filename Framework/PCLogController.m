@@ -1,34 +1,34 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2001 Free Software Foundation
+ Copyright (C) 2001 Free Software Foundation
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCLogController.h>
 
 void
 PCLog(id sender, int tag, NSString* format, va_list args)
 {
-  [[PCLogController sharedLogController] 
-    logMessage:[NSString stringWithFormat:format arguments: args]
-       withTag:tag
-        sender:sender];
+  [[PCLogController sharedLogController]
+   logMessage:[NSString stringWithFormat:format arguments: args]
+   withTag:tag
+   sender:sender];
 }
 
 void
@@ -82,10 +82,10 @@ static PCLogController *_logCtrllr = nil;
 + (PCLogController *)sharedLogController
 {
   if (!_logCtrllr)
-    {
-      _logCtrllr = [[PCLogController alloc] init];
-    }
-   
+  {
+    _logCtrllr = [[PCLogController alloc] init];
+  }
+
   return _logCtrllr;
 }
 
@@ -98,25 +98,25 @@ static PCLogController *_logCtrllr = nil;
   NSFont *font = nil;
 
   if (!(self = [super init]))
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   if ([NSBundle loadNibNamed:@"LogPanel" owner:self] == NO)
-    {
-      NSLog(@"PCLogController[init]: error loading NIB file!");
-      return nil;
-    }
+  {
+    NSLog(@"PCLogController[init]: error loading NIB file!");
+    return nil;
+  }
 
   [panel setFrameAutosaveName:@"LogPanel"];
   if (![panel setFrameUsingName: @"LogPanel"])
-    {
-      [panel center];
-    }
+  {
+    [panel center];
+  }
 
   font = [NSFont userFixedPitchFontOfSize:[NSFont systemFontSize]];
   textAttributes =
-    [NSMutableDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
+  [NSMutableDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
   [textAttributes retain];
 
   return self;
@@ -142,37 +142,37 @@ static PCLogController *_logCtrllr = nil;
   NSString           *messageText = nil;
   NSAttributedString *message = nil;
 
-  messageText = 
-    [NSString stringWithFormat:@" %@: %@\n",[sender className],text];
+  messageText =
+  [NSString stringWithFormat:@" %@: %@\n",[sender className],text];
 
-  switch (tag) 
-    {
+  switch (tag)
+  {
     case INFO:
-      [textAttributes 
-	setObject:[NSColor colorWithDeviceRed:.0 green:.0 blue:.0 alpha:1.0]
-	   forKey:NSForegroundColorAttributeName];
+      [textAttributes
+       setObject:[NSColor colorWithDeviceRed:.0 green:.0 blue:.0 alpha:1.0]
+       forKey:NSForegroundColorAttributeName];
       break;
     case STATUS:
-      [textAttributes 
-	setObject:[NSColor colorWithDeviceRed:.0 green:.35 blue:.0 alpha:1.0]
-	   forKey:NSForegroundColorAttributeName];
+      [textAttributes
+       setObject:[NSColor colorWithDeviceRed:.0 green:.35 blue:.0 alpha:1.0]
+       forKey:NSForegroundColorAttributeName];
       break;
-      
+
     case WARNING:
-      [textAttributes 
-	setObject:[NSColor colorWithDeviceRed:.56 green:.45 blue:.0 alpha:1.0]
-	   forKey:NSForegroundColorAttributeName];
+      [textAttributes
+       setObject:[NSColor colorWithDeviceRed:.56 green:.45 blue:.0 alpha:1.0]
+       forKey:NSForegroundColorAttributeName];
       break;
 
     case ERROR:
-      [textAttributes 
-	setObject:[NSColor colorWithDeviceRed:.63 green:.0 blue:.0 alpha:1.0]
-	   forKey:NSForegroundColorAttributeName];
+      [textAttributes
+       setObject:[NSColor colorWithDeviceRed:.63 green:.0 blue:.0 alpha:1.0]
+       forKey:NSForegroundColorAttributeName];
       break;
 
     default:
       break;
-    }
+  }
 
   message = [[NSAttributedString alloc] initWithString:messageText
                                             attributes:textAttributes];

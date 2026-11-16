@@ -1,28 +1,28 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2001-2017 Free Software Foundation
+ Copyright (C) 2001-2017 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
-	    Riccardo Mottola
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCMakefileFactory.h>
 #import <ProjectCenter/PCFileManager.h>
@@ -39,37 +39,37 @@
 - (id)init
 {
   if ((self = [super init]))
-    {
-      rootKeys = [[NSArray arrayWithObjects:
-	PCClasses,
-	PCHeaders,
-	PCOtherSources,
-	PCImages,
-	PCOtherResources,
-	PCSubprojects,
-	PCDocuFiles,
-	PCSupportingFiles,
-	PCLibraries,
-	PCNonProject,
-	nil] retain];
+  {
+    rootKeys = [[NSArray arrayWithObjects:
+                 PCClasses,
+                 PCHeaders,
+                 PCOtherSources,
+                 PCImages,
+                 PCOtherResources,
+                 PCSubprojects,
+                 PCDocuFiles,
+                 PCSupportingFiles,
+                 PCLibraries,
+                 PCNonProject,
+                 nil] retain];
 
-      rootCategories = [[NSArray arrayWithObjects:
-	@"Classes",
-	@"Headers",
-	@"Other Sources",
-	@"Images",
-	@"Other Resources",
-	@"Subprojects",
-	@"Documentation",
-	@"Supporting Files",
-	@"Libraries",
-	@"Non Project Files",
-	nil] retain];
+    rootCategories = [[NSArray arrayWithObjects:
+                       @"Classes",
+                       @"Headers",
+                       @"Other Sources",
+                       @"Images",
+                       @"Other Resources",
+                       @"Subprojects",
+                       @"Documentation",
+                       @"Supporting Files",
+                       @"Libraries",
+                       @"Non Project Files",
+                       nil] retain];
 
-      rootEntries = [[NSDictionary 
-	dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
-    
-    }
+    rootEntries = [[NSDictionary
+                    dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
+
+  }
 
   return self;
 }
@@ -91,32 +91,32 @@
   infoFile = [NSString stringWithFormat:@"%@Info.plist",projectName];
   infoFilePath = [projectPath stringByAppendingPathComponent:infoFile];
 
-  // Old project with info file Info-gnustep.plist located in Resources 
+  // Old project with info file Info-gnustep.plist located in Resources
   // directory. Move it to parent directory and replace it in PCOtherResources.
   otherRes = [[projectDict objectForKey:PCOtherResources] mutableCopy];
   if ([otherRes containsObject:oldFile])
-    {
-      oldFilePath = [self dirForCategoryKey:PCOtherResources];
-      oldFilePath = [oldFilePath stringByAppendingPathComponent:oldFile];
-      
-      [pcfm copyFile:oldFilePath toFile:infoFilePath];
-      [pcfm removeFileAtPath:oldFilePath removeDirsIfEmpty:YES];
+  {
+    oldFilePath = [self dirForCategoryKey:PCOtherResources];
+    oldFilePath = [oldFilePath stringByAppendingPathComponent:oldFile];
 
-      [otherRes removeObject:oldFile];
-      [otherRes addObject:infoFile];
-      [self setProjectDictObject:otherRes forKey:PCSupportingFiles notify:NO];
-      RELEASE(otherRes);
-    }
+    [pcfm copyFile:oldFilePath toFile:infoFilePath];
+    [pcfm removeFileAtPath:oldFilePath removeDirsIfEmpty:YES];
+
+    [otherRes removeObject:oldFile];
+    [otherRes addObject:infoFile];
+    [self setProjectDictObject:otherRes forKey:PCSupportingFiles notify:NO];
+    RELEASE(otherRes);
+  }
 
   if ([[NSFileManager defaultManager] fileExistsAtPath:infoFilePath])
-    {
-      infoDict = 
-	[[NSMutableDictionary alloc] initWithContentsOfFile:infoFilePath];
-    }
+  {
+    infoDict =
+    [[NSMutableDictionary alloc] initWithContentsOfFile:infoFilePath];
+  }
   else
-    {
-      infoDict = [[NSMutableDictionary alloc] init];
-    }
+  {
+    infoDict = [[NSMutableDictionary alloc] init];
+  }
 }
 
 - (void)dealloc
@@ -124,7 +124,7 @@
   [rootCategories release];
   [rootKeys release];
   [rootEntries release];
-  
+
   [super dealloc];
 }
 
@@ -158,9 +158,9 @@
   [self setProjectPath:path];
   [self setProjectName:[path lastPathComponent]];
   if ([[projectName pathExtension] isEqualToString:@"subproj"])
-    {
-      projectName = [projectName stringByDeletingPathExtension];
-    }
+  {
+    projectName = [projectName stringByDeletingPathExtension];
+  }
   [projectDict setObject:projectName forKey:PCProjectName];
   [projectDict setObject:[[NSCalendarDate date] description]
                   forKey:PCCreationDate];
@@ -223,21 +223,21 @@
   id entry = [projectDict objectForKey:key];
 
   if (entry == nil)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   if ([entry isKindOfClass:[NSString class]] && [entry isEqualToString:@""])
-    {
-      [infoDict removeObjectForKey:name];
-      return;
-    }
+  {
+    [infoDict removeObjectForKey:name];
+    return;
+  }
 
   if ([entry isKindOfClass:[NSArray class]] && [entry count] <= 0)
-    {
-      [infoDict removeObjectForKey:name];
-      return;
-    }
+  {
+    [infoDict removeObjectForKey:name];
+    return;
+  }
 
   [infoDict setObject:entry forKey:name];
 }
@@ -258,7 +258,7 @@
 
   infoFile = [NSString stringWithFormat:@"%@Info.plist",projectName];
   infoFile = [projectPath stringByAppendingPathComponent:infoFile];
-  
+
   return [infoDict writeToFile:infoFile atomically:YES];
 }
 
@@ -292,34 +292,34 @@
 
   // Subprojects
   if ([[projectDict objectForKey:PCSubprojects] count] > 0)
-    {
-      [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
-    }
+  {
+    [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
+  }
 
   // Resources
   count = [[self resourceFileKeys] count];
   resources = [[NSMutableArray alloc] initWithCapacity:1];
   for (i = 0; i < count; i++)
-    {
-      key = [[self resourceFileKeys] objectAtIndex:i];
-      
-      [resources addObjectsFromArray:[projectDict objectForKey:key]];
-    }
+  {
+    key = [[self resourceFileKeys] objectAtIndex:i];
+
+    [resources addObjectsFromArray:[projectDict objectForKey:key]];
+  }
   // Remove localized resource files from gathered array
   localizedResources = [projectDict objectForKey:PCLocalizedResources];
   for (i = [resources count]; i > 0; i--)
+  {
+    if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
     {
-      if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
-	{
-	  [resources removeObjectAtIndex:i-1];
-	}
+      [resources removeObjectAtIndex:i-1];
     }
+  }
   [mf appendResources:resources inDir:@"Resources"];
   [resources release];
 
   // Localization
   [mf appendLocalizedResources:localizedResources
-		  forLanguages:[projectDict objectForKey:PCUserLanguages]];
+                  forLanguages:[projectDict objectForKey:PCUserLanguages]];
 
   // Sources
   [mf appendHeaders:[projectDict objectForKey:PCHeaders]];
@@ -331,13 +331,13 @@
 
   // Write the new file to disc!
   mfl = [projectPath stringByAppendingPathComponent:@"GNUmakefile"];
-  if ((mfd = [mf encodedMakefile])) 
+  if ((mfd = [mf encodedMakefile]))
+  {
+    if ([mfd writeToFile:mfl atomically:YES])
     {
-      if ([mfd writeToFile:mfl atomically:YES]) 
-	{
-	  return YES;
-	}
+      return YES;
     }
+  }
 
   return NO;
 }
@@ -348,23 +348,23 @@
 
   [mff appendString:@"\n#\n# Tool\n#\n"];
   [mff appendString:[NSString stringWithFormat:@"VERSION = %@\n",
-    [projectDict objectForKey:PCRelease]]];
+                     [projectDict objectForKey:PCRelease]]];
   [mff appendString:[NSString stringWithFormat:@"PACKAGE_NAME = %@\n",
-    projectName]];
+                     projectName]];
   [mff appendString:[NSString stringWithFormat:@"TOOL_NAME = %@\n",
-    projectName]];
+                     projectName]];
   [mff appendString:[NSString stringWithFormat:@"%@_TOOL_ICON = %@\n",
-    projectName, [projectDict objectForKey:PCToolIcon]]];
+                     projectName, [projectDict objectForKey:PCToolIcon]]];
 
   /* FIXME %@_COPY_INTO_DIR needs to be properly reinstantiated
-     as well as %@_STANDARD_INSTALL = no  */
+   as well as %@_STANDARD_INSTALL = no  */
 
   /* set the domain if it was specified */
   if (!(installDomain == nil) && ![installDomain isEqualToString:@""])
-    {
-      [mff appendString:
-	     [NSString stringWithFormat:@"GNUSTEP_INSTALLATION_DOMAIN = %@\n",[installDomain uppercaseString]]];
-    }
+  {
+    [mff appendString:
+     [NSString stringWithFormat:@"GNUSTEP_INSTALLATION_DOMAIN = %@\n",[installDomain uppercaseString]]];
+  }
 }
 
 - (void)appendTail:(PCMakefileFactory *)mff
@@ -383,20 +383,20 @@
 - (NSView *)projectAttributesView
 {
   if (projectAttributesView == nil)
+  {
+    if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
     {
-      if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
-	{
-	  NSLog(@"PCLibraryProject: error loading Inspector NIB!");
-	  return nil;
-	}
-      [projectAttributesView retain];
-      [self updateInspectorValues:nil];
+      NSLog(@"PCLibraryProject: error loading Inspector NIB!");
+      return nil;
     }
+    [projectAttributesView retain];
+    [self updateInspectorValues:nil];
+  }
 
   return projectAttributesView;
 }
 
-- (void)updateInspectorValues:(NSNotification *)aNotif 
+- (void)updateInspectorValues:(NSNotification *)aNotif
 {
 }
 

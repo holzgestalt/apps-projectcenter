@@ -1,27 +1,27 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2004-2014 Free Software Foundation
+ Copyright (C) 2004-2014 Free Software Foundation
 
-   Authors: Serg Stoyan
-            Riccardo Mottola
+ Authors: Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCLogController.h>
 #import <ProjectCenter/PCAddFilesPanel.h>
@@ -33,9 +33,9 @@ static PCAddFilesPanel *addFilesPanel = nil;
 + (PCAddFilesPanel *)addFilesPanel
 {
   if (addFilesPanel == nil)
-    {
-      addFilesPanel = [[self alloc] init];
-    }
+  {
+    addFilesPanel = [[self alloc] init];
+  }
 
   return addFilesPanel;
 }
@@ -63,8 +63,8 @@ static PCAddFilesPanel *addFilesPanel = nil;
   [fileTypeAccessaryView setBorderType:NSGrooveBorder];
   [fileTypeAccessaryView addSubview:fileTypePopup];
   [fileTypeAccessaryView sizeToFit];
-  [fileTypeAccessaryView setAutoresizingMask:NSViewMinXMargin 
-    | NSViewMaxXMargin];
+  [fileTypeAccessaryView setAutoresizingMask:NSViewMinXMargin
+   | NSViewMaxXMargin];
 
   // Panel
   [self setAllowsMultipleSelection:YES];
@@ -108,9 +108,9 @@ static PCAddFilesPanel *addFilesPanel = nil;
   NSString  *category = [fileTypePopup titleOfSelectedItem];
 
   if ([[self delegate] respondsToSelector:@selector(categoryChangedTo:)])
-    {
-      [[self delegate] categoryChangedTo:category];
-    }
+  {
+    [[self delegate] categoryChangedTo:category];
+  }
 }
 
 @end

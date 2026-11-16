@@ -29,7 +29,7 @@ static NSRect ObjectFrame(NSXMLElement *element)
 {
   NSXMLElement *frame = FrameElement(element);
   return NSMakeRect([Attribute(frame,@"x") doubleValue], [Attribute(frame,@"y") doubleValue],
-    [Attribute(frame,@"width") doubleValue], [Attribute(frame,@"height") doubleValue]);
+                    [Attribute(frame,@"width") doubleValue], [Attribute(frame,@"height") doubleValue]);
 }
 
 static NSXMLElement *TitleElement(NSXMLElement *element)
@@ -44,14 +44,14 @@ static NSXMLElement *TitleElement(NSXMLElement *element)
 static NSString *ObjectTitle(NSXMLElement *element)
 {
   return Attribute(TitleElement(element),@"title") ?: Attribute(element,@"userLabel")
-    ?: Attribute(element,@"customClass") ?: [element name];
+  ?: Attribute(element,@"customClass") ?: [element name];
 }
 
 /* Represent interface objects, skipping XML containers such as <subviews>.
  * Stable items let NSOutlineView preserve expansion across property edits. */
 @interface PCInterfaceItem : NSObject
 {
-@public
+  @public
   NSXMLElement *element;
   NSString *filePath;
   PCInterfaceItem *parent;
@@ -77,13 +77,13 @@ static NSString *ObjectTitle(NSXMLElement *element)
 {
   if (!element) return [[NSWorkspace sharedWorkspace] iconForFile:filePath];
   return [children count] ? [NSImage imageNamed:@"common_Folder"]
-    : [[NSWorkspace sharedWorkspace] iconForFileType:@"h"];
+  : [[NSWorkspace sharedWorkspace] iconForFileType:@"h"];
 }
 - (PCInterfaceItem *)itemForObject:(NSXMLElement *)object
 {
   if (object == element) return self;
   for (PCInterfaceItem *child in children)
-    { PCInterfaceItem *found = [child itemForObject:object]; if (found) return found; }
+  { PCInterfaceItem *found = [child itemForObject:object]; if (found) return found; }
   return nil;
 }
 @end
@@ -162,7 +162,7 @@ static NSTableCellView *InterfaceObjectCell(void)
 
 @interface PCInterfaceCanvas : NSView
 {
-@public
+  @public
   PCInterfaceEditor *editor;
   NSXMLElement *root, *selection;
   NSMutableArray *elements, *rects;
@@ -177,7 +177,7 @@ static NSTableCellView *InterfaceObjectCell(void)
 - (id)initWithFrame:(NSRect)frame
 {
   if ((self = [super initWithFrame:frame]))
-    { elements = [NSMutableArray new]; rects = [NSMutableArray new]; }
+  { elements = [NSMutableArray new]; rects = [NSMutableArray new]; }
   return self;
 }
 - (void)dealloc { [elements release]; [rects release]; [super dealloc]; }
@@ -191,20 +191,20 @@ static NSTableCellView *InterfaceObjectCell(void)
   if ([[root name] isEqual:@"window"])
     for (NSXMLNode *child in [root children])
       if ([child kind] == NSXMLElementKind && [Attribute((id)child,@"key") isEqual:@"contentView"])
-        { root = (id)child; break; }
+      { root = (id)child; break; }
   if ([[object name] isEqual:@"menuItem"])
-    {
-      root = (id)[object parent];
-      if ([[root name] isEqual:@"items"]) root = (id)[root parent];
-      for (NSXMLNode *child in [object children])
-        if ([[child name] isEqual:@"menu"]) { root = (id)child; break; }
-    }
+  {
+    root = (id)[object parent];
+    if ([[root name] isEqual:@"items"]) root = (id)[root parent];
+    for (NSXMLNode *child in [object children])
+      if ([[child name] isEqual:@"menu"]) { root = (id)child; break; }
+  }
   NSSize size = ObjectFrame(root).size;
   if ([[root name] isEqual:@"menu"])
-    {
-      NSArray *containers = [root elementsForName:@"items"];
-      if ([containers count]) size.height = [[[containers objectAtIndex:0] elementsForName:@"menuItem"] count]*26+60;
-    }
+  {
+    NSArray *containers = [root elementsForName:@"items"];
+    if ([containers count]) size.height = [[[containers objectAtIndex:0] elementsForName:@"menuItem"] count]*26+60;
+  }
   NSSize viewport = [[self enclosingScrollView] contentSize];
   [self setFrameSize:NSMakeSize(MAX(viewport.width,MAX(640,size.width+80)),MAX(viewport.height,MAX(480,size.height+80)))];
   [self setNeedsDisplay:YES];
@@ -214,31 +214,31 @@ static NSTableCellView *InterfaceObjectCell(void)
   NSRect rect = ObjectFrame(object);
   BOOL framed = FrameElement(object) != nil;
   if (framed)
+  {
+    rect.origin = isRoot ? origin : NSMakePoint(origin.x+rect.origin.x,origin.y+rect.origin.y);
+    rect.size.width = MAX(1,rect.size.width); rect.size.height = MAX(1,rect.size.height);
+    [elements addObject:object]; [rects addObject:[NSValue valueWithRect:rect]];
+    [(isRoot ? [NSColor windowBackgroundColor] : [NSColor controlBackgroundColor]) set];
+    NSRectFill(rect);
+    [[NSColor grayColor] set]; NSFrameRect(rect);
+    NSString *title = ObjectTitle(object);
+    if ([[object name] isEqual:@"button"])
     {
-      rect.origin = isRoot ? origin : NSMakePoint(origin.x+rect.origin.x,origin.y+rect.origin.y);
-      rect.size.width = MAX(1,rect.size.width); rect.size.height = MAX(1,rect.size.height);
-      [elements addObject:object]; [rects addObject:[NSValue valueWithRect:rect]];
-      [(isRoot ? [NSColor windowBackgroundColor] : [NSColor controlBackgroundColor]) set];
-      NSRectFill(rect);
-      [[NSColor grayColor] set]; NSFrameRect(rect);
-      NSString *title = ObjectTitle(object);
-      if ([[object name] isEqual:@"button"])
-        {
-          NSButtonCell *cell = [[[NSButtonCell alloc] initTextCell:title] autorelease];
-          [cell setBezelStyle:NSRoundedBezelStyle];
-          [cell drawWithFrame:rect inView:self];
-        }
-      else if ([[object name] isEqual:@"textField"])
-        {
-          NSTextFieldCell *cell = [[[NSTextFieldCell alloc] initTextCell:title] autorelease];
-          [cell setBezeled:YES]; [cell drawWithFrame:rect inView:self];
-        }
-      else if (!isRoot && rect.size.height >= 12)
-        [title drawInRect:NSInsetRect(rect,4,2) withAttributes:
-          [NSDictionary dictionaryWithObjectsAndKeys:[NSFont systemFontOfSize:11],NSFontAttributeName,
-          [NSColor controlTextColor],NSForegroundColorAttributeName,nil]];
-      origin = rect.origin;
+      NSButtonCell *cell = [[[NSButtonCell alloc] initTextCell:title] autorelease];
+      [cell setBezelStyle:NSRoundedBezelStyle];
+      [cell drawWithFrame:rect inView:self];
     }
+    else if ([[object name] isEqual:@"textField"])
+    {
+      NSTextFieldCell *cell = [[[NSTextFieldCell alloc] initTextCell:title] autorelease];
+      [cell setBezeled:YES]; [cell drawWithFrame:rect inView:self];
+    }
+    else if (!isRoot && rect.size.height >= 12)
+      [title drawInRect:NSInsetRect(rect,4,2) withAttributes:
+       [NSDictionary dictionaryWithObjectsAndKeys:[NSFont systemFontOfSize:11],NSFontAttributeName,
+        [NSColor controlTextColor],NSForegroundColorAttributeName,nil]];
+    origin = rect.origin;
+  }
   for (NSXMLNode *child in [object children])
     if ([child kind] == NSXMLElementKind)
       [self drawObject:(id)child atOrigin:origin isRoot:NO];
@@ -248,44 +248,44 @@ static NSTableCellView *InterfaceObjectCell(void)
   [[NSColor lightGrayColor] set]; NSRectFill(dirty);
   [elements removeAllObjects]; [rects removeAllObjects];
   if (root && FrameElement(root))
-    {
-      [self drawObject:root atOrigin:NSMakePoint(40,40) isRoot:YES];
-      for (NSUInteger i=0; i<[elements count]; i++)
-        if ([elements objectAtIndex:i] == selection)
-          { [[NSColor selectedControlColor] set]; NSFrameRectWithWidth([[rects objectAtIndex:i] rectValue],3); }
-    }
+  {
+    [self drawObject:root atOrigin:NSMakePoint(40,40) isRoot:YES];
+    for (NSUInteger i=0; i<[elements count]; i++)
+      if ([elements objectAtIndex:i] == selection)
+      { [[NSColor selectedControlColor] set]; NSFrameRectWithWidth([[rects objectAtIndex:i] rectValue],3); }
+  }
   else if ([[root name] isEqual:@"menu"])
+  {
+    NSArray *items = [[root elementsForName:@"items"] count] ?
+    [[[root elementsForName:@"items"] objectAtIndex:0] elementsForName:@"menuItem"] : [NSArray array];
+    CGFloat y = [self bounds].size.height-60;
+    [ObjectTitle(root) drawAtPoint:NSMakePoint(40,y) withAttributes:
+     [NSDictionary dictionaryWithObject:[NSFont boldSystemFontOfSize:14] forKey:NSFontAttributeName]];
+    for (NSXMLElement *item in items)
     {
-      NSArray *items = [[root elementsForName:@"items"] count] ?
-        [[[root elementsForName:@"items"] objectAtIndex:0] elementsForName:@"menuItem"] : [NSArray array];
-      CGFloat y = [self bounds].size.height-60;
-      [ObjectTitle(root) drawAtPoint:NSMakePoint(40,y) withAttributes:
-        [NSDictionary dictionaryWithObject:[NSFont boldSystemFontOfSize:14] forKey:NSFontAttributeName]];
-      for (NSXMLElement *item in items)
-        {
-          y -= 26; NSRect row = NSMakeRect(40,y,300,26);
-          [(item == selection ? [NSColor selectedControlColor] : [NSColor controlBackgroundColor]) set]; NSRectFill(row);
-          [elements addObject:item]; [rects addObject:[NSValue valueWithRect:row]];
-          if ([Attribute(item,@"isSeparatorItem") isEqual:@"YES"])
-            { [[NSColor grayColor] set]; NSRectFill(NSMakeRect(48,y+12,284,1)); }
-          else [ObjectTitle(item) drawInRect:NSInsetRect(row,8,4) withAttributes:nil];
-        }
+      y -= 26; NSRect row = NSMakeRect(40,y,300,26);
+      [(item == selection ? [NSColor selectedControlColor] : [NSColor controlBackgroundColor]) set]; NSRectFill(row);
+      [elements addObject:item]; [rects addObject:[NSValue valueWithRect:row]];
+      if ([Attribute(item,@"isSeparatorItem") isEqual:@"YES"])
+      { [[NSColor grayColor] set]; NSRectFill(NSMakeRect(48,y+12,284,1)); }
+      else [ObjectTitle(item) drawInRect:NSInsetRect(row,8,4) withAttributes:nil];
     }
+  }
   else
-    {
-      NSString *label = root ? ObjectTitle(root) : @"Select an object to inspect its interface.";
-      [label drawAtPoint:NSMakePoint(40,80) withAttributes:
-        [NSDictionary dictionaryWithObject:[NSFont systemFontOfSize:16] forKey:NSFontAttributeName]];
-      [@"Select a window or view in the object list to see its layout." drawAtPoint:NSMakePoint(40,50)
-        withAttributes:nil];
-    }
+  {
+    NSString *label = root ? ObjectTitle(root) : @"Select an object to inspect its interface.";
+    [label drawAtPoint:NSMakePoint(40,80) withAttributes:
+     [NSDictionary dictionaryWithObject:[NSFont systemFontOfSize:16] forKey:NSFontAttributeName]];
+    [@"Select a window or view in the object list to see its layout." drawAtPoint:NSMakePoint(40,50)
+                                                                   withAttributes:nil];
+  }
 }
 - (void)mouseDown:(NSEvent *)event
 {
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
   for (NSInteger i=[elements count]-1; i>=0; i--)
     if (NSPointInRect(point,[[rects objectAtIndex:i] rectValue]))
-      { [editor selectObject:[elements objectAtIndex:i]]; break; }
+    { [editor selectObject:[elements objectAtIndex:i]]; break; }
 }
 @end
 
@@ -313,12 +313,12 @@ static NSTableCellView *InterfaceObjectCell(void)
   NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:data options:NSXMLNodePreserveAll error:&error];
   if (!document || ![[[document rootElement] name] isEqual:@"document"]
       || ![Attribute([document rootElement],@"type") isEqual:@"com.apple.InterfaceBuilder3.Cocoa.XIB"])
-    {
-      [document release];
-      NSRunAlertPanel(@"Interface Editor",@"Cannot open %@ as a modern Cocoa XIB. %@",@"OK",nil,nil,
-        [_path lastPathComponent],error ? [error localizedDescription] : @"This XIB format is not supported.");
-      return NO;
-    }
+  {
+    [document release];
+    NSRunAlertPanel(@"Interface Editor",@"Cannot open %@ as a modern Cocoa XIB. %@",@"OK",nil,nil,
+                    [_path lastPathComponent],error ? [error localizedDescription] : @"This XIB format is not supported.");
+    return NO;
+  }
   [_document release]; _document = document;
   [_objects removeAllObjects]; [self collectObjects:[document rootElement]];
   [_rootItem release]; _rootItem = [PCInterfaceItem new];
@@ -331,16 +331,16 @@ static NSTableCellView *InterfaceObjectCell(void)
 {
   for (NSXMLNode *child in [element children])
     if ([child kind] == NSXMLElementKind)
+    {
+      PCInterfaceItem *container = parent;
+      if ([_objects indexOfObjectIdenticalTo:child] != NSNotFound)
       {
-        PCInterfaceItem *container = parent;
-        if ([_objects indexOfObjectIdenticalTo:child] != NSNotFound)
-          {
-            container = [[[PCInterfaceItem alloc] init] autorelease];
-            container->element = [(NSXMLElement *)child retain]; container->parent = parent;
-            [parent->children addObject:container];
-          }
-        [self addObjectsFromElement:(id)child toItem:container];
+        container = [[[PCInterfaceItem alloc] init] autorelease];
+        container->element = [(NSXMLElement *)child retain]; container->parent = parent;
+        [parent->children addObject:container];
       }
+      [self addObjectsFromElement:(id)child toItem:container];
+    }
 }
 - (id)openFileAtPath:(NSString *)path editorManager:(id)manager editable:(BOOL)editable
 {
@@ -374,15 +374,15 @@ static NSTableCellView *InterfaceObjectCell(void)
   NSArray *names = @[@"Title",@"X",@"Y",@"Width",@"Height"];
   CGFloat x = 8;
   for (NSUInteger i=0; i<5; i++)
-    {
-      CGFloat width = i == 0 ? 160 : 60;
-      NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(x,73,width,20)] autorelease];
-      [label setStringValue:[names objectAtIndex:i]]; [label setEditable:NO]; [label setBezeled:NO]; [label setDrawsBackground:NO];
-      [_component addSubview:label];
-      _fields[i] = [[[NSTextField alloc] initWithFrame:NSMakeRect(x,45,width,25)] autorelease];
-      [_fields[i] setTarget:self]; [_fields[i] setAction:@selector(applyProperties:)];
-      [_component addSubview:_fields[i]]; x += width+8;
-    }
+  {
+    CGFloat width = i == 0 ? 160 : 60;
+    NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(x,73,width,20)] autorelease];
+    [label setStringValue:[names objectAtIndex:i]]; [label setEditable:NO]; [label setBezeled:NO]; [label setDrawsBackground:NO];
+    [_component addSubview:label];
+    _fields[i] = [[[NSTextField alloc] initWithFrame:NSMakeRect(x,45,width,25)] autorelease];
+    [_fields[i] setTarget:self]; [_fields[i] setAction:@selector(applyProperties:)];
+    [_component addSubview:_fields[i]]; x += width+8;
+  }
   NSButton *apply = [[[NSButton alloc] initWithFrame:NSMakeRect(x,45,80,26)] autorelease];
   [apply setTitle:@"Apply"]; [apply setTarget:self]; [apply setAction:@selector(applyProperties:)];
   [apply setEnabled:editable]; [_component addSubview:apply];
@@ -431,13 +431,13 @@ static NSTableCellView *InterfaceObjectCell(void)
   if (item) [self revealItem:item->parent];
   NSInteger row = item ? [_tree rowForItem:item] : -1;
   if (row >= 0 && [_tree selectedRow] != row)
-    { [_tree selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO]; [_tree scrollRowToVisible:row]; }
+  { [_tree selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO]; [_tree scrollRowToVisible:row]; }
   NSXMLElement *frame = FrameElement(object);
   [_fields[0] setStringValue:Attribute(TitleElement(object),@"title") ?: @""];
   [_fields[0] setEnabled:_editable && [TitleElement(object) attributeForName:@"title"] != nil];
   NSArray *keys = @[@"x",@"y",@"width",@"height"];
   for (NSUInteger i=1; i<5; i++)
-    { [_fields[i] setStringValue:Attribute(frame,[keys objectAtIndex:i-1]) ?: @"0"]; [_fields[i] setEnabled:_editable && frame != nil]; }
+  { [_fields[i] setStringValue:Attribute(frame,[keys objectAtIndex:i-1]) ?: @"0"]; [_fields[i] setEnabled:_editable && frame != nil]; }
   [_status setStringValue:object ? [NSString stringWithFormat:@"%@ · %@ · Frame edits preserve existing Auto Layout constraints",[object name],Attribute(object,@"id") ?: @""] : @"No interface objects"];
   [(PCInterfaceCanvas *)_canvas showObject:object];
   _updatingSelection = NO;
@@ -448,23 +448,23 @@ static NSTableCellView *InterfaceObjectCell(void)
   NSXMLElement *frame = FrameElement(_selected);
   double values[4];
   for (NSUInteger i=0; frame && i<4; i++)
-    {
-      NSScanner *scanner = [NSScanner scannerWithString:[_fields[i+1] stringValue]];
-      if (![scanner scanDouble:&values[i]] || ![scanner isAtEnd] || !isfinite(values[i]) || (i>=2 && values[i]<0))
-        { NSRunAlertPanel(@"Interface Editor",@"Enter valid frame numbers and nonnegative dimensions.",@"OK",nil,nil); return; }
-    }
+  {
+    NSScanner *scanner = [NSScanner scannerWithString:[_fields[i+1] stringValue]];
+    if (![scanner scanDouble:&values[i]] || ![scanner isAtEnd] || !isfinite(values[i]) || (i>=2 && values[i]<0))
+    { NSRunAlertPanel(@"Interface Editor",@"Enter valid frame numbers and nonnegative dimensions.",@"OK",nil,nil); return; }
+  }
   BOOL changed = NO;
   if ([_fields[0] isEnabled] && ![Attribute(TitleElement(_selected),@"title") isEqual:[_fields[0] stringValue]])
-    { SetAttribute(TitleElement(_selected),@"title",[_fields[0] stringValue]); changed = YES; }
+  { SetAttribute(TitleElement(_selected),@"title",[_fields[0] stringValue]); changed = YES; }
   NSArray *keys = @[@"x",@"y",@"width",@"height"];
   for (NSUInteger i=0; frame && i<4; i++)
     if ([Attribute(frame,[keys objectAtIndex:i]) doubleValue] != values[i])
-      { SetAttribute(frame,[keys objectAtIndex:i],[NSString stringWithFormat:@"%.15g",values[i]]); changed = YES; }
+    { SetAttribute(frame,[keys objectAtIndex:i],[NSString stringWithFormat:@"%.15g",values[i]]); changed = YES; }
   if (changed)
-    {
-      [self setIsEdited:YES]; [_tree reloadData]; [self selectObject:_selected];
-      [[NSNotificationCenter defaultCenter] postNotificationName:PCEditorDidChangeNotification object:self];
-    }
+  {
+    [self setIsEdited:YES]; [_tree reloadData]; [self selectObject:_selected];
+    [[NSNotificationCenter defaultCenter] postNotificationName:PCEditorDidChangeNotification object:self];
+  }
 }
 - (NSView *)componentView { return _component; }
 - (NSView *)editorView { return _canvas; }
@@ -487,8 +487,8 @@ static NSTableCellView *InterfaceObjectCell(void)
 {
   if ([_manager respondsToSelector:@selector(project)] || !windowed || _window) return;
   _window = [[NSWindow alloc] initWithContentRect:NSMakeRect(100,100,900,600)
-    styleMask:NSTitledWindowMask|NSClosableWindowMask|NSResizableWindowMask|NSMiniaturizableWindowMask
-    backing:NSBackingStoreBuffered defer:NO];
+                                        styleMask:NSTitledWindowMask|NSClosableWindowMask|NSResizableWindowMask|NSMiniaturizableWindowMask
+                                          backing:NSBackingStoreBuffered defer:NO];
   [_window setReleasedWhenClosed:NO]; [_window setTitle:[_path lastPathComponent]];
   [_window setContentView:_component]; [_window setDelegate:(id)self];
 }
@@ -506,7 +506,7 @@ static NSTableCellView *InterfaceObjectCell(void)
   if (!_editable) return NO;
   NSError *error = nil;
   if (![[_document XMLData] writeToFile:path options:NSDataWritingAtomic error:&error])
-    { NSRunAlertPanel(@"Save Interface",@"%@",@"OK",nil,nil,[error localizedDescription]); return NO; }
+  { NSRunAlertPanel(@"Save Interface",@"%@",@"OK",nil,nil,[error localizedDescription]); return NO; }
   _edited = NO;
   [[NSNotificationCenter defaultCenter] postNotificationName:PCEditorDidSaveNotification object:self];
   return YES;
@@ -528,10 +528,10 @@ static NSTableCellView *InterfaceObjectCell(void)
 - (BOOL)close:(id)sender
 {
   if (_edited)
-    {
-      NSInteger result = NSRunAlertPanel(@"Save Interface",@"Save changes to %@?",@"Save",@"Cancel",@"Don't Save",[_path lastPathComponent]);
-      if (result == NSAlertAlternateReturn || (result == NSAlertDefaultReturn && ![self saveFile])) return NO;
-    }
+  {
+    NSInteger result = NSRunAlertPanel(@"Save Interface",@"Save changes to %@?",@"Save",@"Cancel",@"Don't Save",[_path lastPathComponent]);
+    if (result == NSAlertAlternateReturn || (result == NSAlertDefaultReturn && ![self saveFile])) return NO;
+  }
   return [self closeFile:sender save:NO];
 }
 @end

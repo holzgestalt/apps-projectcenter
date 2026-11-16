@@ -1,26 +1,26 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2005 Free Software Foundation
+ Copyright (C) 2005 Free Software Foundation
 
-   Authors: Serg Stoyan
+ Authors: Serg Stoyan
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <AppKit/AppKit.h>
 
@@ -34,10 +34,10 @@
 {
   filePath = nil;
   [self setRefusesFirstResponder:YES];
-//  [self setEditable:NO]; // prevents dragging
-//  [self setImage:[NSImage imageNamed:@"ProjectCenter"]];
-  [self 
-    registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+  //  [self setEditable:NO]; // prevents dragging
+  //  [self setImage:[NSImage imageNamed:@"ProjectCenter"]];
+  [self
+   registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
 }
 
 - (id)initWithFrame:(NSRect)frameRect
@@ -46,8 +46,8 @@
 
   filePath = nil;
   [self setRefusesFirstResponder:YES];
-//  [self setEditable:NO]; // prevents dragging
-//  [self setImage:[NSImage imageNamed:@"ProjectCenter"]];
+  //  [self setEditable:NO]; // prevents dragging
+  //  [self setImage:[NSImage imageNamed:@"ProjectCenter"]];
 
   return self;
 }
@@ -80,21 +80,21 @@
 - (void)updateIcon
 {
   if (delegate)
+  {
+    if ([delegate respondsToSelector:@selector(fileNameIconImage)])
     {
-      if ([delegate respondsToSelector:@selector(fileNameIconImage)])
-	{
-	  [self setImage:[delegate fileNameIconImage]];
-	}
-      if ((fileNameField != nil) &&
-	  [delegate respondsToSelector:@selector(fileNameIconTitle)])
-	{
-	  [fileNameField setStringValue:[delegate fileNameIconTitle]];
-	}
-      if ([delegate respondsToSelector:@selector(fileNameIconPath)])
-	{
-	  ASSIGN(filePath, [delegate fileNameIconPath]);
-	}
+      [self setImage:[delegate fileNameIconImage]];
     }
+    if ((fileNameField != nil) &&
+        [delegate respondsToSelector:@selector(fileNameIconTitle)])
+    {
+      [fileNameField setStringValue:[delegate fileNameIconTitle]];
+    }
+    if ([delegate respondsToSelector:@selector(fileNameIconPath)])
+    {
+      ASSIGN(filePath, [delegate fileNameIconPath]);
+    }
+  }
 }
 
 // --- Drag and drop
@@ -106,22 +106,22 @@
   NSPoint      dragPosition;
 
   [pboard declareTypes:[NSArray arrayWithObject:NSFilenamesPboardType]
-		 owner:nil];
+                 owner:nil];
   [pboard setPropertyList:fileList forType:NSFilenamesPboardType];
 
   // Start the drag operation
   dragPosition = [self convertPoint:[theEvent locationInWindow]
-			   fromView:nil];
+                           fromView:nil];
   dragPosition.x -= 16;
   dragPosition.y -= 16;
 
   [self dragImage:[self image]
-	       at:dragPosition
-	   offset:NSZeroSize
-	    event:theEvent
+               at:dragPosition
+           offset:NSZeroSize
+            event:theEvent
        pasteboard:pboard
-	   source:self
-	slideBack:YES];
+           source:self
+        slideBack:YES];
 }
 
 // --- NSDraggingDestination protocol methods
@@ -132,23 +132,23 @@
   NSArray      *paths = [pb propertyListForType:NSFilenamesPboardType];
   NSDragOperation draggingOp = NSDragOperationNone;
 
-//  NSLog(@"Dragging entered: %@", paths);
+  //  NSLog(@"Dragging entered: %@", paths);
 
   if (![paths isKindOfClass:[NSArray class]] || [paths count] == 0)
-    {
-      return draggingOp;
-    }
+  {
+    return draggingOp;
+  }
 
-  if (delegate && 
+  if (delegate &&
       [delegate respondsToSelector:@selector(canPerformDraggingOf:)] &&
       [delegate canPerformDraggingOf:paths] == YES)
-    {
-      draggingOp = NSDragOperationCopy;
-    }
+  {
+    draggingOp = NSDragOperationCopy;
+  }
 
   if (draggingOp == NSDragOperationCopy)
-    { // TODO: Change icon to icon that shows open state of destination
-    }
+  { // TODO: Change icon to icon that shows open state of destination
+  }
 
   return draggingOp;
 }
@@ -166,11 +166,11 @@
 
   NSLog(@"Prepare for drag operation");
 
-  if (delegate && 
+  if (delegate &&
       [delegate respondsToSelector:@selector(prepareForDraggingOf:)])
-    {
-      return [delegate prepareForDraggingOf:paths];
-    }
+  {
+    return [delegate prepareForDraggingOf:paths];
+  }
   return YES;
 }
 
@@ -181,11 +181,11 @@
 
   NSLog(@"performDragOperation: %@", paths);
 
-  if (delegate && 
+  if (delegate &&
       [delegate respondsToSelector:@selector(performDraggingOf:)])
-    {
-      return [delegate performDraggingOf:paths];
-    }
+  {
+    return [delegate performDraggingOf:paths];
+  }
 
   return YES;
 }
@@ -197,11 +197,11 @@
 
   NSLog(@"Conclude drag operation");
 
-  if (delegate && 
+  if (delegate &&
       [delegate respondsToSelector:@selector(concludeDraggingOf:)])
-    {
-      [delegate concludeDraggingOf:paths];
-    }
+  {
+    [delegate concludeDraggingOf:paths];
+  }
 }
 
 // --- NSDraggingSource protocol methods

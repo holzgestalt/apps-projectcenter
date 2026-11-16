@@ -1,25 +1,25 @@
 /*
-**  PCDebugger
-**
-**  Copyright (c) 2008-2021
-**
-**  Author: Gregory Casamento <greg_casamento@yahoo.com>
-**          Riccardo Mottola <rm@gnu.org>
-**
-**  This program is free software; you can redistribute it and/or modify
-**  it under the terms of the GNU General Public License as published by
-**  the Free Software Foundation; either version 2 of the License, or
-**  (at your option) any later version.
-**
-**  This program is distributed in the hope that it will be useful,
-**  but WITHOUT ANY WARRANTY; without even the implied warranty of
-**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**  GNU General Public License for more details.
-**
-**  You should have received a copy of the GNU General Public License
-**  along with this program; if not, write to the Free Software
-**  Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
-*/
+ **  PCDebugger
+ **
+ **  Copyright (c) 2008-2021
+ **
+ **  Author: Gregory Casamento <greg_casamento@yahoo.com>
+ **          Riccardo Mottola <rm@gnu.org>
+ **
+ **  This program is free software; you can redistribute it and/or modify
+ **  it under the terms of the GNU General Public License as published by
+ **  the Free Software Foundation; either version 2 of the License, or
+ **  (at your option) any later version.
+ **
+ **  This program is distributed in the hope that it will be useful,
+ **  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ **  GNU General Public License for more details.
+ **
+ **  You should have received a copy of the GNU General Public License
+ **  along with this program; if not, write to the Free Software
+ **  Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
+ */
 
 #import <stdio.h>
 
@@ -86,8 +86,8 @@ extern NSString *PCDBDebuggerStartedNotification;
 - (void)updateEditor;
 - (void)handleBreakpointNotification:(NSNotification *)notification;
 - (void)recordBreakpointNumber:(NSString *)number
-			   file:(NSString *)file
-			   line:(NSUInteger)line;
+                          file:(NSString *)file
+                          line:(NSUInteger)line;
 - (void)removeBreakpointNumber:(NSString *)number;
 
 /* Called by the debugger wrapper */

@@ -1,28 +1,28 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2025 Free Software Foundation
+ Copyright (C) 2000-2025 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Sergii Stoian
-            Riccardo Mottola
+ Authors: Philippe C.D. Robert
+ Sergii Stoian
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCProjectBuilderOptions.h>
 
@@ -32,40 +32,40 @@
 
 @implementation PCProjectBuilderOptions
 
-- (void)_setStateForButton:(id)button 
-		       key:(NSString *)key
-	      defaultState:(int)dState
+- (void)_setStateForButton:(id)button
+                       key:(NSString *)key
+              defaultState:(int)dState
 {
   NSString *value = [[project projectDict] objectForKey:key];
   int      state;
 
   if (value == nil)
-    {
-      state = dState;
-    }
+  {
+    state = dState;
+  }
   else
-    {
-      if ([value isEqualToString:@"YES"])
-	state = NSOnState;
-      else
-	state = NSOffState;
-    }
+  {
+    if ([value isEqualToString:@"YES"])
+      state = NSOnState;
+    else
+      state = NSOffState;
+  }
   [button setState:state];
 }
 
 - (id)initWithProject:(PCProject *)aProject delegate:(id)aDelegate
 {
   if ((self = [super init]))
-    {
-      project = aProject;
-      delegate = aDelegate;
+  {
+    project = aProject;
+    delegate = aDelegate;
 
-      [[NSNotificationCenter defaultCenter]
-	addObserver:self
-	   selector:@selector(loadProjectProperties:)
-	       name:PCProjectDictDidChangeNotification
-	     object:nil];
-    }
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(loadProjectProperties:)
+     name:PCProjectDictDidChangeNotification
+     object:nil];
+  }
 
   return self;
 }
@@ -96,20 +96,20 @@
   NSRect opRect;
 
   if (!optionsPanel)
+  {
+    if ([NSBundle loadNibNamed:@"BuilderOptions" owner:self] == NO)
     {
-      if ([NSBundle loadNibNamed:@"BuilderOptions" owner:self] == NO)
-	{
-	  PCLogError(self, @"error loading BuilderOptions NIB file!");
-	  return;
-	}
-
+      PCLogError(self, @"error loading BuilderOptions NIB file!");
+      return;
     }
 
+  }
+
   opRect = [optionsPanel frame];
-  opRect.origin.x = builderRect.origin.x + 
-    (builderRect.size.width - opRect.size.width)/2;
-  opRect.origin.y = builderRect.origin.y + 
-    (builderRect.size.height - opRect.size.height)/2;
+  opRect.origin.x = builderRect.origin.x +
+  (builderRect.size.width - opRect.size.width)/2;
+  opRect.origin.y = builderRect.origin.y +
+  (builderRect.size.height - opRect.size.height)/2;
   [optionsPanel setFrame:opRect display:NO];
 
   [optionsPanel makeKeyAndOrderFront:nil];
@@ -119,9 +119,9 @@
 - (NSString *)buildTarget
 {
   if (targetPopup)
-    {
-      return [targetPopup titleOfSelectedItem];
-    }
+  {
+    return [targetPopup titleOfSelectedItem];
+  }
 
   return nil;
 }
@@ -129,16 +129,16 @@
 - (void)optionsPopupChanged:(id)sender
 {
   if (sender == targetPopup)
-    {
-      [delegate targetDidSet:[targetPopup titleOfSelectedItem]];
-    }
+  {
+    [delegate targetDidSet:[targetPopup titleOfSelectedItem]];
+  }
   else
-    {
-      NSInteger tag;
+  {
+    NSInteger tag;
 
-      tag = [[parallelismPopup selectedItem] tag];
-      [project setProjectDictObject:[NSNumber numberWithInt:tag] forKey: PCBuilderParallelism notify:NO];
-    }
+    tag = [[parallelismPopup selectedItem] tag];
+    [project setProjectDictObject:[NSNumber numberWithInt:tag] forKey: PCBuilderParallelism notify:NO];
+  }
 }
 
 - (void)controlTextDidEndEditing:(NSNotification *)aNotif
@@ -150,7 +150,7 @@
     return;
 
   args = [[[buildArgsField stringValue] componentsSeparatedByString:@" "]
-    mutableCopy];
+          mutableCopy];
   [args removeObject:@""];
   [args removeObject:@" "];
 
@@ -165,9 +165,9 @@
   NSString *key;
 
   if (sender == verboseButton)
-      key = PCBuilderVerbose;
+    key = PCBuilderVerbose;
   if (sender == debugButton)
-      key = PCBuilderDebug;
+    key = PCBuilderDebug;
   if (sender == stripButton)
     key = PCBuilderStrip;
   if (sender == sharedLibsButton)
@@ -190,31 +190,31 @@
   // Setup build arguments field
   args = [[project projectDict] objectForKey:PCBuilderArguments];
   if ([args isKindOfClass:[NSArray class]])
-    {
-      [buildArgsField setStringValue:[args componentsJoinedByString:@" "]];
-    }
+  {
+    [buildArgsField setStringValue:[args componentsJoinedByString:@" "]];
+  }
   else if ([args isKindOfClass:[NSString class]])
-    {
-      [buildArgsField setStringValue:args];
-    }
+  {
+    [buildArgsField setStringValue:args];
+  }
   else
-    {
-      [buildArgsField setStringValue:@""];
-    }
+  {
+    [buildArgsField setStringValue:@""];
+  }
 
   // Setup option buttons
   [self _setStateForButton:verboseButton
-		       key:PCBuilderVerbose
-	      defaultState:NSOffState];
+                       key:PCBuilderVerbose
+              defaultState:NSOffState];
   [self _setStateForButton:debugButton
-		       key:PCBuilderDebug
-	      defaultState:NSOnState];
+                       key:PCBuilderDebug
+              defaultState:NSOnState];
   [self _setStateForButton:stripButton
-		       key:PCBuilderStrip
-	      defaultState:NSOffState];
+                       key:PCBuilderStrip
+              defaultState:NSOffState];
   [self _setStateForButton:sharedLibsButton
-		       key:PCBuilderSharedLibs
-	      defaultState:NSOnState];
+                       key:PCBuilderSharedLibs
+              defaultState:NSOnState];
 }
 
 @end

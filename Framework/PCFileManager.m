@@ -1,28 +1,28 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2022 Free Software Foundation
+ Copyright (C) 2000-2022 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
-	    Riccardo Mottola
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCFileManager.h>
@@ -46,9 +46,9 @@ static PCFileManager *_mgr = nil;
 + (PCFileManager *)defaultManager
 {
   if (_mgr == nil)
-    {
-      _mgr = [[self alloc] init];
-    }
+  {
+    _mgr = [[self alloc] init];
+  }
 
   return _mgr;
 }
@@ -59,10 +59,10 @@ static PCFileManager *_mgr = nil;
 
 - (id)initWithProjectManager:(PCProjectManager *)aProjectManager
 {
-  if ((self = [super init])) 
-    {
-      projectManager = aProjectManager;
-    }
+  if ((self = [super init]))
+  {
+    projectManager = aProjectManager;
+  }
   return self;
 }
 
@@ -73,17 +73,17 @@ static PCFileManager *_mgr = nil;
 #endif
 
   if (addFilesPanel)
-    {
-      RELEASE(addFilesPanel);
-    }
-  
+  {
+    RELEASE(addFilesPanel);
+  }
+
   [super dealloc];
 }
 
 // ===========================================================================
 // ==== NSFileManager delegate methods
 // ===========================================================================
-- (BOOL)     fileManager:(NSFileManager *)manager 
+- (BOOL)     fileManager:(NSFileManager *)manager
  shouldProceedAfterError:(NSDictionary *)errorDict
 {
   NSLog(@"FM error is: %@", [errorDict objectForKey:@"Error"]);
@@ -108,32 +108,32 @@ static PCFileManager *_mgr = nil;
    * _path = @"".
    */
   isDir = NO;
-  while (_path != nil  
-	 &&  ![_path isEqualToString: _oldPath]
-	 &&  ![fm fileExistsAtPath:_path isDirectory:&isDir])
-    {
-      [pathArray addObject:[_path lastPathComponent]];
-      _oldPath = _path;
-      _path = [_path stringByDeletingLastPathComponent];
-    }
+  while (_path != nil
+         &&  ![_path isEqualToString: _oldPath]
+         &&  ![fm fileExistsAtPath:_path isDirectory:&isDir])
+  {
+    [pathArray addObject:[_path lastPathComponent]];
+    _oldPath = _path;
+    _path = [_path stringByDeletingLastPathComponent];
+  }
 
   if (!isDir)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   if ([_path length] != [path length])
+  {
+    for (i = [pathArray count]-1; i >= 0; i--)
     {
-      for (i = [pathArray count]-1; i >= 0; i--)
-	{
-	  _path = 
-	    [_path stringByAppendingPathComponent:[pathArray objectAtIndex:i]];
-	  if ([fm createDirectoryAtPath:_path attributes:nil] == NO)
-	    {
-	      return NO;
-	    }
-	}
+      _path =
+      [_path stringByAppendingPathComponent:[pathArray objectAtIndex:i]];
+      if ([fm createDirectoryAtPath:_path attributes:nil] == NO)
+      {
+        return NO;
+      }
     }
+  }
 
   return YES;
 }
@@ -144,29 +144,29 @@ static PCFileManager *_mgr = nil;
   NSString      *directoryPath = nil;
 
   if (!file)
+  {
+    return NO;
+  }
+
+  if (![fm fileExistsAtPath:toFile])
+  {
+    directoryPath = [toFile stringByDeletingLastPathComponent];
+    if ([self createDirectoriesIfNeededAtPath:directoryPath] == NO)
     {
+      NSRunAlertPanel(@"Copy File",
+                      @"Couldn't create directories at path %@",
+                      @"Ok",nil,nil, directoryPath);
       return NO;
     }
 
-  if (![fm fileExistsAtPath:toFile]) 
+    if ([fm copyPath:file toPath:toFile handler:self] == NO)
     {
-      directoryPath = [toFile stringByDeletingLastPathComponent];
-      if ([self createDirectoriesIfNeededAtPath:directoryPath] == NO)
-	{
-	  NSRunAlertPanel(@"Copy File",
-			  @"Couldn't create directories at path %@",
-			  @"Ok",nil,nil, directoryPath);
-	  return NO;
-	}
-
-      if ([fm copyPath:file toPath:toFile handler:self] == NO)
-	{
-	  NSRunAlertPanel(@"Copy File",
-			  @"Couldn't copy file %@ to %@",
-			  @"Ok",nil,nil, file, toFile);
-	  return NO;
-	}
+      NSRunAlertPanel(@"Copy File",
+                      @"Couldn't copy file %@ to %@",
+                      @"Ok",nil,nil, file, toFile);
+      return NO;
     }
+  }
 
   return YES;
 }
@@ -176,37 +176,37 @@ static PCFileManager *_mgr = nil;
   NSString *path = nil;
 
   if (!file)
-    {
-      return NO;
-    }
-    
+  {
+    return NO;
+  }
+
   path = [directory stringByAppendingPathComponent:[file lastPathComponent]];
 
   if (![self copyFile:file toFile:path])
-    { // No need to open aler panel here
-      return NO;
-    }
+  { // No need to open aler panel here
+    return NO;
+  }
 
   return YES;
 }
 
-- (BOOL)copyFile:(NSString *)file 
+- (BOOL)copyFile:(NSString *)file
    fromDirectory:(NSString *)fromDir
    intoDirectory:(NSString *)toDir
 {
   NSString *path = nil;
 
   if (!file || !fromDir || !toDir)
-    {
-      return NO;
-    }
-    
+  {
+    return NO;
+  }
+
   path = [fromDir stringByAppendingPathComponent:[file lastPathComponent]];
 
   if (![self copyFile:path intoDirectory:toDir])
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   return YES;
 }
@@ -217,18 +217,18 @@ static PCFileManager *_mgr = nil;
   NSString     *file = nil;
 
   if (!files)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   enumerator = [files objectEnumerator];
   while ((file = [enumerator nextObject]))
+  {
+    if ([self copyFile:file intoDirectory:directory] == NO)
     {
-      if ([self copyFile:file intoDirectory:directory] == NO)
-	{
-	  return NO;
-	}
+      return NO;
     }
+  }
 
   return YES;
 }
@@ -238,16 +238,16 @@ static PCFileManager *_mgr = nil;
   NSFileManager *fm = [NSFileManager defaultManager];
 
   while ([[fm directoryContentsAtPath:path] count] == 0)
+  {
+    if ([fm removeFileAtPath:path handler:nil] == NO)
     {
-      if ([fm removeFileAtPath:path handler:nil] == NO)
-	{
-	  NSRunAlertPanel(@"Remove Directory",
-			  @"Couldn't remove empty directory at path %@",
-			  @"Ok",nil,nil, path);
-	  return NO;
-	}
-      path = [path stringByDeletingLastPathComponent];
+      NSRunAlertPanel(@"Remove Directory",
+                      @"Couldn't remove empty directory at path %@",
+                      @"Ok",nil,nil, path);
+      return NO;
     }
+    path = [path stringByDeletingLastPathComponent];
+  }
 
   return YES;
 }
@@ -258,25 +258,25 @@ static PCFileManager *_mgr = nil;
 {
   NSString      *path = nil;
   NSFileManager *fm = [NSFileManager defaultManager];
-  
+
   if (!file)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   path = [directory stringByAppendingPathComponent:file];
   if (![fm removeFileAtPath:path handler:nil])
-    {
-      NSRunAlertPanel(@"Remove File",
-		      @"Couldn't remove file at path %@",
-		      @"Ok",nil,nil, path);
-      return NO;
-    }
+  {
+    NSRunAlertPanel(@"Remove File",
+                    @"Couldn't remove file at path %@",
+                    @"Ok",nil,nil, path);
+    return NO;
+  }
 
   if (removeDirs)
-    {
-      [self removeDirectoriesIfEmptyAtPath:directory];
-    }
+  {
+    [self removeDirectoriesIfEmptyAtPath:directory];
+  }
 
   return YES;
 }
@@ -284,8 +284,8 @@ static PCFileManager *_mgr = nil;
 - (BOOL)removeFileAtPath:(NSString *)file removeDirsIfEmpty:(BOOL)removeDirs
 {
   return [self removeFile:[file lastPathComponent]
-	    fromDirectory:[file stringByDeletingLastPathComponent]
-	removeDirsIfEmpty:removeDirs];
+            fromDirectory:[file stringByDeletingLastPathComponent]
+          removeDirsIfEmpty:removeDirs];
 }
 
 - (BOOL)removeFiles:(NSArray *)files
@@ -296,20 +296,20 @@ static PCFileManager *_mgr = nil;
   NSString     *file = nil;
 
   if (!files)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   filesEnum = [files objectEnumerator];
   while ((file = [filesEnum nextObject]))
+  {
+    if ([self removeFile:file
+           fromDirectory:directory
+         removeDirsIfEmpty:removeDirs] == NO)
     {
-      if ([self removeFile:file 
-	     fromDirectory:directory 
-	 removeDirsIfEmpty:removeDirs] == NO)
-	{
-	  return NO;
-	}
+      return NO;
     }
+  }
 
   return YES;
 }
@@ -317,16 +317,16 @@ static PCFileManager *_mgr = nil;
 - (BOOL)moveFile:(NSString *)file intoDirectory:(NSString *)directory
 {
   if ([self copyFile:file intoDirectory:directory] == YES)
-    {
-      [self removeFileAtPath:file removeDirsIfEmpty:YES];
-    }
+  {
+    [self removeFileAtPath:file removeDirsIfEmpty:YES];
+  }
   else
-    {
-      NSRunAlertPanel(@"Move File",
-		      @"Couldn't move file %@ to %@",
-		      @"Ok",nil,nil, file, directory);
-      return NO;
-    }
+  {
+    NSRunAlertPanel(@"Move File",
+                    @"Couldn't move file %@ to %@",
+                    @"Ok",nil,nil, file, directory);
+    return NO;
+  }
 
   return YES;
 }
@@ -346,20 +346,20 @@ static PCFileManager *_mgr = nil;
   pathEnumerator = [NSSearchPathForDirectoriesInDomains(NSDeveloperDirectory, NSAllDomainsMask, YES) objectEnumerator];
 
   while (nil != (directory = [pathEnumerator nextObject]))
-    {
-      NSEnumerator *candidateEnumerator = [candidates objectEnumerator];
-      NSString     *candidate;
+  {
+    NSEnumerator *candidateEnumerator = [candidates objectEnumerator];
+    NSString     *candidate;
 
-      while (nil != (candidate = [candidateEnumerator nextObject]))
-        {
-          NSString *path = [directory stringByAppendingPathComponent: candidate];
-          
-          if ([manager isExecutableFileAtPath: path])
-	    {
-	      return path;
-            }
-        }
+    while (nil != (candidate = [candidateEnumerator nextObject]))
+    {
+      NSString *path = [directory stringByAppendingPathComponent: candidate];
+
+      if ([manager isExecutableFileAtPath: path])
+      {
+        return path;
+      }
     }
+  }
   return nil;
 }
 
@@ -373,8 +373,8 @@ static PCFileManager *_mgr = nil;
 // ===========================================================================
 
 - (id)_panelForOperation:(int)op
-		   title:(NSString *)title
-		 accView:(NSView *)accessoryView
+                   title:(NSString *)title
+                 accView:(NSView *)accessoryView
 {
   id <PCPreferences> prefs = [projectManager prefController];
   NSString           *lastOpenDir;
@@ -383,18 +383,18 @@ static PCFileManager *_mgr = nil;
   operation = op;
 
   switch (op)
-    {
-    case PCOpenFileOperation: 
+  {
+    case PCOpenFileOperation:
       panel = [NSOpenPanel openPanel];
       [panel setCanChooseFiles:YES];
       [panel setCanChooseDirectories:NO];
       lastOpenDir = [prefs stringForKey:@"FileOpenLastDirectory"];
       break;
-    case PCSaveFileOperation: 
+    case PCSaveFileOperation:
       panel = [NSSavePanel savePanel];
       lastOpenDir = [prefs stringForKey:@"FileSaveLastDirectory"];
       break;
-    case PCOpenProjectOperation: 
+    case PCOpenProjectOperation:
       panel = [NSOpenPanel openPanel];
       [panel setAllowsMultipleSelection:NO];
       /* Xcode and ProjectCenter wrappers are directories. A folder-only
@@ -406,43 +406,43 @@ static PCFileManager *_mgr = nil;
       [panel setTreatsFilePackagesAsDirectories:YES];
       lastOpenDir = [prefs stringForKey:@"ProjectOpenLastDirectory"];
       break;
-    case PCOpenDirectoryOperation: 
+    case PCOpenDirectoryOperation:
       panel = [NSOpenPanel openPanel];
       [panel setCanChooseFiles:NO];
       [panel setCanChooseDirectories:YES];
       lastOpenDir = [prefs stringForKey:@"FileOpenLastDirectory"];
       break;
-    case PCAddFileOperation: 
+    case PCAddFileOperation:
       if (addFilesPanel == nil)
-	{
-	  addFilesPanel = [PCAddFilesPanel addFilesPanel];
-	  [addFilesPanel setTreatsFilePackagesAsDirectories: YES]; 
-	}
+      {
+        addFilesPanel = [PCAddFilesPanel addFilesPanel];
+        [addFilesPanel setTreatsFilePackagesAsDirectories: YES];
+      }
       panel = addFilesPanel;
       lastOpenDir = [prefs stringForKey:@"FileAddLastDirectory"];
       if (lastOpenDir == nil)
-	{
-	  PCProject *pr = [projectManager activeProject];
-	  NSString *prPathRoot = [pr projectPath];
-	  lastOpenDir = prPathRoot;
-	}
+      {
+        PCProject *pr = [projectManager activeProject];
+        NSString *prPathRoot = [pr projectPath];
+        lastOpenDir = prPathRoot;
+      }
       break;
     default:
       return nil;
       break;
-    }
+  }
 
   if (!lastOpenDir)
-    {
-      lastOpenDir = NSHomeDirectory();
-    }
+  {
+    lastOpenDir = NSHomeDirectory();
+  }
   [panel setDirectory:lastOpenDir];
   [panel setDelegate:(op == PCAddFileOperation ? self : nil)];
 
   if (title != nil)
-    {
-      [panel setTitle:title];
-    }
+  {
+    [panel setTitle:title];
+  }
   [panel setAccessoryView:accessoryView];
 
 
@@ -455,34 +455,34 @@ static PCFileManager *_mgr = nil;
   NSString           *key = nil;
 
   switch (operation)
-    {
-    case PCOpenFileOperation: 
+  {
+    case PCOpenFileOperation:
       key = @"FileOpenLastDirectory";
       break;
-    case PCSaveFileOperation: 
+    case PCSaveFileOperation:
       key = @"FileSaveLastDirectory";
       break;
-    case PCOpenProjectOperation: 
+    case PCOpenProjectOperation:
       key = @"ProjectOpenLastDirectory";
       break;
-    case PCAddFileOperation: 
+    case PCAddFileOperation:
       key = @"FileAddLastDirectory";
       break;
     default:
       break;
-    }
+  }
 
   if (key != nil)
-    {
-      [prefs setString:[panel directory] forKey:key notify:NO];
-    }
+  {
+    [prefs setString:[panel directory] forKey:key notify:NO];
+  }
 }
 
 - (NSMutableArray *)filesOfTypes:(NSArray *)types
-		       operation:(int)op
-			multiple:(BOOL)yn
-			   title:(NSString *)title
-			 accView:(NSView *)accessoryView
+                       operation:(int)op
+                        multiple:(BOOL)yn
+                           title:(NSString *)title
+                         accView:(NSView *)accessoryView
 {
   id             panel;
   NSMutableArray *fileList = [[NSMutableArray alloc] init];
@@ -491,57 +491,57 @@ static PCFileManager *_mgr = nil;
   panel = [self _panelForOperation:op title:title accView:accessoryView];
   [panel setAllowedFileTypes:types];
 
-  if ((op == PCOpenFileOperation) || 
-      (op == PCOpenProjectOperation) || 
+  if ((op == PCOpenFileOperation) ||
+      (op == PCOpenProjectOperation) ||
       (op == PCOpenDirectoryOperation))
+  {
+    if ((result = [panel runModalForTypes:types]) == NSOKButton)
     {
-      if ((result = [panel runModalForTypes:types]) == NSOKButton) 
-	{
-	  [fileList addObjectsFromArray:[panel filenames]];
-	  if (op == PCOpenProjectOperation)
-	    {
-	      NSString *path = [fileList firstObject];
-	      NSFileManager *fm = [NSFileManager defaultManager];
-	      NSString *extension = [path pathExtension];
-	      BOOL valid = ([extension isEqual:@"xcodeproj"] &&
-	        [fm isReadableFileAtPath:[path stringByAppendingPathComponent:@"project.pbxproj"]]) ||
-	        [fm isReadableFileAtPath:[path stringByAppendingPathComponent:@"PC.project"]];
-	      if (!valid)
-	        {
-	          NSRunAlertPanel(@"Open Project", @"Choose an .xcodeproj or .pcproj folder, or a folder containing PC.project.", @"OK", nil, nil);
-	          [fileList release];
-	          return nil;
-	        }
-	    }
-	}
+      [fileList addObjectsFromArray:[panel filenames]];
+      if (op == PCOpenProjectOperation)
+      {
+        NSString *path = [fileList firstObject];
+        NSFileManager *fm = [NSFileManager defaultManager];
+        NSString *extension = [path pathExtension];
+        BOOL valid = ([extension isEqual:@"xcodeproj"] &&
+                      [fm isReadableFileAtPath:[path stringByAppendingPathComponent:@"project.pbxproj"]]) ||
+        [fm isReadableFileAtPath:[path stringByAppendingPathComponent:@"PC.project"]];
+        if (!valid)
+        {
+          NSRunAlertPanel(@"Open Project", @"Choose an .xcodeproj or .pcproj folder, or a folder containing PC.project.", @"OK", nil, nil);
+          [fileList release];
+          return nil;
+        }
+      }
     }
+  }
   else if (op == PCSaveFileOperation)
+  {
+    if ((result = [panel runModal]) == NSOKButton)
     {
-      if ((result = [panel runModal]) == NSOKButton) 
-	{
-	  [fileList addObject:[panel filename]];
-	}
+      [fileList addObject:[panel filename]];
     }
+  }
   else if (op == PCAddFileOperation)
+  {
+    PCProject *project = [projectManager activeProject];
+    NSString  *selectedCategory = nil;
+
+    [panel setCategories:[project rootCategories]];
+    selectedCategory = [[project projectBrowser] nameOfSelectedCategory];
+    [panel selectCategory:selectedCategory];
+
+    if ((result = [panel runModalForTypes:types]) == NSOKButton)
     {
-      PCProject *project = [projectManager activeProject];
-      NSString  *selectedCategory = nil;
-
-      [panel setCategories:[project rootCategories]];
-      selectedCategory = [[project projectBrowser] nameOfSelectedCategory];
-      [panel selectCategory:selectedCategory];
-
-      if ((result = [panel runModalForTypes:types]) == NSOKButton) 
-	{
-	  [fileList addObjectsFromArray:[panel filenames]];
-	}
+      [fileList addObjectsFromArray:[panel filenames]];
     }
+  }
 
   if (result == NSOKButton)
-    {
-      [self _saveLastDirectoryForPanel:panel];
-      return [fileList autorelease];
-    }
+  {
+    [self _saveLastDirectoryForPanel:panel];
+    return [fileList autorelease];
+  }
 
   return nil;
 }
@@ -559,8 +559,8 @@ static PCFileManager *_mgr = nil;
 
   [addFilesPanel setTitle:[NSString stringWithFormat:@"Add %@",category]];
 
-  fileTypes = [project 
-    fileTypesForCategoryKey:[project keyForCategory:category]];
+  fileTypes = [project
+               fileTypesForCategoryKey:[project keyForCategory:category]];
   [addFilesPanel setFileTypes:fileTypes];
 
   // Set project browser path
@@ -573,7 +573,7 @@ static PCFileManager *_mgr = nil;
 // ==== NSOpenPanel and NSSavePanel delegate
 // ============================================================================
 
-// If file name already in project -- don't show it! 
+// If file name already in project -- don't show it!
 - (BOOL)panel:(id)sender shouldShowFilename:(NSString *)filename
 {
   NSFileManager *fileManager = [NSFileManager defaultManager];
@@ -584,30 +584,30 @@ static PCFileManager *_mgr = nil;
   NSString      *categoryKey = nil;
 
   [fileManager fileExistsAtPath:filename isDirectory:&isDir];
-  
+
   if ([[filename pathExtension] isEqualToString:@"gorm"])
-    {
-      isDir = NO;
-    }
-    
+  {
+    isDir = NO;
+  }
+
   if (sender == addFilesPanel && !isDir)
+  {
+    project = [projectManager activeProject];
+    category = [addFilesPanel selectedCategory];
+    categoryKey = [project keyForCategory:category];
+    fileTypes = [project fileTypesForCategoryKey:categoryKey];
+    // Wrong file extension
+    if (fileTypes
+        && ![fileTypes containsObject:[filename pathExtension]])
     {
-      project = [projectManager activeProject];
-      category = [addFilesPanel selectedCategory];
-      categoryKey = [project keyForCategory:category];
-      fileTypes = [project fileTypesForCategoryKey:categoryKey];
-      // Wrong file extension
-      if (fileTypes 
-	  && ![fileTypes containsObject:[filename pathExtension]])
-	{
-	  return NO;
-	}
-      // File is already in project
-      if (![project doesAcceptFile:filename forKey:categoryKey])
-	{
-	  return NO;
-	}
+      return NO;
     }
+    // File is already in project
+    if (![project doesAcceptFile:filename forKey:categoryKey])
+    {
+      return NO;
+    }
+  }
 
   return YES;
 }
@@ -622,27 +622,27 @@ static PCFileManager *_mgr = nil;
   NSString      *tempExtension = nil;
 
   if (operation == PCOpenProjectOperation)
+  {
+    if ([[filename pathExtension] isEqual:@"xcodeproj"] &&
+        [fm fileExistsAtPath:[filename stringByAppendingPathComponent:@"project.pbxproj"]])
+      return YES;
+    if ([fm fileExistsAtPath:filename isDirectory:&isDir] && isDir)
     {
-      if ([[filename pathExtension] isEqual:@"xcodeproj"] &&
-          [fm fileExistsAtPath:[filename stringByAppendingPathComponent:@"project.pbxproj"]])
-        return YES;
-      if ([fm fileExistsAtPath:filename isDirectory:&isDir] && isDir)
-	{
-	  e = [[sender allowedFileTypes] objectEnumerator]; 
-	  while ((tempExtension = [e nextObject]) != nil)
-	    {
-	      tempList = [self filesWithExtension:tempExtension
-				  	   atPath:filename 
-				      includeDirs:YES];
-	      if ([tempList count] > 0)
-		{
-		  return YES;
-		}
-	    }
+      e = [[sender allowedFileTypes] objectEnumerator];
+      while ((tempExtension = [e nextObject]) != nil)
+      {
+        tempList = [self filesWithExtension:tempExtension
+                                     atPath:filename
+                                includeDirs:YES];
+        if ([tempList count] > 0)
+        {
+          return YES;
+        }
+      }
 
-	  return NO;
-	}
+      return NO;
     }
+  }
 
   return YES;
 }
@@ -673,33 +673,33 @@ static PCFileManager *_mgr = nil;
 
   fh = [NSFileHandle fileHandleForReadingAtPath:filename];
   if (fh == nil)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   data = [fh readDataOfLength:512];
   if ([data length] == 0)
-    {
-      return YES;
-    }
+  {
+    return YES;
+  }
 
   content = [NSString stringWithContentsOfFile: filename];
   for (i = 0; i < [content length]; i++)
+  {
+    if ([alpha characterIsMember: [content characterAtIndex: i]] ||
+        [spaces characterIsMember: [content characterAtIndex: i]] ||
+        [marks characterIsMember: [content characterAtIndex: i]])
     {
-      if ([alpha characterIsMember: [content characterAtIndex: i]] ||
-	  [spaces characterIsMember: [content characterAtIndex: i]] ||
-	  [marks characterIsMember: [content characterAtIndex: i]])
-	{
-	  printable++;
-	}
+      printable++;
     }
+  }
 
   return (((double) printable / i) > 0.9);
 }
 
 - (NSArray *)filesWithExtension:(NSString *)extension
-	     		 atPath:(NSString *)dirPath
-     		    includeDirs:(BOOL)incDirs
+                         atPath:(NSString *)dirPath
+                    includeDirs:(BOOL)incDirs
 {
   NSFileManager  *fm = [NSFileManager defaultManager];
   NSMutableArray *filesList = [[NSMutableArray alloc] init];
@@ -709,17 +709,17 @@ static PCFileManager *_mgr = nil;
 
   e = [[fm directoryContentsAtPath:dirPath] objectEnumerator];
   while ((temp = [e nextObject]) != nil)
+  {
+    if ([fm fileExistsAtPath:temp isDirectory:&isDir] && isDir && !incDirs)
     {
-      if ([fm fileExistsAtPath:temp isDirectory:&isDir] && isDir && !incDirs)
-	{
-	  continue;
-	}
-
-      if ([[temp pathExtension] isEqual:extension])
-	{
-	  [filesList addObject:[dirPath stringByAppendingPathComponent:temp]];
-	}
+      continue;
     }
+
+    if ([[temp pathExtension] isEqual:extension])
+    {
+      [filesList addObject:[dirPath stringByAppendingPathComponent:temp]];
+    }
+  }
 
   return [filesList autorelease];
 }

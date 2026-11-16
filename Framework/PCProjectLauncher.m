@@ -1,28 +1,28 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2020 Free Software Foundation
+ Copyright (C) 2000-2020 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
-	    Riccardo Mottola
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <AppKit/AppKit.h>
 
@@ -50,8 +50,8 @@
 #endif
 
 enum {
-    DEBUG_DEFAULT_TARGET = 1,
-    DEBUG_DEBUG_TARGET   = 2
+  DEBUG_DEFAULT_TARGET = 1,
+  DEBUG_DEBUG_TARGET   = 2
 };
 
 @protocol Terminal
@@ -67,7 +67,7 @@ enum {
 
 - (void)_createComponentView
 {
-  NSScrollView       *scrollView; 
+  NSScrollView       *scrollView;
   NSString           *string;
   NSAttributedString *attributedString;
 
@@ -122,13 +122,13 @@ enum {
   [stdOut setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable];
   [[stdOut textContainer] setWidthTracksTextView:YES];
   [[stdOut textContainer] setContainerSize:
-    NSMakeSize([stdOut frame].size.width, 1e7)];
+   NSMakeSize([stdOut frame].size.width, 1e7)];
 
   // Font
   string  = @"=== Launcher ready ===";
-  attributedString = 
-    [[NSAttributedString alloc] initWithString:string 
-                                    attributes:textAttributes];
+  attributedString =
+  [[NSAttributedString alloc] initWithString:string
+                                  attributes:textAttributes];
   [[stdOut textStorage] setAttributedString:attributedString];
 
   [scrollView setDocumentView:stdOut];
@@ -147,25 +147,25 @@ enum {
   NSAssert (aProject, @"No project specified!");
 
   if ((self = [super init]))
-    {
-      id <PCPreferences> prefs;
-      NSFont *font;
-      NSString *fontName;
-      CGFloat  fontSize;
+  {
+    id <PCPreferences> prefs;
+    NSFont *font;
+    NSString *fontName;
+    CGFloat  fontSize;
 
-      project = aProject;
+    project = aProject;
 
-      prefs = [[project projectManager] prefController];
-      fontName = [prefs stringForKey:ConsoleFixedFont];
-      fontSize = [prefs floatForKey:ConsoleFixedFontSize];
-      font = [NSFont fontWithName:fontName size:fontSize];
-      if (font == nil)
-        font = [NSFont userFixedPitchFontOfSize:0];
+    prefs = [[project projectManager] prefController];
+    fontName = [prefs stringForKey:ConsoleFixedFont];
+    fontSize = [prefs floatForKey:ConsoleFixedFontSize];
+    font = [NSFont fontWithName:fontName size:fontSize];
+    if (font == nil)
+      font = [NSFont userFixedPitchFontOfSize:0];
 
-      textAttributes = 
-	[NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
-      [textAttributes retain];
-    }
+    textAttributes =
+    [NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
+    [textAttributes retain];
+  }
 
   return self;
 }
@@ -177,9 +177,9 @@ enum {
 #endif
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   if ([debugger isDebugging])
-    {
-      [debugger stopDebugging];
-    }
+  {
+    [debugger stopDebugging];
+  }
   RELEASE (componentView);
   RELEASE (textAttributes);
   RELEASE (debugger);
@@ -190,9 +190,9 @@ enum {
 - (NSView *)componentView;
 {
   if (!componentView)
-    {
-      [self _createComponentView];
-    }
+  {
+    [self _createComponentView];
+  }
 
   return componentView;
 }
@@ -212,12 +212,12 @@ enum {
   NSString *executable = [[project projectDict] objectForKey:@"XCODE_Executable"];
   if (executable) return [executable stringByDeletingLastPathComponent];
   if ([[project projectTypeName] isEqualToString: @"Application"])
-    {
-      NSString *appName;
+  {
+    NSString *appName;
 
-      appName = [[project projectName] stringByAppendingPathExtension: @"app"];
-      return [[project projectPath] stringByAppendingPathComponent: appName];
-    }
+    appName = [[project projectName] stringByAppendingPathExtension: @"app"];
+    return [[project projectPath] stringByAppendingPathComponent: appName];
+  }
 
   return nil;
 }
@@ -240,51 +240,51 @@ enum {
   candidates = [NSMutableArray array];
 
   if ([prjType isEqualToString: @"Application"])
+  {
+    NSString *appPath;
+
+    appPath = [self applicationPath];
+    if (appPath)
     {
-      NSString *appPath;
-
-      appPath = [self applicationPath];
-      if (appPath)
-	{
-	  [candidates addObject:
-	    [appPath stringByAppendingPathComponent: projectName]];
-	}
-
-      appPath = [[projectPath stringByAppendingPathComponent: @"obj"]
-        stringByAppendingPathComponent:
-	  [projectName stringByAppendingPathExtension: @"app"]];
       [candidates addObject:
-	[appPath stringByAppendingPathComponent: projectName]];
+       [appPath stringByAppendingPathComponent: projectName]];
     }
+
+    appPath = [[projectPath stringByAppendingPathComponent: @"obj"]
+               stringByAppendingPathComponent:
+                 [projectName stringByAppendingPathExtension: @"app"]];
+    [candidates addObject:
+     [appPath stringByAppendingPathComponent: projectName]];
+  }
   else if ([prjType isEqualToString: @"Tool"])
-    {
-      [candidates addObject:
-	[[projectPath stringByAppendingPathComponent: @"obj"]
-	  stringByAppendingPathComponent: projectName]];
-      [candidates addObject:
-	[projectPath stringByAppendingPathComponent: projectName]];
-    }
+  {
+    [candidates addObject:
+     [[projectPath stringByAppendingPathComponent: @"obj"]
+      stringByAppendingPathComponent: projectName]];
+    [candidates addObject:
+     [projectPath stringByAppendingPathComponent: projectName]];
+  }
   else
-    {
-      NSLog(@"Unknown project type to execute: %@", prjType);
-      return nil;
-    }
+  {
+    NSLog(@"Unknown project type to execute: %@", prjType);
+    return nil;
+  }
 
   fm = [NSFileManager defaultManager];
   enumerator = [candidates objectEnumerator];
   while ((path = [enumerator nextObject]))
-    {
+  {
 #ifdef  __MINGW__
-      if ([[path pathExtension] length] == 0)
-	{
-	  path = [path stringByAppendingPathExtension: @"exe"];
-	}
-#endif
-      if ([fm isExecutableFileAtPath: path])
-	{
-	  return path;
-	}
+    if ([[path pathExtension] length] == 0)
+    {
+      path = [path stringByAppendingPathExtension: @"exe"];
     }
+#endif
+    if ([fm isExecutableFileAtPath: path])
+    {
+      return path;
+    }
+  }
 
   return [candidates count] ? [candidates objectAtIndex: 0] : nil;
 }
@@ -292,29 +292,29 @@ enum {
 - (void)performRun
 {
   if (!_isRunning && !_isDebugging)
-    {
-      [runButton performClick:self];
-    }
+  {
+    [runButton performClick:self];
+  }
 }
 
 - (void)performStop
 {
   if (_isRunning)
-    {
-      [runButton performClick:self];
-    }
+  {
+    [runButton performClick:self];
+  }
   else if (_isDebugging)
-    {
-      [debugger stopDebugging];
-    }
+  {
+    [debugger stopDebugging];
+  }
 }
 
 - (void)performDebug
 {
   if (!_isRunning && !_isDebugging)
-    {
-      [self debug:self];
-    }
+  {
+    [self debug:self];
+  }
 }
 
 - (id<CodeDebugger>)debugger
@@ -325,15 +325,15 @@ enum {
 - (void)debuggerStateDidChange:(NSNotification *)aNotif
 {
   if ([aNotif object] != debugger)
-    {
-      return;
-    }
+  {
+    return;
+  }
   if ([[[aNotif userInfo] objectForKey:@"State"] isEqual:PCDebuggerStateExited])
-    {
-      _isDebugging = NO;
-      [debugButton setState:NSOffState];
-      [runButton setEnabled:YES];
-    }
+  {
+    _isDebugging = NO;
+    [debugButton setState:NSOffState];
+    [runButton setEnabled:YES];
+  }
 }
 
 - (void)debug:(id)sender
@@ -344,70 +344,70 @@ enum {
   PCBundleManager *bundleManager = [[project projectManager] bundleManager];
 
   if ([project isExecutable])
-    {
-      executablePath = [self executablePath];
-    }
+  {
+    executablePath = [self executablePath];
+  }
   else
-    {
-      NSRunAlertPanel(@"Debug",
-		      @"The project is not executable",
-		      @"Close", nil, nil, nil);
-      [debugButton setState:NSOffState];
-      return;
-    }
+  {
+    NSRunAlertPanel(@"Debug",
+                    @"The project is not executable",
+                    @"Close", nil, nil, nil);
+    [debugButton setState:NSOffState];
+    return;
+  }
 
   NSLog(@"debug executable launch path: %@", executablePath);
   if ([fm isExecutableFileAtPath:executablePath] == NO)
-    {
-      NSRunAlertPanel(@"Debug",
-		      @"No executable! Please build the project first.",
-		      @"Close",nil,nil);
-      [debugButton setState:NSOffState];
-      return;
-    }
+  {
+    NSRunAlertPanel(@"Debug",
+                    @"No executable! Please build the project first.",
+                    @"Close",nil,nil);
+    [debugButton setState:NSOffState];
+    return;
+  }
 
 
   // Debugger
   gdbPath = [[[project projectManager] prefController] stringForKey:Debugger];
   if (gdbPath == nil)
-    {
-      gdbPath = @"/usr/bin/gdb";
-    }
+  {
+    gdbPath = @"/usr/bin/gdb";
+  }
 
   if ([fm isExecutableFileAtPath:gdbPath] == NO)
-    {
-      NSRunAlertPanel(@"Debug",
-		      @"Specified debugger `%@` cannot be executed!",
-		      @"Close",nil,nil,gdbPath);
-      [debugButton setState:NSOffState];
-      return;
-    }
-    
+  {
+    NSRunAlertPanel(@"Debug",
+                    @"Specified debugger `%@` cannot be executed!",
+                    @"Close",nil,nil,gdbPath);
+    [debugButton setState:NSOffState];
+    return;
+  }
+
 
   // Debugger: one session per run, shown in the project window.
   if (_isDebugging)
-    {
-      [[project projectWindow] showDebugArea:[debugger debugAreaView]];
-      return;
-    }
+  {
+    [[project projectWindow] showDebugArea:[debugger debugAreaView]];
+    return;
+  }
   if (debugger)
-    {
-      [[NSNotificationCenter defaultCenter] removeObserver:self
-        name:PCDebuggerStateDidChangeNotification object:debugger];
-      DESTROY(debugger);
-    }
+  {
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:PCDebuggerStateDidChangeNotification object:debugger];
+    DESTROY(debugger);
+  }
   debugger = [bundleManager objectForBundleType: @"debugger"
                                        protocol: @protocol(CodeDebugger)
                                        fileName: [executablePath stringByDeletingLastPathComponent]];
   if (nil == debugger)
-    {
-      NSLog(@"No debugger module found");
-      [debugButton setState:NSOffState];
-      return;
-    }
+  {
+    NSLog(@"No debugger module found");
+    [debugButton setState:NSOffState];
+    return;
+  }
   [[NSNotificationCenter defaultCenter] addObserver:self
-    selector:@selector(debuggerStateDidChange:)
-        name:PCDebuggerStateDidChangeNotification object:debugger];
+                                           selector:@selector(debuggerStateDidChange:)
+                                               name:PCDebuggerStateDidChangeNotification object:debugger];
   _isDebugging = YES;
   [debugButton setState:NSOnState];
   [runButton setEnabled:NO];
@@ -429,40 +429,40 @@ enum {
 
   // Check if project type is executable
   if ([project isExecutable])
-    {
-      executablePath = [self executablePath];
-    }
-  else 
-    {
-      NSRunAlertPanel(@"Run",
-		      @"The project is not executable",
-		      @"Close", nil, nil, nil);
-      [runButton setState:NSOffState];
-      return;
-    }
+  {
+    executablePath = [self executablePath];
+  }
+  else
+  {
+    NSRunAlertPanel(@"Run",
+                    @"The project is not executable",
+                    @"Close", nil, nil, nil);
+    [runButton setState:NSOffState];
+    return;
+  }
 
   NSLog(@"executable launch path: %@", executablePath);
 
   /* now check if the executable does exist. Perhaps make failed */
   fm = [NSFileManager defaultManager];
   if (![fm isExecutableFileAtPath:executablePath])
-    {
-      NSRunAlertPanel(@"Run",
-		      @"The project does not have an executable",
-		      @"Close", nil, nil, nil);
-      [runButton setState:NSOffState];
-      return;
-    }
-  
+  {
+    NSRunAlertPanel(@"Run",
+                    @"The project does not have an executable",
+                    @"Close", nil, nil, nil);
+    [runButton setState:NSOffState];
+    return;
+  }
+
 
   // [makeTask isRunning] doesn't work here.
   // "waitpid 7045, result -1, error No child processes" is printed.
   if (launchTask)
-    {
-      PCLogStatus(self, @"task will terminate");
-      [launchTask terminate];
-      return;
-    }
+  {
+    PCLogStatus(self, @"task will terminate");
+    [launchTask terminate];
+    return;
+  }
 
   // Setting I/O
   logPipe = [NSPipe pipe];
@@ -471,8 +471,8 @@ enum {
   [stdOut setString:@""];
   [readHandle waitForDataInBackgroundAndNotify];
 
-  [NOTIFICATION_CENTER addObserver:self 
-                          selector:@selector(logStdOut:) 
+  [NOTIFICATION_CENTER addObserver:self
+                          selector:@selector(logStdOut:)
                               name:NSFileHandleDataAvailableNotification
                             object:readHandle];
 
@@ -482,8 +482,8 @@ enum {
   [stdOut setString:@""];
   [errorReadHandle waitForDataInBackgroundAndNotify];
 
-  [NOTIFICATION_CENTER addObserver:self 
-                          selector:@selector(logErrOut:) 
+  [NOTIFICATION_CENTER addObserver:self
+                          selector:@selector(logErrOut:)
                               name:NSFileHandleDataAvailableNotification
                             object:errorReadHandle];
 
@@ -494,8 +494,8 @@ enum {
   [NOTIFICATION_CENTER addObserver:self
                           selector:@selector(runDidTerminate:)
                               name:NSTaskDidTerminateNotification
-                            object:launchTask];  
-  [launchTask setArguments:args];  
+                            object:launchTask];
+  [launchTask setArguments:args];
   [launchTask setCurrentDirectoryPath:[project projectPath]];
   [launchTask setLaunchPath:executablePath];
   [launchTask setStandardOutput:logPipe];
@@ -512,20 +512,20 @@ enum {
 - (void)runDidTerminate:(NSNotification *)aNotif
 {
   if ([aNotif object] != launchTask)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [NOTIFICATION_CENTER removeObserver: self
-				 name: NSTaskDidTerminateNotification
-			       object: launchTask];
+                                 name: NSTaskDidTerminateNotification
+                               object: launchTask];
 
   // Wait if there are data available.
   if (_isRunning || _isErrorRunning)
-    {
-      [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
-			       beforeDate: [NSDate distantFuture]];
-    }
+  {
+    [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
+                             beforeDate: [NSDate distantFuture]];
+  }
 
   [runButton setState:NSOffState];
   [debugButton setState:NSOffState];
@@ -544,37 +544,37 @@ enum {
   NSData *data;
 
   if ((data = [readHandle availableData]) && [data length] > 0)
-    {
-      [self logData:data error:NO];
-      [readHandle waitForDataInBackgroundAndNotifyForModes:nil];
-    }
+  {
+    [self logData:data error:NO];
+    [readHandle waitForDataInBackgroundAndNotifyForModes:nil];
+  }
   else
-    {
-      [NOTIFICATION_CENTER removeObserver: self 
-			             name: NSFileHandleDataAvailableNotification
-			           object: readHandle];
+  {
+    [NOTIFICATION_CENTER removeObserver: self
+                                   name: NSFileHandleDataAvailableNotification
+                                 object: readHandle];
 
-      _isRunning = NO;
-    }
+    _isRunning = NO;
+  }
 }
 
 - (void)logErrOut:(NSNotification *)aNotif
 {
   NSData *data;
-   
-  if ((data = [errorReadHandle availableData]) && [data length] > 0)
-    {
-      [self logData:data error:YES];
-      [errorReadHandle waitForDataInBackgroundAndNotifyForModes:nil];
-    }
-  else
-    {
-      [NOTIFICATION_CENTER removeObserver: self 
-			             name: NSFileHandleDataAvailableNotification
-			           object: errorReadHandle];
 
-      _isErrorRunning = NO;
-    }
+  if ((data = [errorReadHandle availableData]) && [data length] > 0)
+  {
+    [self logData:data error:YES];
+    [errorReadHandle waitForDataInBackgroundAndNotifyForModes:nil];
+  }
+  else
+  {
+    [NOTIFICATION_CENTER removeObserver: self
+                                   name: NSFileHandleDataAvailableNotification
+                                 object: errorReadHandle];
+
+    _isErrorRunning = NO;
+  }
 }
 
 @end
@@ -583,18 +583,18 @@ enum {
 
 - (void)logString:(NSString *)str newLine:(BOOL)newLine
 {
-  [stdOut replaceCharactersInRange:NSMakeRange([[stdOut string] length],0) 
-       withString:str];
+  [stdOut replaceCharactersInRange:NSMakeRange([[stdOut string] length],0)
+                        withString:str];
 
   if (newLine) {
-    [stdOut replaceCharactersInRange:NSMakeRange([[stdOut string] length], 0) 
-	 withString:@"\n"];
+    [stdOut replaceCharactersInRange:NSMakeRange([[stdOut string] length], 0)
+                          withString:@"\n"];
   }
   else {
-    [stdOut replaceCharactersInRange:NSMakeRange([[stdOut string] length], 0) 
-	 withString:@" "];
+    [stdOut replaceCharactersInRange:NSMakeRange([[stdOut string] length], 0)
+                          withString:@" "];
   }
-  
+
   [stdOut scrollRangeToVisible:NSMakeRange([[stdOut string] length], 0)];
 }
 
@@ -603,7 +603,7 @@ enum {
   NSString *s = nil;
   NSAttributedString *as = nil;
 
-//  [self logString:s newLine:NO];
+  //  [self logString:s newLine:NO];
   s = [[NSString alloc] initWithData:data
                             encoding:[NSString defaultCStringEncoding]];
   as = [[NSAttributedString alloc] initWithString:s

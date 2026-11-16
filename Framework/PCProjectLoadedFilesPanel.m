@@ -1,26 +1,26 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2003-2004 Free Software Foundation
+ Copyright (C) 2003-2004 Free Software Foundation
 
-   Authors: Serg Stoyan
+ Authors: Serg Stoyan
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCProjectManager.h>
 #import <ProjectCenter/PCProject.h>
@@ -44,18 +44,18 @@
   PCLogStatus(self, @"[init]");
 
   self = [super initWithContentRect: NSMakeRect (0, 300, 220, 322)
-                         styleMask: (NSTitledWindowMask 
-		                    | NSClosableWindowMask
-				    | NSResizableWindowMask)
-			   backing: NSBackingStoreRetained
-			     defer: YES];
-//  [self setFloatingPanel:YES];
+                          styleMask: (NSTitledWindowMask
+                                      | NSClosableWindowMask
+                                      | NSResizableWindowMask)
+                            backing: NSBackingStoreRetained
+                              defer: YES];
+  //  [self setFloatingPanel:YES];
   [self setMinSize: NSMakeSize(120, 23)];
   [self setFrameAutosaveName: @"LoadedFiles"];
   [self setReleasedWhenClosed: NO];
   [self setHidesOnDeactivate: YES];
-  [self setTitle: [NSString stringWithFormat: 
-    @"%@ - Loaded Files", [activeProject projectName]]];
+  [self setTitle: [NSString stringWithFormat:
+                   @"%@ - Loaded Files", [activeProject projectName]]];
 
   // Panel's content view
   contentBox = [[NSBox alloc] init];
@@ -72,16 +72,16 @@
   [contentBox setContentView:emptyBox];
 
   // Track project switching
-  [[NSNotificationCenter defaultCenter] 
-    addObserver:self
-       selector:@selector(activeProjectDidChange:)
-           name:PCActiveProjectDidChangeNotification
-         object:nil];
+  [[NSNotificationCenter defaultCenter]
+   addObserver:self
+   selector:@selector(activeProjectDidChange:)
+   name:PCActiveProjectDidChangeNotification
+   object:nil];
 
   if (![self setFrameUsingName: @"LoadedFiles"])
-    {
-      [self center];
-    }
+  {
+    [self center];
+  }
 
   return self;
 }
@@ -96,7 +96,7 @@
 
   RELEASE(contentBox);
   RELEASE(emptyBox);
-  
+
   [super dealloc];
 }
 
@@ -106,10 +106,10 @@
   NSView    *filesView = [[activeProject projectLoadedFiles] componentView];
 
   if (!([contentBox contentView] == filesView))
-    {
-      [contentBox setContentView:filesView];
-      [contentBox display];
-    }
+  {
+    [contentBox setContentView:filesView];
+    [contentBox display];
+  }
 
   [super orderFront:self];
 }
@@ -127,29 +127,29 @@
   id <PCPreferences> prefs = [projectManager prefController];
 
   if (![prefs boolForKey:UseTearOffWindows])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   rootProject = [projectManager rootActiveProject];
   if (rootProject == currentProject)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   currentProject = rootProject;
-    
+
   if (!rootProject)
-    {
-      [contentBox setContentView:emptyBox];
-    }
+  {
+    [contentBox setContentView:emptyBox];
+  }
   else
-    {
-      [self setTitle: [NSString stringWithFormat: 
-	@"%@ - Loaded Files", [rootProject projectName]]];
-      [contentBox 
-	setContentView:[[rootProject projectLoadedFiles] componentView]];
-    }
+  {
+    [self setTitle: [NSString stringWithFormat:
+                     @"%@ - Loaded Files", [rootProject projectName]]];
+    [contentBox
+     setContentView:[[rootProject projectLoadedFiles] componentView]];
+  }
 }
 
 @end

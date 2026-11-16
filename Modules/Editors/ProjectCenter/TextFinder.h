@@ -4,15 +4,15 @@
 #define Backward NO
 
 @interface TextFinder : NSObject {
-    NSString *findString;
-    id findTextField;
-    id replaceTextField;
-    id ignoreCaseButton;
-    id findNextButton;
-    id replaceAllScopeMatrix;
-    id statusField;
-    BOOL findStringChangedSinceLastPasteboardUpdate;
-    BOOL lastFindWasSuccessful;		/* A bit of a kludge */
+  NSString *findString;
+  id findTextField;
+  id replaceTextField;
+  id ignoreCaseButton;
+  id findNextButton;
+  id replaceAllScopeMatrix;
+  id statusField;
+  BOOL findStringChangedSinceLastPasteboardUpdate;
+  BOOL lastFindWasSuccessful;		/* A bit of a kludge */
 }
 
 /* Common way to get a text finder. One instance of TextFinder per app is good enough. */
@@ -54,4 +54,4 @@
 - (NSRange)findString:(NSString *)string selectedRange:(NSRange)selectedRange options:(unsigned)mask wrap:(BOOL)wrapFlag;
 
 @end
-        
+

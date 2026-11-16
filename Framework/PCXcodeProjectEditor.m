@@ -1,15 +1,15 @@
 /*
-   PCXcodeProjectEditor.m
+ PCXcodeProjectEditor.m
 
-   Read-only project editor for Xcode projects.
+ Read-only project editor for Xcode projects.
 
-   This file is part of GNUstep ProjectCenter.
+ This file is part of GNUstep ProjectCenter.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-*/
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ */
 
 #import "PCXcodeProjectEditor.h"
 #import "PCXcodeProject.h"
@@ -23,7 +23,7 @@
 
 @interface PCTargetList : PCNavigator
 {
-@public
+  @public
   PCXcodeProjectEditor *editor;    // not retained
   NSDictionary         *overview;  // not retained
 }
@@ -40,17 +40,17 @@
   [roots removeAllObjects];
   projectGroup = [PCNavigatorItem itemWithTitle:@"PROJECT" icon:nil info:nil];
   [projectGroup->children addObject:[PCNavigatorItem itemWithTitle:[overview objectForKey:@"Name"]
-    icon:[NSImage imageNamed:@"FileProject"]
-    info:[NSDictionary dictionaryWithObject:[NSNumber numberWithInteger:0] forKey:@"Index"]]];
+                                                              icon:[NSImage imageNamed:@"FileProject"]
+                                                              info:[NSDictionary dictionaryWithObject:[NSNumber numberWithInteger:0] forKey:@"Index"]]];
   [roots addObject:projectGroup];
   targetGroup = [PCNavigatorItem itemWithTitle:@"TARGETS" icon:nil info:nil];
   for (NSDictionary *target in [overview objectForKey:@"Targets"])
-    {
-      BOOL application = [[target objectForKey:@"ProductType"] hasPrefix:@"com.apple.product-type.application"];
-      [targetGroup->children addObject:[PCNavigatorItem itemWithTitle:[target objectForKey:@"Name"]
-        icon:[NSImage imageNamed:application ? @"NSApplicationIcon" : @"GSBuildTemplate"]
-        info:[NSDictionary dictionaryWithObject:[NSNumber numberWithInteger:index++] forKey:@"Index"]]];
-    }
+  {
+    BOOL application = [[target objectForKey:@"ProductType"] hasPrefix:@"com.apple.product-type.application"];
+    [targetGroup->children addObject:[PCNavigatorItem itemWithTitle:[target objectForKey:@"Name"]
+                                                               icon:[NSImage imageNamed:application ? @"NSApplicationIcon" : @"GSBuildTemplate"]
+                                                               info:[NSDictionary dictionaryWithObject:[NSNumber numberWithInteger:index++] forKey:@"Index"]]];
+  }
   [roots addObject:targetGroup];
   [self _reloadOutlineExpandingAll];
 }
@@ -58,25 +58,25 @@
 - (void)selectIndex:(NSInteger)index
 {
   for (NSInteger row = 0; row < [outline numberOfRows]; row++)
+  {
+    PCNavigatorItem *item = [outline itemAtRow:row];
+    if ([[item->info objectForKey:@"Index"] integerValue] == index && item->info)
     {
-      PCNavigatorItem *item = [outline itemAtRow:row];
-      if ([[item->info objectForKey:@"Index"] integerValue] == index && item->info)
-        {
-          updatingSelection = YES;
-          [outline selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
-          updatingSelection = NO;
-          return;
-        }
+      updatingSelection = YES;
+      [outline selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+      updatingSelection = NO;
+      return;
     }
+  }
 }
 
 - (void)selectionDidChange:(PCNavigatorItem *)item
 {
   NSNumber *index = [item->info objectForKey:@"Index"];
   if (index)
-    {
-      [editor selectEntryAtIndex:[index integerValue]];
-    }
+  {
+    [editor selectEntryAtIndex:[index integerValue]];
+  }
 }
 
 /* Group headers are labels, not selectable entries. */
@@ -101,15 +101,15 @@ static NSString *DisplayValue(id value)
 static NSString *ProductTypeName(NSString *type, NSString *kind)
 {
   NSDictionary *names = [NSDictionary dictionaryWithObjectsAndKeys:
-    @"Application", @"com.apple.product-type.application",
-    @"Unit Test Bundle", @"com.apple.product-type.bundle.unit-test",
-    @"UI Test Bundle", @"com.apple.product-type.bundle.ui-testing",
-    @"Bundle", @"com.apple.product-type.bundle",
-    @"Framework", @"com.apple.product-type.framework",
-    @"Command-line Tool", @"com.apple.product-type.tool",
-    @"Static Library", @"com.apple.product-type.library.static",
-    @"Dynamic Library", @"com.apple.product-type.library.dynamic",
-    @"App Extension", @"com.apple.product-type.app-extension", nil];
+                         @"Application", @"com.apple.product-type.application",
+                         @"Unit Test Bundle", @"com.apple.product-type.bundle.unit-test",
+                         @"UI Test Bundle", @"com.apple.product-type.bundle.ui-testing",
+                         @"Bundle", @"com.apple.product-type.bundle",
+                         @"Framework", @"com.apple.product-type.framework",
+                         @"Command-line Tool", @"com.apple.product-type.tool",
+                         @"Static Library", @"com.apple.product-type.library.static",
+                         @"Dynamic Library", @"com.apple.product-type.library.dynamic",
+                         @"App Extension", @"com.apple.product-type.app-extension", nil];
 
   if ([names objectForKey:type]) return [names objectForKey:type];
   if (type) return type;
@@ -132,14 +132,14 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   [scroll setAutohidesScrollers:YES];
   [scroll setBorderType:NSNoBorder];
   for (i = 0; i < [titles count]; i++)
-    {
-      NSTableColumn *column = [[[NSTableColumn alloc] initWithIdentifier:
-        [NSString stringWithFormat:@"%lu", (unsigned long)i]] autorelease];
-      [[column headerCell] setStringValue:[titles objectAtIndex:i]];
-      [column setWidth:i == 0 ? firstWidth : 260];
-      [column setEditable:NO];
-      [table addTableColumn:column];
-    }
+  {
+    NSTableColumn *column = [[[NSTableColumn alloc] initWithIdentifier:
+                              [NSString stringWithFormat:@"%lu", (unsigned long)i]] autorelease];
+    [[column headerCell] setStringValue:[titles objectAtIndex:i]];
+    [column setWidth:i == 0 ? firstWidth : 260];
+    [column setEditable:NO];
+    [table addTableColumn:column];
+  }
   [table setColumnAutoresizingStyle:NSTableViewNoColumnAutoresizing];
   [table setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [table setDataSource:owner];
@@ -152,59 +152,59 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
 - (id)initWithProject:(PCProject *)aProject
 {
   if ((self = [super init]))
+  {
+    NSRect frame = NSMakeRect(0, 0, 800, 500);
+    NSView *list;
+    NSArray *titles = [NSArray arrayWithObjects:@"General", @"Build Settings", @"Build Phases", nil];
+    NSUInteger i;
+
+    project = aProject;
+    view = [[NSView alloc] initWithFrame:frame];
+    [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+
+    targetList = [[PCTargetList alloc] initWithProject:aProject];
+    targetList->editor = self;
+    list = [targetList view];
+    [list setFrame:NSMakeRect(0, 0, 200, NSHeight(frame))];
+    [list setAutoresizingMask:NSViewHeightSizable | NSViewMaxXMargin];
+    [view addSubview:list];
+
+    /* Like Xcode: a segmented control selects the pane. */
+    sections = [[[NSSegmentedControl alloc] initWithFrame:
+                 NSMakeRect(208 + (NSWidth(frame) - 208 - 330) / 2, NSHeight(frame) - 32, 330, 24)] autorelease];
+    [sections setSegmentCount:[titles count]];
+    for (i = 0; i < [titles count]; i++)
     {
-      NSRect frame = NSMakeRect(0, 0, 800, 500);
-      NSView *list;
-      NSArray *titles = [NSArray arrayWithObjects:@"General", @"Build Settings", @"Build Phases", nil];
-      NSUInteger i;
-
-      project = aProject;
-      view = [[NSView alloc] initWithFrame:frame];
-      [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-
-      targetList = [[PCTargetList alloc] initWithProject:aProject];
-      targetList->editor = self;
-      list = [targetList view];
-      [list setFrame:NSMakeRect(0, 0, 200, NSHeight(frame))];
-      [list setAutoresizingMask:NSViewHeightSizable | NSViewMaxXMargin];
-      [view addSubview:list];
-
-      /* Like Xcode: a segmented control selects the pane. */
-      sections = [[[NSSegmentedControl alloc] initWithFrame:
-        NSMakeRect(208 + (NSWidth(frame) - 208 - 330) / 2, NSHeight(frame) - 32, 330, 24)] autorelease];
-      [sections setSegmentCount:[titles count]];
-      for (i = 0; i < [titles count]; i++)
-        {
-          [sections setLabel:[titles objectAtIndex:i] forSegment:i];
-          [sections setWidth:110 forSegment:i];
-        }
-      [[sections cell] setTrackingMode:NSSegmentSwitchTrackingSelectOne];
-      [sections setSelectedSegment:0];
-      [sections setTarget:self];
-      [sections setAction:@selector(sectionChanged:)];
-      [sections setAutoresizingMask:NSViewMinXMargin | NSViewMaxXMargin | NSViewMinYMargin];
-      [view addSubview:sections];
-
-      tabs = [[[NSTabView alloc] initWithFrame:NSMakeRect(208, 0, NSWidth(frame) - 208, NSHeight(frame) - 40)] autorelease];
-      [tabs setTabViewType:NSNoTabsNoBorder];
-      [tabs setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-      for (i = 0; i < [titles count]; i++)
-        {
-          NSTabViewItem *item = [[[NSTabViewItem alloc] initWithIdentifier:[titles objectAtIndex:i]] autorelease];
-          NSView *content = [[[NSView alloc] initWithFrame:[tabs contentRect]] autorelease];
-          [content setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-          [item setLabel:[titles objectAtIndex:i]];
-          [item setView:content];
-          [tabs addTabViewItem:item];
-        }
-      [view addSubview:tabs];
-      generalTable = Table([NSArray arrayWithObjects:@"Property", @"Value", nil], 180, self,
-                           [[tabs tabViewItemAtIndex:0] view]);
-      settingsTable = Table([NSArray arrayWithObject:@"Setting"], 300, self,
-                            [[tabs tabViewItemAtIndex:1] view]);
-      phasesTable = Table([NSArray arrayWithObjects:@"Phase", @"Contents", nil], 240, self,
-                          [[tabs tabViewItemAtIndex:2] view]);
+      [sections setLabel:[titles objectAtIndex:i] forSegment:i];
+      [sections setWidth:110 forSegment:i];
     }
+    [[sections cell] setTrackingMode:NSSegmentSwitchTrackingSelectOne];
+    [sections setSelectedSegment:0];
+    [sections setTarget:self];
+    [sections setAction:@selector(sectionChanged:)];
+    [sections setAutoresizingMask:NSViewMinXMargin | NSViewMaxXMargin | NSViewMinYMargin];
+    [view addSubview:sections];
+
+    tabs = [[[NSTabView alloc] initWithFrame:NSMakeRect(208, 0, NSWidth(frame) - 208, NSHeight(frame) - 40)] autorelease];
+    [tabs setTabViewType:NSNoTabsNoBorder];
+    [tabs setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    for (i = 0; i < [titles count]; i++)
+    {
+      NSTabViewItem *item = [[[NSTabViewItem alloc] initWithIdentifier:[titles objectAtIndex:i]] autorelease];
+      NSView *content = [[[NSView alloc] initWithFrame:[tabs contentRect]] autorelease];
+      [content setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      [item setLabel:[titles objectAtIndex:i]];
+      [item setView:content];
+      [tabs addTabViewItem:item];
+    }
+    [view addSubview:tabs];
+    generalTable = Table([NSArray arrayWithObjects:@"Property", @"Value", nil], 180, self,
+                         [[tabs tabViewItemAtIndex:0] view]);
+    settingsTable = Table([NSArray arrayWithObject:@"Setting"], 300, self,
+                          [[tabs tabViewItemAtIndex:1] view]);
+    phasesTable = Table([NSArray arrayWithObjects:@"Phase", @"Contents", nil], 240, self,
+                        [[tabs tabViewItemAtIndex:2] view]);
+  }
   return self;
 }
 
@@ -258,18 +258,18 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
 
   /* Keep the selection; initially the target ProjectCenter builds. */
   if (selectedName == nil || selection == nil)
-    {
-      selectedName = [[project projectDict] objectForKey:@"PROJECT_NAME"];
-      index = -1;
-    }
+  {
+    selectedName = [[project projectDict] objectForKey:@"PROJECT_NAME"];
+    index = -1;
+  }
   for (NSDictionary *target in [overview objectForKey:@"Targets"])
+  {
+    if ([[target objectForKey:@"Name"] isEqual:selectedName])
     {
-      if ([[target objectForKey:@"Name"] isEqual:selectedName])
-        {
-          index = i;
-        }
-      i++;
+      index = i;
     }
+    i++;
+  }
   [self selectEntryAtIndex:index < 0 ? 0 : index];
 }
 
@@ -292,11 +292,11 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
 {
   NSMutableArray *parts = [NSMutableArray array];
   for (NSDictionary *c in configurations)
-    {
-      [parts addObject:[c objectForKey:@"Base"]
-        ? [NSString stringWithFormat:@"%@ (based on %@)", [c objectForKey:@"Name"], [c objectForKey:@"Base"]]
-        : [c objectForKey:@"Name"]];
-    }
+  {
+    [parts addObject:[c objectForKey:@"Base"]
+     ? [NSString stringWithFormat:@"%@ (based on %@)", [c objectForKey:@"Name"], [c objectForKey:@"Base"]]
+     : [c objectForKey:@"Name"]];
+  }
   return [parts componentsJoinedByString:@", "];
 }
 
@@ -309,45 +309,45 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   };
 
   if (selection == overview)
-    {
-      add(@"Project", [overview objectForKey:@"Name"]);
-      add(@"Project Format", [overview objectForKey:@"Format"]
-          ? [NSString stringWithFormat:@"objectVersion %@", [overview objectForKey:@"Format"]] : nil);
-      add(@"Development Region", [overview objectForKey:@"DevelopmentRegion"]);
-      add(@"Localizations", [[overview objectForKey:@"KnownRegions"] componentsJoinedByString:@", "]);
-      add(@"Configurations", [self _configurationSummary:[overview objectForKey:@"Configurations"]]);
-      add(@"Targets", [[[overview objectForKey:@"Targets"] valueForKey:@"Name"] componentsJoinedByString:@", "]);
-      add(@"Location", [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]);
-    }
+  {
+    add(@"Project", [overview objectForKey:@"Name"]);
+    add(@"Project Format", [overview objectForKey:@"Format"]
+        ? [NSString stringWithFormat:@"objectVersion %@", [overview objectForKey:@"Format"]] : nil);
+    add(@"Development Region", [overview objectForKey:@"DevelopmentRegion"]);
+    add(@"Localizations", [[overview objectForKey:@"KnownRegions"] componentsJoinedByString:@", "]);
+    add(@"Configurations", [self _configurationSummary:[overview objectForKey:@"Configurations"]]);
+    add(@"Targets", [[[overview objectForKey:@"Targets"] valueForKey:@"Name"] componentsJoinedByString:@", "]);
+    add(@"Location", [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]);
+  }
   else
-    {
-      NSString *first = [[[selection objectForKey:@"Configurations"] firstObject] objectForKey:@"Name"];
-      NSDictionary *settings = [self _mergedSettings:first];
-      NSString *productName = DisplayValue([settings objectForKey:@"PRODUCT_NAME"]);
-      NSString *version = DisplayValue([settings objectForKey:@"MARKETING_VERSION"]);
-      NSString *build = DisplayValue([settings objectForKey:@"CURRENT_PROJECT_VERSION"]);
+  {
+    NSString *first = [[[selection objectForKey:@"Configurations"] firstObject] objectForKey:@"Name"];
+    NSDictionary *settings = [self _mergedSettings:first];
+    NSString *productName = DisplayValue([settings objectForKey:@"PRODUCT_NAME"]);
+    NSString *version = DisplayValue([settings objectForKey:@"MARKETING_VERSION"]);
+    NSString *build = DisplayValue([settings objectForKey:@"CURRENT_PROJECT_VERSION"]);
 
-      productName = [productName stringByReplacingOccurrencesOfString:@"$(TARGET_NAME)"
-                                                          withString:[selection objectForKey:@"Name"]];
-      add(@"Target", [selection objectForKey:@"Name"]);
-      add(@"Type", ProductTypeName([selection objectForKey:@"ProductType"], [selection objectForKey:@"Kind"]));
-      add(@"Product Name", [productName length] ? productName : [selection objectForKey:@"ProductName"]);
-      add(@"Bundle Identifier", [settings objectForKey:@"PRODUCT_BUNDLE_IDENTIFIER"]);
-      add(@"Deployment Target", [settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"]
-          ? [NSString stringWithFormat:@"macOS %@", DisplayValue([settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"])] : nil);
-      add(@"Version", [version length] && [build length]
-          ? [NSString stringWithFormat:@"%@ (%@)", version, build] : ([version length] ? version : build));
-      add(@"Info.plist", [settings objectForKey:@"INFOPLIST_FILE"]);
-      add(@"Configurations", [self _configurationSummary:[selection objectForKey:@"Configurations"]]);
-      add(@"Dependencies", [[selection objectForKey:@"Dependencies"] componentsJoinedByString:@", "]);
-      add(@"Build Tool", [selection objectForKey:@"BuildTool"]);
-      if ([[selection objectForKey:@"Name"] isEqual:[[project projectDict] objectForKey:@"PROJECT_NAME"]])
-        {
-          /* The target ProjectCenter builds and runs on GNUstep. */
-          add(@"GNUstep Build Script", [[project projectDict] objectForKey:@"XCODE_BuildScript"]);
-          add(@"GNUstep Executable", [[project projectDict] objectForKey:@"XCODE_Executable"]);
-        }
+    productName = [productName stringByReplacingOccurrencesOfString:@"$(TARGET_NAME)"
+                                                         withString:[selection objectForKey:@"Name"]];
+    add(@"Target", [selection objectForKey:@"Name"]);
+    add(@"Type", ProductTypeName([selection objectForKey:@"ProductType"], [selection objectForKey:@"Kind"]));
+    add(@"Product Name", [productName length] ? productName : [selection objectForKey:@"ProductName"]);
+    add(@"Bundle Identifier", [settings objectForKey:@"PRODUCT_BUNDLE_IDENTIFIER"]);
+    add(@"Deployment Target", [settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"]
+        ? [NSString stringWithFormat:@"macOS %@", DisplayValue([settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"])] : nil);
+    add(@"Version", [version length] && [build length]
+        ? [NSString stringWithFormat:@"%@ (%@)", version, build] : ([version length] ? version : build));
+    add(@"Info.plist", [settings objectForKey:@"INFOPLIST_FILE"]);
+    add(@"Configurations", [self _configurationSummary:[selection objectForKey:@"Configurations"]]);
+    add(@"Dependencies", [[selection objectForKey:@"Dependencies"] componentsJoinedByString:@", "]);
+    add(@"Build Tool", [selection objectForKey:@"BuildTool"]);
+    if ([[selection objectForKey:@"Name"] isEqual:[[project projectDict] objectForKey:@"PROJECT_NAME"]])
+    {
+      /* The target ProjectCenter builds and runs on GNUstep. */
+      add(@"GNUstep Build Script", [[project projectDict] objectForKey:@"XCODE_BuildScript"]);
+      add(@"GNUstep Executable", [[project projectDict] objectForKey:@"XCODE_Executable"]);
     }
+  }
   ASSIGN(generalRows, rows);
 }
 
@@ -364,19 +364,19 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   if ([configurations count] == 0)
     configurations = [overview objectForKey:@"Configurations"];
   for (NSDictionary *c in configurations)
-    {
-      NSDictionary *settings = [self _mergedSettings:[c objectForKey:@"Name"]];
-      [names addObject:[c objectForKey:@"Name"]];
-      [merged addObject:settings];
-      [keys addObjectsFromArray:[settings allKeys]];
-    }
+  {
+    NSDictionary *settings = [self _mergedSettings:[c objectForKey:@"Name"]];
+    [names addObject:[c objectForKey:@"Name"]];
+    [merged addObject:settings];
+    [keys addObjectsFromArray:[settings allKeys]];
+  }
   for (NSString *key in [[keys allObjects] sortedArrayUsingSelector:@selector(compare:)])
-    {
-      NSMutableArray *row = [NSMutableArray arrayWithObject:key];
-      for (NSDictionary *settings in merged)
-        [row addObject:DisplayValue([settings objectForKey:key])];
-      [rows addObject:row];
-    }
+  {
+    NSMutableArray *row = [NSMutableArray arrayWithObject:key];
+    for (NSDictionary *settings in merged)
+      [row addObject:DisplayValue([settings objectForKey:key])];
+    [rows addObject:row];
+  }
   ASSIGN(settingRows, rows);
   ASSIGN(configurationNames, names);
 
@@ -385,14 +385,14 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   for (i = 1; i < [columns count]; i++)
     [settingsTable removeTableColumn:[columns objectAtIndex:i]];
   for (i = 0; i < [names count]; i++)
-    {
-      NSTableColumn *column = [[[NSTableColumn alloc] initWithIdentifier:
-        [NSString stringWithFormat:@"%lu", (unsigned long)i + 1]] autorelease];
-      [[column headerCell] setStringValue:[names objectAtIndex:i]];
-      [column setWidth:240];
-      [column setEditable:NO];
-      [settingsTable addTableColumn:column];
-    }
+  {
+    NSTableColumn *column = [[[NSTableColumn alloc] initWithIdentifier:
+                              [NSString stringWithFormat:@"%lu", (unsigned long)i + 1]] autorelease];
+    [[column headerCell] setStringValue:[names objectAtIndex:i]];
+    [column setWidth:240];
+    [column setEditable:NO];
+    [settingsTable addTableColumn:column];
+  }
 }
 
 - (void)_buildPhaseRows
@@ -400,19 +400,19 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   NSMutableArray *rows = [NSMutableArray array];
 
   for (NSDictionary *phase in [selection objectForKey:@"Phases"])
-    {
-      NSArray *files = [phase objectForKey:@"Files"];
-      NSString *script = [phase objectForKey:@"Script"];
-      NSString *count = script ? @"" : [NSString stringWithFormat:@"%lu item%@",
-        (unsigned long)[files count], [files count] == 1 ? @"" : @"s"];
+  {
+    NSArray *files = [phase objectForKey:@"Files"];
+    NSString *script = [phase objectForKey:@"Script"];
+    NSString *count = script ? @"" : [NSString stringWithFormat:@"%lu item%@",
+                                      (unsigned long)[files count], [files count] == 1 ? @"" : @"s"];
 
-      [rows addObject:[NSArray arrayWithObjects:[phase objectForKey:@"Name"], count, nil]];
-      for (NSString *file in files)
-        [rows addObject:[NSArray arrayWithObjects:@"", file, nil]];
-      for (NSString *line in [script componentsSeparatedByString:@"\n"])
-        if ([line length])
-          [rows addObject:[NSArray arrayWithObjects:@"", line, nil]];
-    }
+    [rows addObject:[NSArray arrayWithObjects:[phase objectForKey:@"Name"], count, nil]];
+    for (NSString *file in files)
+      [rows addObject:[NSArray arrayWithObjects:@"", file, nil]];
+    for (NSString *line in [script componentsSeparatedByString:@"\n"])
+      if ([line length])
+        [rows addObject:[NSArray arrayWithObjects:@"", line, nil]];
+  }
   if ([rows count] == 0 && selection != overview)
     [rows addObject:[NSArray arrayWithObjects:@"No build phases", @"", nil]];
   ASSIGN(phaseRows, rows);
@@ -422,7 +422,7 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
 {
   NSArray *targets = [overview objectForKey:@"Targets"];
   NSDictionary *entry = index <= 0 || index > (NSInteger)[targets count]
-    ? overview : [targets objectAtIndex:index - 1];
+  ? overview : [targets objectAtIndex:index - 1];
 
   ASSIGN(selection, entry);
   [targetList selectIndex:entry == overview ? 0 : index];

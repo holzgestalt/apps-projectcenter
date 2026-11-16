@@ -1,27 +1,27 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2014 Free Software Foundation
+ Copyright (C) 2000-2014 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #ifndef _PCFileManager_h_
 #define _PCFileManager_h_
@@ -34,11 +34,11 @@
 @class PCAddFilesPanel;
 
 enum {
-    PCOpenFileOperation,
-    PCSaveFileOperation,
-    PCAddFileOperation,
-    PCOpenProjectOperation,
-    PCOpenDirectoryOperation
+  PCOpenFileOperation,
+  PCSaveFileOperation,
+  PCAddFileOperation,
+  PCOpenProjectOperation,
+  PCOpenDirectoryOperation
 };
 
 @interface PCFileManager : NSObject
@@ -90,10 +90,10 @@ enum {
 - (BOOL)copyFiles:(NSArray *)files intoDirectory:(NSString *)directory;
 
 // Calls copyFile:intoDirectory:
-- (BOOL)copyFile:(NSString *)file 
+- (BOOL)copyFile:(NSString *)file
    fromDirectory:(NSString *)fromDir
    intoDirectory:(NSString *)toDir;
-   
+
 // If directory is empty remove it recursively
 - (BOOL)removeDirectoriesIfEmptyAtPath:(NSString *)path;
 
@@ -121,10 +121,10 @@ enum {
 
 // Shows panel and return selected files if any
 - (NSMutableArray *)filesOfTypes:(NSArray *)types
-		       operation:(int)op
-			multiple:(BOOL)yn
-			   title:(NSString *)title
-			 accView:(NSView *)accessoryView;
+                       operation:(int)op
+                        multiple:(BOOL)yn
+                           title:(NSString *)title
+                         accView:(NSView *)accessoryView;
 
 @end
 
@@ -132,12 +132,12 @@ enum {
 
 - (BOOL)isTextFile:(NSString *)filename;
 
-// Return list of files and directories absolute paths that has 
+// Return list of files and directories absolute paths that has
 // specified 'extension' at directory 'dirPath'. If 'incDirs'
 // has value YES also include directories in this list.
 - (NSArray *)filesWithExtension:(NSString *)extension
-	     		 atPath:(NSString *)dirPath
-     		    includeDirs:(BOOL)incDirs;
+                         atPath:(NSString *)dirPath
+                    includeDirs:(BOOL)incDirs;
 
 @end
 #endif

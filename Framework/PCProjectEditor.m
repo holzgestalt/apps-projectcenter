@@ -1,28 +1,28 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2002-2015 Free Software Foundation
+ Copyright (C) 2002-2015 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
-            Riccardo Mottola
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCFileManager.h>
@@ -82,7 +82,7 @@
   [[textView textContainer] setContainerSize:frame.size];
 
   [_componentView setContentView:_scrollView];
-//  RELEASE(_scrollView);
+  //  RELEASE(_scrollView);
 
   [_componentView sizeToFit];
 }
@@ -97,10 +97,10 @@
 - (id)init
 {
   if ((self = [super init]))
-    {
-      PCLogStatus(self, @"[init]");
-      _componentView = nil;
-    }
+  {
+    PCLogStatus(self, @"[init]");
+    _componentView = nil;
+  }
 
   return self;
 }
@@ -111,15 +111,15 @@
   NSLog (@"PCProjectEditor: dealloc");
 #endif
 
-//  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  //  [[NSNotificationCenter defaultCenter] removeObserver:self];
 
   if (_componentView)
-    {
-      RELEASE(_scrollView);
-      RELEASE(_componentView);
-    }
+  {
+    RELEASE(_scrollView);
+    RELEASE(_componentView);
+  }
 
-//  RELEASE(_editorsDict);
+  //  RELEASE(_editorsDict);
 
   [super dealloc];
 }
@@ -127,9 +127,9 @@
 - (NSView *)componentView
 {
   if (_componentView == nil)
-    {
-      [self _createComponentView];
-    }
+  {
+    [self _createComponentView];
+  }
 
   return _componentView;
 }
@@ -156,73 +156,73 @@
   NSDictionary    *infoTable = nil;
 
   if ([item length] == 0)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   // File selected and editor should already be loaded
   if (file != nil)
+  {
+    if ([[item substringToIndex:1] isEqualToString:@"@"])
     {
-      if ([[item substringToIndex:1] isEqualToString:@"@"])
-	{
-	  NSArray *methods;
-	  id<CodeEditor> editor = [self activeEditor];
-	  BOOL hasMethods = NO;
+      NSArray *methods;
+      id<CodeEditor> editor = [self activeEditor];
+      BOOL hasMethods = NO;
 
-	  methods = [editor browserItemsForItem: item];
-	  NSLog(@"[PCPE] we have class/protocol/whatever");
-	  hasMethods = [methods count];
-	  return hasMethods;
-	}
+      methods = [editor browserItemsForItem: item];
+      NSLog(@"[PCPE] we have class/protocol/whatever");
+      hasMethods = [methods count];
+      return hasMethods;
     }
+  }
 
   // Category selected
-  infoTable = [bundleManager infoForBundleType:@"editor" 
-				       keyName:@"FileTypes"
-				   keyContains:[item pathExtension]];
+  infoTable = [bundleManager infoForBundleType:@"editor"
+                                       keyName:@"FileTypes"
+                                   keyContains:[item pathExtension]];
 
   if ([[infoTable objectForKey:@"ProvidesBrowserItems"] isEqualToString:@"YES"])
-    {
-      return YES;
-    }
-  
+  {
+    return YES;
+  }
+
   return NO;
 }
 
 - (id<CodeEditor>) openEditorForFilePath: (NSString *)filePath
-				windowed: (BOOL)windowed
+                                windowed: (BOOL)windowed
 {
   PCProject      *activeProject = [[_project projectManager] activeProject];
   NSString       *fileName = [filePath lastPathComponent];
   BOOL           editable = YES;
   id<CodeEditor> editor = nil;
   NSFileManager  *mgr = [NSFileManager defaultManager];
-  
-  NSLog(@"PCPE: fileName: %@, filePath: %@, project: %@", 
-	fileName, filePath, [activeProject projectName]);
+
+  NSLog(@"PCPE: fileName: %@, filePath: %@, project: %@",
+        fileName, filePath, [activeProject projectName]);
 
   if (![mgr fileExistsAtPath: filePath])
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   // Determine if file should be opened for read only
   if (![_project isEditableFile:fileName])
-    {
-      editable = NO;
-    }
+  {
+    editable = NO;
+  }
 
   // Set the 'editor' var either by requesting already opened
   // editor or by creating the new one.
-  editor = [self openEditorForFile:filePath 
-			  editable:editable 
-			  windowed:windowed];
+  editor = [self openEditorForFile:filePath
+                          editable:editable
+                          windowed:windowed];
   if (!editor)
-    {
-      NSLog(@"We don't have editor for file: %@", fileName);
-      [self setActiveEditor: nil];
-      return nil;
-    }
+  {
+    NSLog(@"We don't have editor for file: %@", fileName);
+    [self setActiveEditor: nil];
+    return nil;
+  }
 
   // Category path was changed by user's clicking inside browser.
   // That's why new category path must be transfered to editor.
@@ -231,7 +231,7 @@
   [self orderFrontEditorForFile:filePath];
 
   // Reload last column because editor has just been loaded
-  [[_project projectBrowser] reloadLastColumnAndNotify:NO]; 
+  [[_project projectBrowser] reloadLastColumnAndNotify:NO];
   [editor fileStructureItemSelected:fileName];
 
   return editor;
@@ -243,7 +243,7 @@
 // 2. "/Subprojects/Project/Classes/Class.m/- init"
 // 3. "/Library/gnustep-gui"
 - (id<CodeEditor>)openEditorForCategoryPath:(NSString *)categoryPath
-    				   windowed:(BOOL)windowed
+                                   windowed:(BOOL)windowed
 {
   NSArray        *pathArray = [categoryPath pathComponents];
   NSString       *pathLastObject = [pathArray lastObject];
@@ -257,34 +257,34 @@
 
   fileName = [[_project projectBrowser] projectFileForCategoryPath:categoryPath];
   if (fileName == nil)
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   filePath = [activeProject pathForFile:fileName forKey:categoryKey];
 
-/*  NSLog(@"PCPE: fileName: %@ filePath: %@ project: %@", 
-	fileName, filePath, [activeProject projectName]);*/
+  /*  NSLog(@"PCPE: fileName: %@ filePath: %@ project: %@",
+   fileName, filePath, [activeProject projectName]);*/
 
   // Determine if file should be opened for read only
   if (![_project isEditableFile:fileName])
-    {
-      editable = NO;
-    }
+  {
+    editable = NO;
+  }
 
-//  NSLog(@"fileName: %@ > %@", fileName, listEntry);
+  //  NSLog(@"fileName: %@ > %@", fileName, listEntry);
 
   // Set the 'editor' var either by requesting already opened
   // editor or by creating the new one.
-  editor = [self openEditorForFile:filePath 
-			  editable:editable 
-			  windowed:windowed];
+  editor = [self openEditorForFile:filePath
+                          editable:editable
+                          windowed:windowed];
   if (!editor)
-    {
-      NSLog(@"We don't have editor for file: %@", fileName);
-      [self setActiveEditor: nil];
-      return nil;
-    }
+  {
+    NSLog(@"We don't have editor for file: %@", fileName);
+    [self setActiveEditor: nil];
+    return nil;
+  }
 
   // Category path was changed by user's clicking inside browser.
   // That's why new category path must be transfered to editor.
@@ -292,29 +292,29 @@
   [self orderFrontEditorForFile:filePath];
 
   pathLastObject = [pathArray lastObject];
-/*  NSLog(@"pathArray: c: %i %@", [pathArray count], pathArray);
-  NSLog(@"pathArray: lastObject %@", [pathArray lastObject]);
-  NSLog(@"lastObject[1]: %@", 
-  [pathLastObject substringWithRange:NSMakeRange(0,1)]);*/
+  /*  NSLog(@"pathArray: c: %i %@", [pathArray count], pathArray);
+   NSLog(@"pathArray: lastObject %@", [pathArray lastObject]);
+   NSLog(@"lastObject[1]: %@",
+   [pathLastObject substringWithRange:NSMakeRange(0,1)]);*/
 
   if ([pathLastObject isEqualToString:@"/"])
-    {
-      pathLastObject = [pathArray objectAtIndex:[pathArray count]-2];
+  {
+    pathLastObject = [pathArray objectAtIndex:[pathArray count]-2];
 
-      if ([pathLastObject isEqualToString:[fileName lastPathComponent]]) // file selected
-	{ // Reload last column because editor has just been loaded
-	  [[_project projectBrowser] reloadLastColumnAndNotify:NO]; 
-	}
-      else
-	{
-	  [editor fileStructureItemSelected:pathLastObject];
-	}
+    if ([pathLastObject isEqualToString:[fileName lastPathComponent]]) // file selected
+    { // Reload last column because editor has just been loaded
+      [[_project projectBrowser] reloadLastColumnAndNotify:NO];
     }
-  else // TODO: rethink
+    else
     {
-      NSLog(@"[PCE] rethink? openEditorForCategoryPath - pathLastObject: %@", pathLastObject);
       [editor fileStructureItemSelected:pathLastObject];
     }
+  }
+  else // TODO: rethink
+  {
+    NSLog(@"[PCE] rethink? openEditorForCategoryPath - pathLastObject: %@", pathLastObject);
+    [editor fileStructureItemSelected:pathLastObject];
+  }
 
   return editor;
 }
@@ -324,24 +324,24 @@
   id<CodeEditor> editor = [_editorsDict objectForKey:path];
 
   if (!editor)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   if ([editor isWindowed])
-    {
-      [editor show];
-    }
+  {
+    [editor show];
+  }
   else
-    {
-      [_componentView setContentView:[editor componentView]];
-      [[_project projectWindow] setCustomContentView:_componentView];
-      [[_project projectWindow] makeFirstResponder:[editor editorView]];
-      [[_project projectWindow] makeKeyAndOrderFront:self];
+  {
+    [_componentView setContentView:[editor componentView]];
+    [[_project projectWindow] setCustomContentView:_componentView];
+    [[_project projectWindow] makeFirstResponder:[editor editorView]];
+    [[_project projectWindow] makeKeyAndOrderFront:self];
 
-      NSLog(@"PCPE: categoryPath - %@", [editor categoryPath]);
-      [[_project projectBrowser] setPath:[editor categoryPath]];
-    }
+    NSLog(@"PCPE: categoryPath - %@", [editor categoryPath]);
+    [[_project projectBrowser] setPath:[editor categoryPath]];
+  }
 }
 
 // ===========================================================================
@@ -355,13 +355,13 @@
   BOOL           res;
 
   if (editor != nil)
-    {
-      categoryPath = [editor categoryPath];
-      res = [super saveFileAs:file];
-      [editor setCategoryPath:categoryPath];
+  {
+    categoryPath = [editor categoryPath];
+    res = [super saveFileAs:file];
+    [editor setCategoryPath:categoryPath];
 
-      return res;
-    }
+    return res;
+  }
 
   return NO;
 }
@@ -372,15 +372,15 @@
 
 - (void)editorDidOpen:(NSNotification *)aNotif
 {
-/*  PCEditor         *editor = [aNotif object];
-  PCProjectBrowser *browser = [_project projectBrowser];
-  NSString         *path = [browser path];
-  
-  // Active editor is set after PCEditorDidBecomeActiveNotification will be
-  // sent, but we should do it here for loading list of classes into browser.
-  [self setActiveEditor:editor];
-  [browser reloadLastColumnAndNotify:NO];
-  [browser setPath:path];*/
+  /*  PCEditor         *editor = [aNotif object];
+   PCProjectBrowser *browser = [_project projectBrowser];
+   NSString         *path = [browser path];
+
+   // Active editor is set after PCEditorDidBecomeActiveNotification will be
+   // sent, but we should do it here for loading list of classes into browser.
+   [self setActiveEditor:editor];
+   [browser reloadLastColumnAndNotify:NO];
+   [browser setPath:path];*/
   NSLog(@"PCProjectEditor editorDidOpen!");
 }
 
@@ -390,30 +390,30 @@
 
   // It is not our editor
   if (![[_editorsDict allValues] containsObject:editor])
-    {
-      return;
-    }
-  
+  {
+    return;
+  }
+
   [_editorsDict removeObjectForKey:[editor path]];
 
   if ([_editorsDict count])
-    {
-      NSString       *lastEditorKey = [[_editorsDict allKeys] lastObject];
-      id<CodeEditor> lastEditor = [_editorsDict objectForKey:lastEditorKey];
+  {
+    NSString       *lastEditorKey = [[_editorsDict allKeys] lastObject];
+    id<CodeEditor> lastEditor = [_editorsDict objectForKey:lastEditorKey];
 
-      [_componentView setContentView:[lastEditor componentView]];
-      [[_project projectWindow] makeFirstResponder:[lastEditor editorView]];
-    }
+    [_componentView setContentView:[lastEditor componentView]];
+    [[_project projectWindow] makeFirstResponder:[lastEditor editorView]];
+  }
   else
-    {
-      PCProjectBrowser *browser = [_project projectBrowser];
-      
-      [_componentView setContentView:_scrollView];
-      [[_project projectWindow] makeFirstResponder:_scrollView];
+  {
+    PCProjectBrowser *browser = [_project projectBrowser];
 
-      [browser setPath:[browser pathToSelectedCategory]];
-      [self setActiveEditor:nil];
-    }
+    [_componentView setContentView:_scrollView];
+    [[_project projectWindow] makeFirstResponder:_scrollView];
+
+    [browser setPath:[browser pathToSelectedCategory]];
+    [self setActiveEditor:nil];
+  }
 }
 
 - (void)editorDidBecomeActive:(NSNotification *)aNotif
@@ -422,16 +422,16 @@
   NSString       *categoryPath = [editor categoryPath];
 
   if (![[_editorsDict allValues] containsObject:editor])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   [self setActiveEditor:editor];
 
   if (categoryPath)
-    {
-      [[_project projectBrowser] setPath:categoryPath];
-    }
+  {
+    [[_project projectBrowser] setPath:categoryPath];
+  }
 }
 
 @end

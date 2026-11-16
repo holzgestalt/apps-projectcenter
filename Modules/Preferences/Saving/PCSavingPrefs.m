@@ -1,17 +1,17 @@
-// 
+//
 // GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 //
 // Copyright (C) 2001-2009 Free Software Foundation
 //
 // Authors: Sergii Stoian
 //
-// Description: 
+// Description:
 //
 // This file is part of GNUstep.
 //
 // This application is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as published 
-// by the Free Software Foundation; either version 2 of the License, or 
+// modify it under the terms of the GNU General Public License as published
+// by the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This application is distributed in the hope that it will be useful,
@@ -20,7 +20,7 @@
 // Library General Public License for more details.
 //
 // You should have received a copy of the GNU General Public
-// License along with this library; if not, write to the Free Software 
+// License along with this library; if not, write to the Free Software
 // Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
 
 #import "PCSavingPrefs.h"
@@ -36,9 +36,9 @@
   self = [super init];
 
   if ([NSBundle loadNibNamed:@"SavingPrefs" owner:self] == NO)
-    {
-      NSLog(@"PCSavingPrefs: error loading NIB file!");
-    }
+  {
+    NSLog(@"PCSavingPrefs: error loading NIB file!");
+  }
 
   prefs = aPrefs;
 
@@ -97,10 +97,10 @@
   BOOL state;
 
   if (saveOnQuit == nil)
-    {// HACK!!! need to be fixed in GNUstep
-      saveOnQuit = sender;
-      return;
-    }
+  {// HACK!!! need to be fixed in GNUstep
+    saveOnQuit = sender;
+    return;
+  }
 
   state = ([sender state] == NSOffState) ? NO : YES;
   [prefs setBool:state forKey:SaveOnQuit notify:YES];
@@ -111,10 +111,10 @@
   BOOL state;
 
   if (keepBackup == nil)
-    {// HACK!!! need to be fixed in GNUstep
-      keepBackup = sender;
-      return;
-    }
+  {// HACK!!! need to be fixed in GNUstep
+    keepBackup = sender;
+    return;
+  }
 
   state = ([sender state] == NSOffState) ? NO : YES;
   [prefs setBool:state forKey:KeepBackup notify:YES];
@@ -123,18 +123,18 @@
 - (void)setSavePeriod:(id)sender
 {
   NSString *periodString;
-  
+
   if (sender == autosaveSlider)
-    {
-      [autosaveField setIntValue:[sender intValue]];
-    }
+  {
+    [autosaveField setIntValue:[sender intValue]];
+  }
 
   periodString = [autosaveField stringValue];
   [prefs setString:periodString forKey:AutoSavePeriod notify:YES];
 
-  [[NSNotificationCenter defaultCenter] 
-    postNotificationName:PCSavePeriodDidChangeNotification
-                  object:periodString];
+  [[NSNotificationCenter defaultCenter]
+   postNotificationName:PCSavePeriodDidChangeNotification
+   object:periodString];
 }
 
 @end

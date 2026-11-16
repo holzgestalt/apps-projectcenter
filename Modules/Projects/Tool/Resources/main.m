@@ -1,10 +1,10 @@
 /*
-   Project: $PROJECTNAME$
+ Project: $PROJECTNAME$
 
-   Author: $FULLUSERNAME$
+ Author: $FULLUSERNAME$
 
-   Created: $DATE$ by $USERNAME$
-*/
+ Created: $DATE$ by $USERNAME$
+ */
 
 #import <Foundation/Foundation.h>
 

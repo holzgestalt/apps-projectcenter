@@ -1,13 +1,13 @@
-/* 
-   Project: $PROJECTNAME$
+/*
+ Project: $PROJECTNAME$
 
-   Author: $FULLUSERNAME$
+ Author: $FULLUSERNAME$
 
-   Created: $DATE$ by $USERNAME$
-   
-   Application Controller
-*/
- 
+ Created: $DATE$ by $USERNAME$
+
+ Application Controller
+ */
+
 #ifndef _PCAPPPROJ_APPCONTROLLER_H
 #define _PCAPPPROJ_APPCONTROLLER_H
 
@@ -33,7 +33,7 @@
 - (BOOL) applicationShouldTerminate: (id)sender;
 - (void) applicationWillTerminate: (NSNotification *)aNotif;
 - (BOOL) application: (NSApplication *)application
-	    openFile: (NSString *)fileName;
+            openFile: (NSString *)fileName;
 
 // Actions...
 - (IBAction) showPrefPanel: (id)sender;

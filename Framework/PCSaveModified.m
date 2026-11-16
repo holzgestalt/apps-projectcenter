@@ -1,49 +1,49 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2004 Free Software Foundation
+ Copyright (C) 2000-2004 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCEditorManager.h>
 
 #import <ProjectCenter/PCSaveModified.h>
 
 BOOL PCRunSaveModifiedFilesPanel(PCEditorManager *manager,
-				 NSString *defaultText,
-				 NSString *alternateText,
-				 NSString *otherText)
+                                 NSString *defaultText,
+                                 NSString *alternateText,
+                                 NSString *otherText)
 {
   PCSaveModified *saveModifiedPanel;
   BOOL           result;
 
   if (!(saveModifiedPanel = [[PCSaveModified alloc] init]))
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   result = [saveModifiedPanel saveFilesWithEditorManager:manager
-				       defaultButtonText:defaultText
-				     alternateButtonText:alternateText
-					 otherButtonText:otherText];
+                                       defaultButtonText:defaultText
+                                     alternateButtonText:alternateText
+                                         otherButtonText:otherText];
   RELEASE(saveModifiedPanel);
 
   return result;
@@ -53,15 +53,15 @@ BOOL PCRunSaveModifiedFilesPanel(PCEditorManager *manager,
 @implementation PCSaveModified
 
 - (BOOL)saveFilesWithEditorManager:(PCEditorManager *)manager
-		 defaultButtonText:(NSString *)defaultText
-	       alternateButtonText:(NSString *)alternateText
-		   otherButtonText:(NSString *)otherText
+                 defaultButtonText:(NSString *)defaultText
+               alternateButtonText:(NSString *)alternateText
+                   otherButtonText:(NSString *)otherText
 {
   if ([NSBundle loadNibNamed:@"SaveModified" owner:self] == NO)
-    {
-      NSLog(@"Error loading SaveModified NIB file!");
-      return NO;
-    }
+  {
+    NSLog(@"Error loading SaveModified NIB file!");
+    return NO;
+  }
 
   editorManager = manager;
 
@@ -83,18 +83,18 @@ BOOL PCRunSaveModifiedFilesPanel(PCEditorManager *manager,
   [NSApp runModalForWindow:panel];
 
   if (clickedButton == defaultButton)
-    {
-      [self saveSelectedFiles];
-      return YES;
-    }
+  {
+    [self saveSelectedFiles];
+    return YES;
+  }
   else if (clickedButton == alternateButton)
-    {
-      return YES;
-    }
+  {
+    return YES;
+  }
   else if (clickedButton == otherButton)
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 
   return YES;
 }
@@ -120,9 +120,9 @@ BOOL PCRunSaveModifiedFilesPanel(PCEditorManager *manager,
   NSLog(@"SaveModified|filesToSave: %@", filesToSave);
 
   while ((filePath = [enumerator nextObject]))
-    {
-      [[editorManager editorForFile:filePath] saveFileIfNeeded];
-    }
+  {
+    [[editorManager editorForFile:filePath] saveFileIfNeeded];
+  }
 
   return YES;
 }
@@ -140,10 +140,10 @@ BOOL PCRunSaveModifiedFilesPanel(PCEditorManager *manager,
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView
 {
   if (aTableView != filesList)
-    {
-      return 0;
-    }
-  
+  {
+    return 0;
+  }
+
   return [[editorManager modifiedFiles] count];
 }
 
@@ -152,9 +152,9 @@ BOOL PCRunSaveModifiedFilesPanel(PCEditorManager *manager,
                         row:(NSInteger)rowIndex
 {
   if (aTableView != filesList)
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   return [[[editorManager modifiedFiles] objectAtIndex:rowIndex] lastPathComponent];
 }

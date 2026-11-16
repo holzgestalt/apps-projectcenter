@@ -1,26 +1,26 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2003 Free Software Foundation
+ Copyright (C) 2003 Free Software Foundation
 
-   Authors: Serg Stoyan
+ Authors: Serg Stoyan
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCProjectManager.h>
 #import <ProjectCenter/PCProject.h>
@@ -38,8 +38,8 @@
   PCProject *activeProject = [projectManager rootActiveProject];
 
   [panel setFrameAutosaveName:@"ProjectBuilder"];
-  [panel setTitle:[NSString stringWithFormat: 
-    @"%@ - Project Build", [activeProject projectName]]];
+  [panel setTitle:[NSString stringWithFormat:
+                   @"%@ - Project Build", [activeProject projectName]]];
 
   // Panel's content view
   [panel setContentView:contentBox];
@@ -48,16 +48,16 @@
   RETAIN(emptyBox);
 
   // Track project switching
-  [[NSNotificationCenter defaultCenter] 
-    addObserver:self
-       selector:@selector(activeProjectDidChange:)
-           name:PCActiveProjectDidChangeNotification
-         object:nil];
+  [[NSNotificationCenter defaultCenter]
+   addObserver:self
+   selector:@selector(activeProjectDidChange:)
+   name:PCActiveProjectDidChangeNotification
+   object:nil];
 
   if (![panel setFrameUsingName:@"ProjectBuilder"])
-    {
-      [panel center];
-    }
+  {
+    [panel center];
+  }
 }
 
 - (id)initWithProjectManager:(PCProjectManager *)aManager
@@ -65,10 +65,10 @@
   projectManager = aManager;
 
   if ([NSBundle loadNibNamed:@"BuilderPanel" owner:self] == NO)
-    {
-      PCLogError(self, @"error loading BuilderPanel NIB file!");
-      return nil;
-    }
+  {
+    PCLogError(self, @"error loading BuilderPanel NIB file!");
+    return nil;
+  }
 
   return self;
 }
@@ -80,7 +80,7 @@
 #endif
 
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-  
+
   RELEASE(emptyBox);
 
   [super dealloc];
@@ -92,23 +92,23 @@
   NSView    *builderView = [[activeProject projectBuilder] componentView];
 
   if (!([contentBox contentView] == builderView))
-    {
-      [contentBox setContentView:builderView];
-    }
+  {
+    [contentBox setContentView:builderView];
+  }
 
-/*  NSLog(self, @"orderFront: %@ -> %@", 
-  	builderView, [builderView superview]);*/
+  /*  NSLog(self, @"orderFront: %@ -> %@",
+   builderView, [builderView superview]);*/
 
   [panel orderFront:self];
 }
 
 - (void)close
 {
-//  PCLogInfo(self, @"close: %@", [contentBox contentView]);
+  //  PCLogInfo(self, @"close: %@", [contentBox contentView]);
 
   [contentBox setContentView:emptyBox];
-  
-//  PCLogInfo(self, @"close: %@", [contentBox contentView]);
+
+  //  PCLogInfo(self, @"close: %@", [contentBox contentView]);
 
   [panel close];
 }
@@ -119,31 +119,31 @@
   id <PCPreferences> prefs = [projectManager prefController];
 
   if (![prefs boolForKey:UseTearOffWindows])
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   rootProject = [projectManager rootActiveProject];
   if (rootProject == currentProject)
-    {
-      return;
-    }
-  
+  {
+    return;
+  }
+
   currentProject = rootProject;
 
-//  NSLog(@"Buider Panel: activeProjectDidChange to: %@",
-//	[rootProject projectName]);
+  //  NSLog(@"Buider Panel: activeProjectDidChange to: %@",
+  //	[rootProject projectName]);
 
   if (!rootProject)
-    {
-      [contentBox setContentView:emptyBox];
-    }
+  {
+    [contentBox setContentView:emptyBox];
+  }
   else
-    {
-      [panel setTitle:[NSString stringWithFormat: 
-	@"%@ - Project Build", [rootProject projectName]]];
-      [contentBox setContentView:[[rootProject projectBuilder] componentView]];
-    }
+  {
+    [panel setTitle:[NSString stringWithFormat:
+                     @"%@ - Project Build", [rootProject projectName]]];
+    [contentBox setContentView:[[rootProject projectBuilder] componentView]];
+  }
 }
 
 - (BOOL)isVisible

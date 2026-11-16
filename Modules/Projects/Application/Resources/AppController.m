@@ -1,12 +1,12 @@
-/* 
-   Project: $PROJECTNAME$
+/*
+ Project: $PROJECTNAME$
 
-   Author: $FULLUSERNAME$
+ Author: $FULLUSERNAME$
 
-   Created: $DATE$ by $USERNAME$
-   
-   Application Controller
-*/
+ Created: $DATE$ by $USERNAME$
+
+ Application Controller
+ */
 
 #import "AppController.h"
 
@@ -23,7 +23,7 @@
    * [defaults setObject:anObject forKey:keyForThatObject];
    *
    */
-  
+
   [[NSUserDefaults standardUserDefaults] registerDefaults: defaults];
   [[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -31,8 +31,8 @@
 - (id) init
 {
   if ((self = [super init]))
-    {
-    }
+  {
+  }
   return self;
 }
 
@@ -47,8 +47,8 @@
 
 - (void) applicationDidFinishLaunching: (NSNotification *)aNotif
 {
-// Uncomment if your application is Renaissance-based
-//  [NSBundle loadGSMarkupNamed: @"Main" owner: self];
+  // Uncomment if your application is Renaissance-based
+  //  [NSBundle loadGSMarkupNamed: @"Main" owner: self];
 }
 
 - (BOOL) applicationShouldTerminate: (id)sender
@@ -61,7 +61,7 @@
 }
 
 - (BOOL) application: (NSApplication *)application
-	    openFile: (NSString *)fileName
+            openFile: (NSString *)fileName
 {
   return NO;
 }

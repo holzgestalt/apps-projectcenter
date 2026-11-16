@@ -1,15 +1,15 @@
 /*
-   PCNavigators.h
+ PCNavigators.h
 
-   Breakpoint and debug navigators for the project window's sidebar.
+ Breakpoint and debug navigators for the project window's sidebar.
 
-   This file is part of GNUstep ProjectCenter.
+ This file is part of GNUstep ProjectCenter.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-*/
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ */
 
 #import <AppKit/AppKit.h>
 #import <Protocols/CodeDebugger.h>
@@ -19,7 +19,7 @@
 /* One row in a navigator outline. */
 @interface PCNavigatorItem : NSObject
 {
-@public
+  @public
   NSString       *title;
   NSImage        *icon;
   NSString       *toolTip;

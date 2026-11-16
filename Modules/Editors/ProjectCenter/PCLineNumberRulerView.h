@@ -1,6 +1,6 @@
 /*
-   GNUstep ProjectCenter - line number ruler for the editor.
-*/
+ GNUstep ProjectCenter - line number ruler for the editor.
+ */
 
 #import <AppKit/AppKit.h>
 

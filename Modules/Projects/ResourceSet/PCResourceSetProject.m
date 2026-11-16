@@ -1,27 +1,27 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2004-2017 Free Software Foundation
+ Copyright (C) 2004-2017 Free Software Foundation
 
-   Authors: Serg Stoyan
-            Riccardo Mottola
+ Authors: Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCMakefileFactory.h>
 
@@ -36,22 +36,22 @@
 - (id)init
 {
   if ((self = [super init]))
-    {
-      rootKeys = [[NSArray arrayWithObjects:
-	PCOtherResources,
-	PCSupportingFiles,
-	PCNonProject,
-	nil] retain];
+  {
+    rootKeys = [[NSArray arrayWithObjects:
+                 PCOtherResources,
+                 PCSupportingFiles,
+                 PCNonProject,
+                 nil] retain];
 
-      rootCategories = [[NSArray arrayWithObjects:
-	@"Other Resources",
-	@"Supporting Files",
-	@"Non Project Files",
-	nil] retain];
+    rootCategories = [[NSArray arrayWithObjects:
+                       @"Other Resources",
+                       @"Supporting Files",
+                       @"Non Project Files",
+                       nil] retain];
 
-      rootEntries = [[NSDictionary 
-	dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
-    }
+    rootEntries = [[NSDictionary
+                    dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
+  }
 
   return self;
 }
@@ -63,7 +63,7 @@
   [rootEntries release];
 
   if (projectAttributesView) [projectAttributesView release];
-  
+
   [super dealloc];
 }
 
@@ -96,9 +96,9 @@
   [self setProjectPath:path];
   [self setProjectName:[path lastPathComponent]];
   if ([[projectName pathExtension] isEqualToString:@"subproj"])
-    {
-      projectName = [projectName stringByDeletingPathExtension];
-    }
+  {
+    projectName = [projectName stringByDeletingPathExtension];
+  }
   [projectDict setObject:projectName forKey:PCProjectName];
   [projectDict setObject:[[NSCalendarDate date] description]
                   forKey:PCCreationDate];
@@ -147,39 +147,39 @@
   resources = [[NSMutableArray alloc] initWithCapacity:1];
   // Gather all resource files into one array
   for (i = 0; i < count; i++)
-    {
-      key = [[self resourceFileKeys] objectAtIndex:i];
-      
-      [resources addObjectsFromArray:[projectDict objectForKey:key]];
-    }
+  {
+    key = [[self resourceFileKeys] objectAtIndex:i];
+
+    [resources addObjectsFromArray:[projectDict objectForKey:key]];
+  }
   // Remove localized resource files from gathered array
   localizedResources = [projectDict objectForKey:PCLocalizedResources];
   for (i = [resources count]; i > 0; i--)
+  {
+    if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
     {
-      if ([localizedResources containsObject:[resources objectAtIndex:i-1]])
-	{
-	  [resources removeObjectAtIndex:i-1];
-	}
+      [resources removeObjectAtIndex:i-1];
     }
+  }
   [mf appendResources:resources inDir:@"Resources"];
   [resources release];
 
   // Localization
   [mf appendLocalizedResources:localizedResources
-		  forLanguages:[projectDict objectForKey:PCUserLanguages]];
+                  forLanguages:[projectDict objectForKey:PCUserLanguages]];
 
   // Tail
   [self appendTail:mf];
 
   // Write the new file to disc!
   mfl = [projectPath stringByAppendingPathComponent:@"GNUmakefile"];
-  if ((mfd = [mf encodedMakefile])) 
+  if ((mfd = [mf encodedMakefile]))
+  {
+    if ([mfd writeToFile:mfl atomically:YES])
     {
-      if ([mfd writeToFile:mfl atomically:YES]) 
-	{
-	  return YES;
-	}
+      return YES;
     }
+  }
 
   return NO;
 }
@@ -188,12 +188,12 @@
 {
   [mff appendString:@"\n#\n# Resource Set\n#\n"];
   [mff appendString:[NSString stringWithFormat:@"RESOURCE_SET_NAME = %@\n",
-    projectName]];
+                     projectName]];
 
   // updated variable and path as suggested by makefile migration
   // TODO: perhaps paths hould be created with system path separator
   [mff appendString:
-         [NSString stringWithFormat:@"%@_INSTALL_DIR = $(GNUSTEP_LIBRARY)/Libraries/Resources/%@\n",projectName, projectName]];
+   [NSString stringWithFormat:@"%@_INSTALL_DIR = $(GNUSTEP_LIBRARY)/Libraries/Resources/%@\n",projectName, projectName]];
 }
 
 - (void)appendTail:(PCMakefileFactory *)mff
@@ -211,20 +211,20 @@
 - (NSView *)projectAttributesView
 {
   if (projectAttributesView == nil)
+  {
+    if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
     {
-      if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
-	{
-	  NSLog(@"PCLibraryProject: error loading Inspector NIB!");
-	  return nil;
-	}
-      [projectAttributesView retain];
-      [self updateInspectorValues:nil];
+      NSLog(@"PCLibraryProject: error loading Inspector NIB!");
+      return nil;
     }
+    [projectAttributesView retain];
+    [self updateInspectorValues:nil];
+  }
 
   return projectAttributesView;
 }
 
-- (void)updateInspectorValues:(NSNotification *)aNotif 
+- (void)updateInspectorValues:(NSNotification *)aNotif
 {
 }
 

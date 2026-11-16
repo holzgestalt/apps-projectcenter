@@ -1,11 +1,11 @@
-// 
+//
 // GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 //
 // Copyright (C) 2001-2009 Free Software Foundation
 //
 // Authors: Sergii Stoian
 //
-// Description: 
+// Description:
 //
 // This file is part of GNUstep.
 //
@@ -26,7 +26,7 @@
 #import <AppKit/AppKit.h>
 #import <Protocols/Preferences.h>
 
-#ifndef PCDefaultBuildTool 
+#ifndef PCDefaultBuildTool
 #define PCDefaultBuildTool @"/usr/bin/make"
 #endif
 

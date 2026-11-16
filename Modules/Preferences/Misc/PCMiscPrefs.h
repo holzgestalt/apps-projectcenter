@@ -1,11 +1,11 @@
-// 
+//
 // GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 //
 // Copyright (C) 2001-2009 Free Software Foundation
 //
 // Authors: Sergii Stoian
 //
-// Description: 
+// Description:
 //
 // This file is part of GNUstep.
 //

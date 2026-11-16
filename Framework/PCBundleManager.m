@@ -1,27 +1,27 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2000-2004 Free Software Foundation
+ Copyright (C) 2000-2004 Free Software Foundation
 
-   Authors: Philippe C.D. Robert
-            Serg Stoyan
+ Authors: Philippe C.D. Robert
+ Serg Stoyan
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 // TODO: Finish support for third party bundles.
 //       It involves support for user defined bundle directories
@@ -45,10 +45,10 @@
 - (id)init
 {
   if ((self = [super init]))
-    {
-      loadedBundles = [[NSMutableDictionary alloc] init];
-      bundlesInfo = [[NSMutableDictionary alloc] init];
-    }
+  {
+    loadedBundles = [[NSMutableDictionary alloc] init];
+    bundlesInfo = [[NSMutableDictionary alloc] init];
+  }
 
   return self;
 }
@@ -66,12 +66,12 @@
 {
   NSString *path = [[NSBundle mainBundle] resourcePath];
 
-  if (![[NSFileManager defaultManager] fileExistsAtPath:path]) 
-    {
-      [NSException raise:@"PCBundleManagerPathException" 
-	          format:@"ProjectCenter installed incorrectly"];
-      return nil;
-    }
+  if (![[NSFileManager defaultManager] fileExistsAtPath:path])
+  {
+    [NSException raise:@"PCBundleManagerPathException"
+                format:@"ProjectCenter installed incorrectly"];
+    return nil;
+  }
 
   return path;
 }
@@ -92,33 +92,33 @@
   NSMutableDictionary *reqBundlesInfo;
 
   reqBundlesInfo = [NSMutableDictionary dictionary];
-  bundles = [NSBundle pathsForResourcesOfType:extension 
+  bundles = [NSBundle pathsForResourcesOfType:extension
                                   inDirectory:[self resourcePath]];
   enumerator = [bundles objectEnumerator];
 
   while ((bundlePath = [enumerator nextObject]))
+  {
+    infoTablePath = [NSString
+                     stringWithFormat:@"%@/Resources/Info.table", bundlePath];
+    // TODO: fill 'reqBundlesInfo' with element from 'bundlesInfo' if
+    // exists
+    infoTable = [NSDictionary dictionaryWithContentsOfFile:infoTablePath];
+    if (infoTable == nil)
     {
-      infoTablePath = [NSString 
-	stringWithFormat:@"%@/Resources/Info.table", bundlePath];
-      // TODO: fill 'reqBundlesInfo' with element from 'bundlesInfo' if
-      // exists
-      infoTable = [NSDictionary dictionaryWithContentsOfFile:infoTablePath];
-      if (infoTable == nil)
-	{
-	  PCLogInfo(self, @"Ignoring bundle without Info.table at %@", bundlePath);
-	  continue;
-	}
-      [reqBundlesInfo setObject:infoTable forKey:bundlePath];
-      [bundlesInfo setObject:infoTable forKey:bundlePath];
+      PCLogInfo(self, @"Ignoring bundle without Info.table at %@", bundlePath);
+      continue;
     }
+    [reqBundlesInfo setObject:infoTable forKey:bundlePath];
+    [bundlesInfo setObject:infoTable forKey:bundlePath];
+  }
 
   return reqBundlesInfo;
 }
 
 // Key value can be checked against NSString and NSArray values only.
 - (NSDictionary *)infoForBundleType:(NSString *)extension
-			    keyName:(NSString *)key
-			keyContains:(NSString *)value
+                            keyName:(NSString *)key
+                        keyContains:(NSString *)value
 {
   NSDictionary *reqBundlesInfo;
   NSEnumerator *enumerator;
@@ -127,46 +127,46 @@
   NSDictionary *infoTable;
 
   if (extension == nil)
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   reqBundlesInfo = [self infoForBundlesType:extension];
   enumerator = [[reqBundlesInfo allKeys] objectEnumerator];
 
   infoTable = nil;
   while ((bundlePath = [enumerator nextObject]))
+  {
+    infoTable = [reqBundlesInfo objectForKey:bundlePath];
+
+    if (key == nil || value == nil)
     {
-      infoTable = [reqBundlesInfo objectForKey:bundlePath];
-
-      if (key == nil || value == nil)
-	{
-	  break;
-	}
-
-      keyValue = [infoTable objectForKey:key];
-
-      if ([keyValue isKindOfClass:[NSString class]] &&
-	  [keyValue isEqualToString:value])
-	{
-	  break;
-	}
-      else if ([keyValue isKindOfClass:[NSArray class]] &&
-	       [keyValue containsObject:value])
-	{
-	  break;
-	}
-      else
-	{
-	  infoTable = nil;
-	}
+      break;
     }
+
+    keyValue = [infoTable objectForKey:key];
+
+    if ([keyValue isKindOfClass:[NSString class]] &&
+        [keyValue isEqualToString:value])
+    {
+      break;
+    }
+    else if ([keyValue isKindOfClass:[NSArray class]] &&
+             [keyValue containsObject:value])
+    {
+      break;
+    }
+    else
+    {
+      infoTable = nil;
+    }
+  }
 
   return infoTable;
 }
 
 - (NSDictionary *)infoForBundleName:(NSString *)name
-			       type:(NSString *)type
+                               type:(NSString *)type
 {
   NSDictionary *reqBundlesInfo = [self infoForBundlesType:type];
   NSEnumerator *enumerator = [[reqBundlesInfo allKeys] objectEnumerator];
@@ -175,35 +175,35 @@
 
   infoTable = nil;
   while ((bundlePath = [enumerator nextObject]))
+  {
+    infoTable = [reqBundlesInfo objectForKey:bundlePath];
+    if ([[infoTable objectForKey:@"Name"] isEqualToString:name])
     {
-      infoTable = [reqBundlesInfo objectForKey:bundlePath];
-      if ([[infoTable objectForKey:@"Name"] isEqualToString:name])
-	{
-	  break;
-	}
-      else
-	{
-	  infoTable = nil;
-	}
+      break;
     }
+    else
+    {
+      infoTable = nil;
+    }
+  }
 
   return infoTable;
 }
 
-- (NSString *)classNameForBundleType:(NSString*)type 
-			    fileName:(NSString *)fileName
+- (NSString *)classNameForBundleType:(NSString*)type
+                            fileName:(NSString *)fileName
 {
   NSString     *fileExtension = [fileName pathExtension];
   NSDictionary *infoTable = nil;
   NSString     *className = nil;
 
   infoTable = [self infoForBundleType:type
-			      keyName:@"FileTypes"
-			  keyContains:fileExtension];
+                              keyName:@"FileTypes"
+                          keyContains:fileExtension];
   if (infoTable == nil)
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   className = [infoTable objectForKey:@"PrincipalClassName"];
 
@@ -220,18 +220,18 @@
   bundlePaths = [bundlesInfo allKeys];
   enumerator = [bundlePaths objectEnumerator];
 
-//  NSLog(@"Bundle fullpath method #1: %@", 
-//	[[self resourcePath] stringByAppendingPathComponent:bundleName]);
+  //  NSLog(@"Bundle fullpath method #1: %@",
+  //	[[self resourcePath] stringByAppendingPathComponent:bundleName]);
 
   while ((bundleFullPath = [enumerator nextObject]))
+  {
+    if ([[bundleFullPath lastPathComponent] isEqualToString:bundleName])
     {
-      if ([[bundleFullPath lastPathComponent] isEqualToString:bundleName])
-	{
-	  break;
-	}
+      break;
     }
+  }
 
-//  NSLog(@"Bundle fullpath method #2: %@", bundleFullPath);
+  //  NSLog(@"Bundle fullpath method #2: %@", bundleFullPath);
 
   return bundleFullPath;
 }
@@ -239,81 +239,81 @@
 // --- Invokes loading of bundle
 
 - (id)objectForClassName:(NSString *)className
-	      bundleType:(NSString *)bundleExtension
-		protocol:(Protocol *)proto
+              bundleType:(NSString *)bundleExtension
+                protocol:(Protocol *)proto
 {
   Class objectClass;
 
   if (![className isKindOfClass:[NSString class]] || [className length] == 0)
-    {
-      NSLog(@"Bundle for class called with empty className");
-      return nil;
-    }
+  {
+    NSLog(@"Bundle for class called with empty className");
+    return nil;
+  }
 
   if ([self bundleOfType:bundleExtension withClassName:className] == nil)
-    {
-      NSLog(@"Bundle for class %@ NOT FOUND!", className);
-      return nil;
-    }
+  {
+    NSLog(@"Bundle for class %@ NOT FOUND!", className);
+    return nil;
+  }
 
   objectClass = NSClassFromString(className);
   if (objectClass == Nil)
-    {
-      NSLog(@"Class %@ not found after loading bundle!", className);
-      return nil;
-    }
+  {
+    NSLog(@"Class %@ not found after loading bundle!", className);
+    return nil;
+  }
 
   if (proto != nil && ![objectClass conformsToProtocol:proto])
-    {
-      [NSException raise:NOT_A_PROJECT_TYPE_EXCEPTION 
-	          format:@"%@ does not conform to protocol!", className];
-      return nil;
-    }
+  {
+    [NSException raise:NOT_A_PROJECT_TYPE_EXCEPTION
+                format:@"%@ does not conform to protocol!", className];
+    return nil;
+  }
 
   return [[objectClass alloc] init];
 }
 
 - (id)objectForBundleWithName:(NSString *)name
-			 type:(NSString *)extension
-		     protocol:(Protocol *)proto
+                         type:(NSString *)extension
+                     protocol:(Protocol *)proto
 {
   NSDictionary *infoTable;
   NSString     *className;
 
   infoTable = [self infoForBundleName:name type:extension];
   if (infoTable == nil)
-    {
-      PCLogInfo(self, @"Bundle %@.%@ NOT FOUND!", name, extension);
-      return nil;
-    }
+  {
+    PCLogInfo(self, @"Bundle %@.%@ NOT FOUND!", name, extension);
+    return nil;
+  }
   className = [infoTable objectForKey:@"PrincipalClassName"];
 
-  return [self objectForClassName:className 
-		       bundleType:extension
-			 protocol:proto];
+  return [self objectForClassName:className
+                       bundleType:extension
+                         protocol:proto];
 }
 
 - (id)objectForBundleType:(NSString *)extension
-		 protocol:(Protocol *)proto
-		 fileName:(NSString *)fileName
+                 protocol:(Protocol *)proto
+                 fileName:(NSString *)fileName
 {
   NSString     *className;
 
   className = [self classNameForBundleType:extension fileName:fileName];
   if ([className length] == 0)
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
-  return [self objectForClassName:className 
-		       bundleType:extension
-			 protocol:proto];
+  return [self objectForClassName:className
+                       bundleType:extension
+                         protocol:proto];
 }
 
 // --- Bundle loading
 
 - (NSBundle *)bundleOfType:(NSString *)type
-	     withClassName:(NSString *)className
+             withClassName:(NSString *)className
 {
   NSArray      *bundlePaths = nil;
   NSString     *bundleFullPath = nil;
@@ -326,35 +326,35 @@
   // Search for bundle full path in bundlesInfo dictionary
   bundlePaths = [bundlesInfo allKeys];
   enumerator = [bundlePaths objectEnumerator];
-  
+
   while ((bundleFullPath = [enumerator nextObject]))
+  {
+
+    if ([[bundleFullPath pathExtension] isEqualToString:type])
     {
-
-      if ([[bundleFullPath pathExtension] isEqualToString:type])
-	{
-	  infoTable = [bundlesInfo objectForKey:bundleFullPath];
-	  principalClass = [infoTable objectForKey:@"PrincipalClassName"];
-	  if ([className isEqualToString:principalClass])
-	    {
-	      matchedBundlePath = bundleFullPath;
-	      break;
-	    }
-	}
+      infoTable = [bundlesInfo objectForKey:bundleFullPath];
+      principalClass = [infoTable objectForKey:@"PrincipalClassName"];
+      if ([className isEqualToString:principalClass])
+      {
+        matchedBundlePath = bundleFullPath;
+        break;
+      }
     }
+  }
 
-//  NSLog(@"bundleForClassName: %@ path %@", className, bundleFullPath);
+  //  NSLog(@"bundleForClassName: %@ path %@", className, bundleFullPath);
 
   if (matchedBundlePath == nil)
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   // Extract from full bundle path it's name and extension
   bundleName = [matchedBundlePath lastPathComponent];
   if (![self loadBundleIfNeededWithName:bundleName])
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 
   return [loadedBundles objectForKey:matchedBundlePath];
 }
@@ -365,10 +365,10 @@
 
   // Check if bundle allready loaded
   if ([[loadedBundles allKeys] containsObject:bundleFullPath] == NO)
-    {
-      return [self loadBundleWithFullPath:bundleFullPath];
-    }
-  
+  {
+    return [self loadBundleWithFullPath:bundleFullPath];
+  }
+
   return YES;
 }
 
@@ -380,24 +380,24 @@
   NSString      *path = [self resourcePath];
 
   if (path)
-    {
-      [self loadBundlesAtPath:path withExtension:extension];
-    }
- 
+  {
+    [self loadBundlesAtPath:path withExtension:extension];
+  }
+
   // Load third party bundles
   enumerator = [NSSearchPathForDirectoriesInDomains
-		 (NSApplicationSupportDirectory, NSAllDomainsMask, YES) 
-		 objectEnumerator];
+                (NSApplicationSupportDirectory, NSAllDomainsMask, YES)
+                objectEnumerator];
   while ((path = [enumerator nextObject]) != nil)
-    {
-      path = [path stringByAppendingPathComponent:@"ProjectCenter"];
+  {
+    path = [path stringByAppendingPathComponent:@"ProjectCenter"];
 
-      if ([fileManager fileExistsAtPath:path isDirectory:&isDir] && isDir)
-	{
-	  PCLogInfo(self, @"Loading bundles at %@", path);
-	  [self loadBundlesAtPath:path withExtension:extension];
-	}
+    if ([fileManager fileExistsAtPath:path isDirectory:&isDir] && isDir)
+    {
+      PCLogInfo(self, @"Loading bundles at %@", path);
+      [self loadBundlesAtPath:path withExtension:extension];
     }
+  }
 }
 
 - (void)loadBundlesAtPath:(NSString *)path withExtension:(NSString *)extension
@@ -410,16 +410,16 @@
   enumerator = [dir objectEnumerator];
 
   while ((bundleName = [enumerator nextObject]))
+  {
+    if ([[bundleName pathExtension] isEqualToString:extension])
     {
-      if ([[bundleName pathExtension] isEqualToString:extension]) 
-	{
-	  NSString *fullPath = nil;
+      NSString *fullPath = nil;
 
-	  fullPath = [NSString stringWithFormat:@"%@/%@", path, bundleName];
+      fullPath = [NSString stringWithFormat:@"%@/%@", path, bundleName];
 
-	  [self loadBundleWithFullPath:fullPath];
-	}
+      [self loadBundleWithFullPath:fullPath];
     }
+  }
 }
 
 - (BOOL)loadBundleWithFullPath:(NSString *)path
@@ -427,18 +427,18 @@
   NSBundle *bundle = nil;
 
   if ((bundle = [NSBundle bundleWithPath:path]) && [bundle load])
-    {
-      [loadedBundles setObject:bundle forKey:path];
+  {
+    [loadedBundles setObject:bundle forKey:path];
 
-      PCLogInfo(self, @"Bundle %@ successfully loaded!", path);
-    }
-  else 
-    {
-      NSRunAlertPanel(@"Load Bundle",
-		      @"Could not load bundle %@!",
-		      @"OK", nil, nil, path);
-      return NO;
-    }
+    PCLogInfo(self, @"Bundle %@ successfully loaded!", path);
+  }
+  else
+  {
+    NSRunAlertPanel(@"Load Bundle",
+                    @"Could not load bundle %@!",
+                    @"OK", nil, nil, path);
+    return NO;
+  }
 
   return YES;
 }

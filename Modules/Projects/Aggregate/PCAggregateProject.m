@@ -1,27 +1,27 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2004-2017 Free Software Foundation
+ Copyright (C) 2004-2017 Free Software Foundation
 
-   Authors: Serg Stoyan
-            Riccardo Mottola
+ Authors: Serg Stoyan
+ Riccardo Mottola
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCFileManager.h>
@@ -38,32 +38,32 @@
 - (id)init
 {
   if ((self = [super init]))
-    {
-/*      NSString *_file;
-      Class    class = [self builderClass];
+  {
+    /*      NSString *_file;
+     Class    class = [self builderClass];
 
-      _file = [[NSBundle bundleForClass:class] pathForResource:@"Info"
-                                                        ofType:@"table"];
-      infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:_file];
-      rootEntries = [infoDict objectForKey:@"BrowserRootEntries"];
-      rootKeys = [[rootEntries allKeys] retain];
-      rootCategories = [[rootEntries allValues] retain];*/
+     _file = [[NSBundle bundleForClass:class] pathForResource:@"Info"
+     ofType:@"table"];
+     infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:_file];
+     rootEntries = [infoDict objectForKey:@"BrowserRootEntries"];
+     rootKeys = [[rootEntries allKeys] retain];
+     rootCategories = [[rootEntries allValues] retain];*/
 
-      rootKeys = [[NSArray arrayWithObjects:
-	PCSubprojects,
-	PCSupportingFiles,
-	PCNonProject,
-	nil] retain];
+    rootKeys = [[NSArray arrayWithObjects:
+                 PCSubprojects,
+                 PCSupportingFiles,
+                 PCNonProject,
+                 nil] retain];
 
-      rootCategories = [[NSArray arrayWithObjects:
-	@"Subprojects",
-	@"Supporting Files",
-	@"Non Project Files",
-	nil] retain];
-      
-      rootEntries = [[NSDictionary 
-	dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
-    }
+    rootCategories = [[NSArray arrayWithObjects:
+                       @"Subprojects",
+                       @"Supporting Files",
+                       @"Non Project Files",
+                       nil] retain];
+
+    rootEntries = [[NSDictionary
+                    dictionaryWithObjects:rootCategories forKeys:rootKeys] retain];
+  }
 
   return self;
 }
@@ -75,7 +75,7 @@
   [rootEntries release];
 
   if (projectAttributesView) [projectAttributesView release];
-  
+
   [super dealloc];
 }
 
@@ -103,7 +103,7 @@
   projectBundle = [NSBundle bundleForClass:[self class]];
 
   [pcfm createDirectoriesIfNeededAtPath:path];
-  
+
   _file = [projectBundle pathForResource:@"PC" ofType:@"project"];
   [projectDict initWithContentsOfFile:_file];
 
@@ -111,9 +111,9 @@
   [self setProjectPath:path];
   [self setProjectName:[path lastPathComponent]];
   if ([[projectName pathExtension] isEqualToString:@"subproj"])
-    {
-      projectName = [projectName stringByDeletingPathExtension];
-    }
+  {
+    projectName = [projectName stringByDeletingPathExtension];
+  }
   [projectDict setObject:projectName forKey:PCProjectName];
   [projectDict setObject:[[NSCalendarDate date] description]
                   forKey:PCCreationDate];
@@ -155,22 +155,22 @@
 
   // Subprojects
   if ([[projectDict objectForKey:PCSubprojects] count] > 0)
-    {
-      [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
-    }
+  {
+    [mf appendSubprojects:[projectDict objectForKey:PCSubprojects]];
+  }
 
   // Tail
   [self appendTail:mf];
 
   // Write the new file to disc!
   mfl = [projectPath stringByAppendingPathComponent:@"GNUmakefile"];
-  if ((mfd = [mf encodedMakefile])) 
+  if ((mfd = [mf encodedMakefile]))
+  {
+    if ([mfd writeToFile:mfl atomically:NO])
     {
-      if ([mfd writeToFile:mfl atomically:NO]) 
-	{
-	  return YES;
-	}
+      return YES;
     }
+  }
 
   return NO;
 }
@@ -179,9 +179,9 @@
 {
   [mff appendString:@"\n#\n# Aggregate\n#\n"];
   [mff appendString:[NSString stringWithFormat:@"VERSION = %@\n",
-    [projectDict objectForKey:PCRelease]]];
+                     [projectDict objectForKey:PCRelease]]];
   [mff appendString:[NSString stringWithFormat:@"PACKAGE_NAME = %@\n",
-    projectName]];
+                     projectName]];
 }
 
 - (void)appendTail:(PCMakefileFactory *)mff
@@ -199,20 +199,20 @@
 - (NSView *)projectAttributesView
 {
   if (projectAttributesView == nil)
+  {
+    if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
     {
-      if ([NSBundle loadNibNamed:@"Inspector" owner:self] == NO)
-	{
-	  NSLog(@"PCLibraryProject: error loading Inspector NIB!");
-	  return nil;
-	}
-      [projectAttributesView retain];
-      [self updateInspectorValues:nil];
+      NSLog(@"PCLibraryProject: error loading Inspector NIB!");
+      return nil;
     }
+    [projectAttributesView retain];
+    [self updateInspectorValues:nil];
+  }
 
   return projectAttributesView;
 }
 
-- (void)updateInspectorValues:(NSNotification *)aNotif 
+- (void)updateInspectorValues:(NSNotification *)aNotif
 {
 }
 
