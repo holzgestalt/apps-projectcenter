@@ -1,17 +1,17 @@
-// 
+//
 // GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 //
 // Copyright (C) 2001-2011 Free Software Foundation
 //
 // Authors: Sergii Stoian
 //
-// Description: 
+// Description:
 //
 // This file is part of GNUstep.
 //
 // This application is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as published 
-// by the Free Software Foundation; either version 2 of the License, or 
+// modify it under the terms of the GNU General Public License as published
+// by the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
 // This application is distributed in the hope that it will be useful,
@@ -20,7 +20,7 @@
 // Library General Public License for more details.
 //
 // You should have received a copy of the GNU General Public
-// License along with this library; if not, write to the Free Software 
+// License along with this library; if not, write to the Free Software
 // Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
 
 #import <ProjectCenter/PCFileManager.h>
@@ -38,9 +38,9 @@
   self = [super init];
 
   if ([NSBundle loadNibNamed:@"MiscPrefs" owner:self] == NO)
-    {
-      NSLog(@"PCMiscPrefs: error loading NIB file!");
-    }
+  {
+    NSLog(@"PCMiscPrefs: error loading NIB file!");
+  }
 
   prefs = aPrefs;
 
@@ -81,11 +81,11 @@
 
   /* some heuristic to find the best debugger default */
   debuggerToolDefault = [pcfm findExecutableToolFrom:
-                                [NSArray arrayWithObjects:
-                                      @"usr/local/bin/gdb",
-                                    @"usr/bin/gdb",
-                                    @"bin/gdb",
-                                    nil]];
+                         [NSArray arrayWithObjects:
+                          @"usr/local/bin/gdb",
+                          @"usr/bin/gdb",
+                          @"bin/gdb",
+                          nil]];
   NSLog(@"Debugger tool found: %@", debuggerToolDefault);
 
   bVal = [prefs boolForKey:PromptOnQuit defaultValue:YES];
@@ -99,7 +99,7 @@
   bVal = [prefs boolForKey:RememberWindows defaultValue:YES];
   state = bVal ? NSOnState : NSOffState;
   [rememberWindows setState:state];
-     
+
   bVal = [prefs boolForKey:DisplayLog defaultValue:NO];
   state = bVal ? NSOnState : NSOffState;
   [displayLog setState:state];
@@ -127,10 +127,10 @@
   BOOL state;
 
   if (promptWhenQuit == nil)
-    {// HACK!!! need to be fixed in GNUstep
-      promptWhenQuit = sender;
-      return;
-    }
+  {// HACK!!! need to be fixed in GNUstep
+    promptWhenQuit = sender;
+    return;
+  }
 
   state = ([sender state] == NSOffState) ? NO : YES;
   [prefs setBool:state forKey:PromptOnQuit notify:YES];
@@ -141,10 +141,10 @@
   BOOL state;
 
   if (fullPathInFilePanels == nil)
-    {// HACK!!! need to be fixed in GNUstep
-      fullPathInFilePanels = sender;
-      return;
-    }
+  {// HACK!!! need to be fixed in GNUstep
+    fullPathInFilePanels = sender;
+    return;
+  }
 
   state = ([sender state] == NSOffState) ? NO : YES;
   [prefs setBool:state forKey:FullPathInFilePanels notify:YES];
@@ -155,10 +155,10 @@
   BOOL state;
 
   if (rememberWindows == nil)
-    {
-      rememberWindows = sender;
-      return;
-    }
+  {
+    rememberWindows = sender;
+    return;
+  }
 
   state = ([sender state] == NSOffState) ? NO : YES;
   [prefs setBool:state forKey:RememberWindows notify:YES];
@@ -169,10 +169,10 @@
   BOOL state;
 
   if (displayLog == nil)
-    {
-      displayLog = sender;
-      return;
-    }
+  {
+    displayLog = sender;
+    return;
+  }
 
   state = ([sender state] == NSOffState) ? NO : YES;
   [prefs setBool:state forKey:DisplayLog notify:YES];
@@ -183,10 +183,10 @@
   BOOL state;
 
   if (useTearOffWindows == nil)
-    {
-      useTearOffWindows = sender;
-      return;
-    }
+  {
+    useTearOffWindows = sender;
+    return;
+  }
 
   state = ([sender state] == NSOffState) ? NO : YES;
   [prefs setBool:state forKey:UseTearOffWindows notify:YES];
@@ -200,48 +200,48 @@
 
   // Choose
   if (sender == debuggerField)
-    {
-      path = [debuggerField stringValue];
-    }
+  {
+    path = [debuggerField stringValue];
+  }
   else
-    {
-      files = [[PCFileManager defaultManager] 
-	filesOfTypes:nil
-	   operation:PCOpenFileOperation
-	    multiple:NO
-	       title:@"Choose Debugger Tool"
-	     accView:nil];
-      path = [files objectAtIndex:0];
-    }
+  {
+    files = [[PCFileManager defaultManager]
+             filesOfTypes:nil
+             operation:PCOpenFileOperation
+             multiple:NO
+             title:@"Choose Debugger Tool"
+             accView:nil];
+    path = [files objectAtIndex:0];
+  }
 
   [[miscView window] makeFirstResponder:debuggerField];
   if (!path)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   // Check
   if (path && ![fm fileExistsAtPath:path])
-    {
-      NSRunAlertPanel(@"Set Debugger Tool",
-		      @"File %@ doesn't exist!\n"
-		      @"Setting field to default value.",
-      		      @"Close", nil, nil, path);
-      path = @"";
-    } 
+  {
+    NSRunAlertPanel(@"Set Debugger Tool",
+                    @"File %@ doesn't exist!\n"
+                    @"Setting field to default value.",
+                    @"Close", nil, nil, path);
+    path = @"";
+  }
   else if (path && ![fm isExecutableFileAtPath:path])
-    {
-      NSRunAlertPanel(@"Set Debugger Tool",
-		      @"File %@ exists but is not executable!\n"
-		      @"Setting field to default value.",
-		      @"Close", nil, nil, path);
-      path = @"";
-    }
+  {
+    NSRunAlertPanel(@"Set Debugger Tool",
+                    @"File %@ exists but is not executable!\n"
+                    @"Setting field to default value.",
+                    @"Close", nil, nil, path);
+    path = @"";
+  }
 
   if ([path isEqualToString:@""])
-    {
-      path = PCDefaultDebugger;
-    }
+  {
+    path = PCDefaultDebugger;
+  }
 
   // Set
   [debuggerField setStringValue:path];
@@ -258,54 +258,54 @@
 
   // Choose
   if (sender == editorField)
-    {
-      path = [editorField stringValue];
-    }
+  {
+    path = [editorField stringValue];
+  }
   else if ([path = [editorField stringValue] isEqualToString:@""])
-    {
-      files = [[PCFileManager defaultManager] 
-	filesOfTypes:nil
-	   operation:PCOpenFileOperation
-	    multiple:NO
-	       title:@"Choose Editor"
-	     accView:nil];
-      path = [files objectAtIndex:0];
-    }
-  
+  {
+    files = [[PCFileManager defaultManager]
+             filesOfTypes:nil
+             operation:PCOpenFileOperation
+             multiple:NO
+             title:@"Choose Editor"
+             accView:nil];
+    path = [files objectAtIndex:0];
+  }
+
   [[miscView window] makeFirstResponder:editorField];
   if (!path)
-    {
-      return;
-    }
+  {
+    return;
+  }
 
   // Check
   if (path && ![ws fullPathForApplication:path])
+  {
+    editorPath = [[path componentsSeparatedByString:@" "] objectAtIndex:0];
+    if (![fm fileExistsAtPath:editorPath])
     {
-      editorPath = [[path componentsSeparatedByString:@" "] objectAtIndex:0];
-      if (![fm fileExistsAtPath:editorPath])
-	{
-	  [editorField selectText:self];
-	  NSRunAlertPanel(@"Set Editor",
-	    		  @"Editor %@ doesn't exist!\n"
-			  @"Setting field to default value.",
-	    		  @"Close", nil, nil, path);
-	  path = @"";
-	}
-      else if (path && ![fm isExecutableFileAtPath:editorPath])
-	{
-	  [editorField selectText:self];
-	  NSRunAlertPanel(@"Set Editor",
-	    		  @"File %@ exists but is not executable!\n"
-			  @"Setting field to default value.",
-	    		  @"Close", nil, nil, path);
-	  path = @"";
-	}
+      [editorField selectText:self];
+      NSRunAlertPanel(@"Set Editor",
+                      @"Editor %@ doesn't exist!\n"
+                      @"Setting field to default value.",
+                      @"Close", nil, nil, path);
+      path = @"";
     }
+    else if (path && ![fm isExecutableFileAtPath:editorPath])
+    {
+      [editorField selectText:self];
+      NSRunAlertPanel(@"Set Editor",
+                      @"File %@ exists but is not executable!\n"
+                      @"Setting field to default value.",
+                      @"Close", nil, nil, path);
+      path = @"";
+    }
+  }
   
   if ([path isEqualToString:@""] || !path)
-    {
-      path = @"ProjectCenter";
-    }
+  {
+    path = @"ProjectCenter";
+  }
 
   // Set
   [editorField setStringValue:path];

@@ -1,25 +1,25 @@
 /*
-**  CodeParser.m
-**
-**  Copyright (c) 2003-2016
-**
-**  Author: Yen-Ju  <yjchenx@hotmail.com>
-**          Riccardo Mottola <rm@gnu.org>
-**
-**  This program is free software; you can redistribute it and/or modify
-**  it under the terms of the GNU General Public License as published by
-**  the Free Software Foundation; either version 2 of the License, or
-**  (at your option) any later version.
-**
-**  This program is distributed in the hope that it will be useful,
-**  but WITHOUT ANY WARRANTY; without even the implied warranty of
-**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**  GNU General Public License for more details.
-**
-**  You should have received a copy of the GNU General Public License
-**  along with this program; if not, write to the Free Software
-**  Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
-*/
+ **  CodeParser.m
+ **
+ **  Copyright (c) 2003-2016
+ **
+ **  Author: Yen-Ju  <yjchenx@hotmail.com>
+ **          Riccardo Mottola <rm@gnu.org>
+ **
+ **  This program is free software; you can redistribute it and/or modify
+ **  it under the terms of the GNU General Public License as published by
+ **  the Free Software Foundation; either version 2 of the License, or
+ **  (at your option) any later version.
+ **
+ **  This program is distributed in the hope that it will be useful,
+ **  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ **  GNU General Public License for more details.
+ **
+ **  You should have received a copy of the GNU General Public License
+ **  along with this program; if not, write to the Free Software
+ **  Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
+ */
 
 #import <Protocols/CodeParser.h>
 
@@ -62,9 +62,9 @@ typedef enum _CodeType {
 - (id)setString:(NSString *)text
 {
   if (_uchar != NULL)
-    {
-      free(_uchar);
-    }
+  {
+    free(_uchar);
+  }
 
   ASSIGN(_string, text);
 
@@ -80,7 +80,7 @@ typedef enum _CodeType {
   _handler = [[ObjCClassHandler alloc] init];
   [self parse];
   AUTORELEASE(_handler);
-  
+
   return [(ObjCClassHandler *)_handler classes];
 }
 
@@ -89,7 +89,7 @@ typedef enum _CodeType {
   _handler = [[ObjCMethodHandler alloc] init];
   [self parse];
   AUTORELEASE(_handler);
-  
+
   return [(ObjCMethodHandler *)_handler methods];
 }
 
@@ -101,31 +101,31 @@ typedef enum _CodeType {
 CodeType codeType(unichar *ch)
 {
   if ( ((*ch > 0x40) && (*ch < 0x5B)) ||
-       ((*ch > 0x60) && (*ch < 0x7B)) ||
-       (*ch == 0x5F) )
-    {
-      return StringCodeType;
-    }
+      ((*ch > 0x60) && (*ch < 0x7B)) ||
+      (*ch == 0x5F) )
+  {
+    return StringCodeType;
+  }
   else if ((*ch == 0x20) || (*ch == 0x0a) || (*ch == 0x0d))
-    {
-      return SpaceAndNewLineCodeType;
-    }
+  {
+    return SpaceAndNewLineCodeType;
+  }
   else if ((*ch > 0x2F) && (*ch < 0x3A))
-    {
-      return NumberCodeType;
-    }
+  {
+    return NumberCodeType;
+  }
   else if (*ch < 0x20)
-    {
-      return InvisibleCodeType;
-    }
+  {
+    return InvisibleCodeType;
+  }
   else if ((*ch > 0x20) && (*ch < 0x7F))
-    {
-      return SymbolCodeType;
-    }
-  else 
-    {
-      return StringCodeType;
-    } 
+  {
+    return SymbolCodeType;
+  }
+  else
+  {
+    return StringCodeType;
+  }
 }
 
 - (void)parse
@@ -140,82 +140,82 @@ CodeType codeType(unichar *ch)
   SEL selSymbol = @selector(symbol:);
   void (*impString)(id, SEL, id);
   void (*impNumber)(id, SEL, id);
-  void (*impSpaceAndNewLine)(id, SEL, unichar); 
-  void (*impInvisible)(id, SEL, unichar); 
-  void (*impSymbol)(id, SEL, unichar); 
+  void (*impSpaceAndNewLine)(id, SEL, unichar);
+  void (*impInvisible)(id, SEL, unichar);
+  void (*impSymbol)(id, SEL, unichar);
 
 
   impString = (void (*)(id, SEL, id))
-              [[_handler class] instanceMethodForSelector:selString]; 
+  [[_handler class] instanceMethodForSelector:selString];
   impNumber = (void (*)(id, SEL, id))
-              [[_handler class] instanceMethodForSelector:selNumber];
+  [[_handler class] instanceMethodForSelector:selNumber];
   impSpaceAndNewLine = (void (*)(id, SEL, unichar))
-              [[_handler class] instanceMethodForSelector:selSpaceAndNewLine];
+  [[_handler class] instanceMethodForSelector:selSpaceAndNewLine];
   impInvisible = (void (*)(id, SEL, unichar))
-              [[_handler class] instanceMethodForSelector:selInvisible];
+  [[_handler class] instanceMethodForSelector:selInvisible];
   impSymbol = (void (*)(id, SEL, unichar))
-              [[_handler class] instanceMethodForSelector:selSymbol];
+  [[_handler class] instanceMethodForSelector:selSymbol];
 
   start = end = 0;
   startType = codeType(_uchar+start);
 
   for (i = 1; i <= _length; i++)
-    {
-      end = i;
-      
-      /* check for end, but check for end char only if not at end */
-      if ((end == _length) || (startType != codeType(_uchar+end)) )
-        {
-          /* Check period in number */
-          if ((startType == NumberCodeType) && (_uchar[end] == 0x2E))
-            continue;
+  {
+    end = i;
 
-          if (startType == StringCodeType)
-            {
-              out = [_string substringWithRange:NSMakeRange(start, end-start)];
-              (*impString)(_handler, selString, out);
-            }
-          else if (startType == NumberCodeType)
-            {
-              out = [_string substringWithRange: NSMakeRange(start, end-start)];
-              (*impNumber)(_handler, selNumber, out);
-            }
-          else if (startType == SpaceAndNewLineCodeType)
-            {
-              NSUInteger j, jlen = end-start/*[out length]*/;
-              for (j = 0; j < jlen; j++)
-                {
-		  (*impSpaceAndNewLine)(_handler, 
-					selSpaceAndNewLine, _uchar[start+j]);
-                }
-            }
-          else if (startType == SymbolCodeType)
-            {
-              NSUInteger j, jlen = end-start/*[out length]*/;
-              for (j = 0; j < jlen; j++)
-                {
-                  (*impSymbol)(_handler, selSymbol, _uchar[start+j]);
-                }
-            }
-          else if (startType == InvisibleCodeType)
-            {
-              NSUInteger j, jlen = end-start/*[out length]*/;
-              for (j = 0; j < jlen; j++)
-                {
-                  (*impInvisible)(_handler, selInvisible, _uchar[start+j]);
-                }
-            }
-          /* if we are at the end, we can getting the last stat char anyway
-             and in any case it would not be valid */
-          if (end != _length)
-            {
-              start = i;
-              startType = codeType(_uchar+start);
-            }
+    /* check for end, but check for end char only if not at end */
+    if ((end == _length) || (startType != codeType(_uchar+end)) )
+    {
+      /* Check period in number */
+      if ((startType == NumberCodeType) && (_uchar[end] == 0x2E))
+        continue;
+
+      if (startType == StringCodeType)
+      {
+        out = [_string substringWithRange:NSMakeRange(start, end-start)];
+        (*impString)(_handler, selString, out);
+      }
+      else if (startType == NumberCodeType)
+      {
+        out = [_string substringWithRange: NSMakeRange(start, end-start)];
+        (*impNumber)(_handler, selNumber, out);
+      }
+      else if (startType == SpaceAndNewLineCodeType)
+      {
+        NSUInteger j, jlen = end-start/*[out length]*/;
+        for (j = 0; j < jlen; j++)
+        {
+          (*impSpaceAndNewLine)(_handler,
+                                selSpaceAndNewLine, _uchar[start+j]);
         }
+      }
+      else if (startType == SymbolCodeType)
+      {
+        NSUInteger j, jlen = end-start/*[out length]*/;
+        for (j = 0; j < jlen; j++)
+        {
+          (*impSymbol)(_handler, selSymbol, _uchar[start+j]);
+        }
+      }
+      else if (startType == InvisibleCodeType)
+      {
+        NSUInteger j, jlen = end-start/*[out length]*/;
+        for (j = 0; j < jlen; j++)
+        {
+          (*impInvisible)(_handler, selInvisible, _uchar[start+j]);
+        }
+      }
+      /* if we are at the end, we can getting the last stat char anyway
+       and in any case it would not be valid */
+      if (end != _length)
+      {
+        start = i;
+        startType = codeType(_uchar+start);
+      }
     }
+  }
   /* send an extra new line if the file did not terminate with such.
-     Forces the parser to close pending actions */
+   Forces the parser to close pending actions */
   if (codeType(_uchar+(_length-1)) != SpaceAndNewLineCodeType)
     (*impSpaceAndNewLine)(_handler, selSpaceAndNewLine, 0X0A);
 }

@@ -1,25 +1,25 @@
 /*
-    TextPattern.m
+ TextPattern.m
 
-    Implementation of operations on text patterns for the
-    ProjectManager application.
+ Implementation of operations on text patterns for the
+ ProjectManager application.
 
-    Copyright (C) 2005  Saso Kiselkov
+ Copyright (C) 2005  Saso Kiselkov
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
-*/
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
+ */
 
 #import "TextPattern.h"
 
@@ -31,9 +31,9 @@ static void
 FreeTextPatternItem (TextPatternItem *item)
 {
   if (item->type == MultipleCharactersTextPatternItem)
-    {
-      free (item->data.multiChar.characters);
-    }
+  {
+    free (item->data.multiChar.characters);
+  }
 
   free (item);
 }
@@ -50,207 +50,207 @@ ParseTextPatternItem (NSString *string, unsigned int *index)
   c = [string characterAtIndex: i];
   i++;
   switch (c)
+  {
+    case '[':
     {
-      case '[':
+      unichar * buf = NULL;
+      unsigned int nChars = 0;
+
+      for (; i < n; i++)
+      {
+        unichar c = [string characterAtIndex: i];
+
+        // handle escapes
+        if (c == '\\')
         {
-          unichar * buf = NULL;
-          unsigned int nChars = 0;
-
-          for (; i < n; i++)
-            {
-              unichar c = [string characterAtIndex: i];
-
-              // handle escapes
-              if (c == '\\')
-                {
-                  if (i + 1 >= n)
-                    {
-                      NSLog(_(@"Text pattern item parse error in text "
-                        @"pattern \"%@\" at index %i: unexpected end of "
-			      @"pattern. Escape sequence expected."), string, i);
-
-                      free (buf);
-                      free (newItem);
-
-                      return NULL;
-                    }
-
-                  i++;
-                  c = [string characterAtIndex: i];
-                }
-              else if (c == ']')
-                {
-                  i++;
-                  break;
-                }
-
-              nChars++;
-              buf = (unichar *) realloc(buf, sizeof (unichar) * nChars);
-              buf[nChars - 1] = c;
-            }
-
-          if (i == n)
-            {
-              NSLog(_(@"Text pattern item parse error in text pattern "
-                @"\"%@\" at index %i: unexpected end of character class."),
-                string, i);
-
-              free (buf);
-              free (newItem);
-
-              return NULL;
-            }
-
-          newItem->type = MultipleCharactersTextPatternItem;
-          newItem->data.multiChar.nCharacters = nChars;
-          newItem->data.multiChar.characters = buf;
-        }
-        break;
-      case '.':
-        newItem->type = AnyCharacterTextPatternItem;
-        break;
-      case '<':
-        newItem->type = BeginningOfWordTextPatternItem;
-        break;
-      case '>':
-        newItem->type = EndingOfWordTextPatternItem;
-        break;
-      case '^':
-        newItem->type = BeginningOfLineTextPatternItem;
-        break;
-      case '$':
-        newItem->type = EndingOfLineTextPatternItem;
-        break;
-      case '\\':
-        if (i >= n)
+          if (i + 1 >= n)
           {
-            NSLog(_(@"Text pattern item parse error in text pattern "
-              @"\"%@\" at index %i: unexpected end of pattern. Escape "
-		    @"sequence expected."), string, i);
+            NSLog(_(@"Text pattern item parse error in text "
+                    @"pattern \"%@\" at index %i: unexpected end of "
+                    @"pattern. Escape sequence expected."), string, i);
 
+            free (buf);
             free (newItem);
+
             return NULL;
           }
-        c = [string characterAtIndex: i];
-        i++;
 
-      default:
-        newItem->type = SingleCharacterTextPatternItem;
-        newItem->data.singleChar = c;
-        break;
+          i++;
+          c = [string characterAtIndex: i];
+        }
+        else if (c == ']')
+        {
+          i++;
+          break;
+        }
+
+        nChars++;
+        buf = (unichar *) realloc(buf, sizeof (unichar) * nChars);
+        buf[nChars - 1] = c;
+      }
+
+      if (i == n)
+      {
+        NSLog(_(@"Text pattern item parse error in text pattern "
+                @"\"%@\" at index %i: unexpected end of character class."),
+              string, i);
+
+        free (buf);
+        free (newItem);
+
+        return NULL;
+      }
+
+      newItem->type = MultipleCharactersTextPatternItem;
+      newItem->data.multiChar.nCharacters = nChars;
+      newItem->data.multiChar.characters = buf;
     }
+      break;
+    case '.':
+      newItem->type = AnyCharacterTextPatternItem;
+      break;
+    case '<':
+      newItem->type = BeginningOfWordTextPatternItem;
+      break;
+    case '>':
+      newItem->type = EndingOfWordTextPatternItem;
+      break;
+    case '^':
+      newItem->type = BeginningOfLineTextPatternItem;
+      break;
+    case '$':
+      newItem->type = EndingOfLineTextPatternItem;
+      break;
+    case '\\':
+      if (i >= n)
+      {
+        NSLog(_(@"Text pattern item parse error in text pattern "
+                @"\"%@\" at index %i: unexpected end of pattern. Escape "
+                @"sequence expected."), string, i);
 
-  // is there trailing cardinality indication?
-  if (i < n)
-    {
+        free (newItem);
+        return NULL;
+      }
       c = [string characterAtIndex: i];
       i++;
 
-      switch (c)
-        {
-          case '{':
-            {
-              NSScanner * scanner;
-              int value;
+    default:
+      newItem->type = SingleCharacterTextPatternItem;
+      newItem->data.singleChar = c;
+      break;
+  }
 
-              if (newItem->type != SingleCharacterTextPatternItem &&
-                  newItem->type != MultipleCharactersTextPatternItem &&
-                  newItem->type != AnyCharacterTextPatternItem)
-                {
-                  NSLog(_(@"Text pattern item parse error in text pattern "
-                    @"\"%@\" at index %i: no cardinality indication in "
-                    @"'<', '>', '^' or '$' allowed."), string, i);
+  // is there trailing cardinality indication?
+  if (i < n)
+  {
+    c = [string characterAtIndex: i];
+    i++;
 
-                  FreeTextPatternItem(newItem);
-
-                  return NULL;
-                }
-
-              scanner = [NSScanner scannerWithString: string];
-
-              [scanner setScanLocation: i];
-              if (![scanner scanInt: &value])
-                {
-                  NSLog(_(@"Text pattern item parse error in text pattern "
-                    @"\"%@\" at index %li: integer expected."), string,
-			(long int)[scanner scanLocation]);
-
-                  FreeTextPatternItem(newItem);
-
-                  return NULL;
-                }
-              newItem->minCount = newItem->maxCount = value;
-              i = [scanner scanLocation];
-              if (i + 1 >= n)
-                {
-                  NSLog(_(@"Text pattern item parse error in text pattern "
-                    @"\"%@\": unexpected end of pattern, '}' or ',' "
-                    @"expected."), string);
-
-                  FreeTextPatternItem(newItem);
-
-                  return NULL;
-                }
-              c = [string characterAtIndex: i];
-              if (c == ',')
-                {
-                  [scanner setScanLocation: i + 1];
-                  if (![scanner scanInt: &value])
-                    {
-                      NSLog(_(@"Text pattern item parser error in text "
-                        @"pattern \"%@\" at index %li: integer expected."),
-			    string, (long int)[scanner scanLocation]);
-    
-                      FreeTextPatternItem(newItem);
-
-                      return NULL;
-                    }
-                  newItem->maxCount = value;
-                  i = [scanner scanLocation];
-                }
-              if (i >= n)
-                {
-                  NSLog(_(@"Text pattern item parse error in text pattern "
-                    @"\"%@\": unexpected end of pattern, '}' expected."),
-                    string);
-
-                  FreeTextPatternItem(newItem);
-
-                  return NULL;
-                }
-              c = [string characterAtIndex: i];
-              i++;
-              if (c != '}')
-                {
-                  NSLog(_(@"Text pattern item parse error in text pattern "
-                    @"\"%@\" at index %i: '}' expected."), string, i);
-
-                  FreeTextPatternItem(newItem);
-
-                  return NULL;
-                }
-            }
-            break;
-          // no cardinality indication - the next character is part of
-          // the next text pattern
-          case '*':
-            newItem->minCount = 0;
-            newItem->maxCount = 0x7fffffff;
-            break;
-          case '?':
-            newItem->minCount = 0;
-            newItem->maxCount = 1;
-            break;
-          default:
-            i--;
-            newItem->minCount = newItem->maxCount = 1;
-            break;
-        }
-    }
-  else
+    switch (c)
     {
-      newItem->minCount = newItem->maxCount = 1;
+      case '{':
+      {
+        NSScanner * scanner;
+        int value;
+
+        if (newItem->type != SingleCharacterTextPatternItem &&
+            newItem->type != MultipleCharactersTextPatternItem &&
+            newItem->type != AnyCharacterTextPatternItem)
+        {
+          NSLog(_(@"Text pattern item parse error in text pattern "
+                  @"\"%@\" at index %i: no cardinality indication in "
+                  @"'<', '>', '^' or '$' allowed."), string, i);
+
+          FreeTextPatternItem(newItem);
+
+          return NULL;
+        }
+
+        scanner = [NSScanner scannerWithString: string];
+
+        [scanner setScanLocation: i];
+        if (![scanner scanInt: &value])
+        {
+          NSLog(_(@"Text pattern item parse error in text pattern "
+                  @"\"%@\" at index %li: integer expected."), string,
+                (long int)[scanner scanLocation]);
+
+          FreeTextPatternItem(newItem);
+
+          return NULL;
+        }
+        newItem->minCount = newItem->maxCount = value;
+        i = [scanner scanLocation];
+        if (i + 1 >= n)
+        {
+          NSLog(_(@"Text pattern item parse error in text pattern "
+                  @"\"%@\": unexpected end of pattern, '}' or ',' "
+                  @"expected."), string);
+
+          FreeTextPatternItem(newItem);
+
+          return NULL;
+        }
+        c = [string characterAtIndex: i];
+        if (c == ',')
+        {
+          [scanner setScanLocation: i + 1];
+          if (![scanner scanInt: &value])
+          {
+            NSLog(_(@"Text pattern item parser error in text "
+                    @"pattern \"%@\" at index %li: integer expected."),
+                  string, (long int)[scanner scanLocation]);
+
+            FreeTextPatternItem(newItem);
+
+            return NULL;
+          }
+          newItem->maxCount = value;
+          i = [scanner scanLocation];
+        }
+        if (i >= n)
+        {
+          NSLog(_(@"Text pattern item parse error in text pattern "
+                  @"\"%@\": unexpected end of pattern, '}' expected."),
+                string);
+
+          FreeTextPatternItem(newItem);
+
+          return NULL;
+        }
+        c = [string characterAtIndex: i];
+        i++;
+        if (c != '}')
+        {
+          NSLog(_(@"Text pattern item parse error in text pattern "
+                  @"\"%@\" at index %i: '}' expected."), string, i);
+
+          FreeTextPatternItem(newItem);
+
+          return NULL;
+        }
+      }
+        break;
+        // no cardinality indication - the next character is part of
+        // the next text pattern
+      case '*':
+        newItem->minCount = 0;
+        newItem->maxCount = 0x7fffffff;
+        break;
+      case '?':
+        newItem->minCount = 0;
+        newItem->maxCount = 1;
+        break;
+      default:
+        i--;
+        newItem->minCount = newItem->maxCount = 1;
+        break;
     }
+  }
+  else
+  {
+    newItem->minCount = newItem->maxCount = 1;
+  }
 
   *index = i;
 
@@ -263,18 +263,18 @@ static void
 DescribeTextPatternItem(TextPatternItem *item)
 {
   switch (item->type)
-    {
+  {
     case SingleCharacterTextPatternItem:
       NSLog(@"  type: single char, value: '%c', min: %i, max: %i",
-        item->data.singleChar,
-        item->minCount,
-        item->maxCount);
+            item->data.singleChar,
+            item->minCount,
+            item->maxCount);
       break;
     case MultipleCharactersTextPatternItem:
       NSLog(@"  type: multi char, value: '%@', min: %i, max: %i",
-        [NSString stringWithCharacters: item->data.multiChar.characters
-                                length: item->data.multiChar.nCharacters],
-        item->minCount, item->maxCount);
+            [NSString stringWithCharacters: item->data.multiChar.characters
+                                    length: item->data.multiChar.nCharacters],
+            item->minCount, item->maxCount);
       break;
     case BeginningOfWordTextPatternItem:
       NSLog(@"  type: beginning of word");
@@ -284,7 +284,7 @@ DescribeTextPatternItem(TextPatternItem *item)
       break;
     case AnyCharacterTextPatternItem:
       NSLog(@"  type: any character, min: %i, max: %i",
-        item->minCount, item->maxCount);
+            item->minCount, item->maxCount);
       break;
     case BeginningOfLineTextPatternItem:
       NSLog(@"  type: beginning of line");
@@ -292,7 +292,7 @@ DescribeTextPatternItem(TextPatternItem *item)
     case EndingOfLineTextPatternItem:
       NSLog(@"  type: ending of line");
       break;
-    }
+  }
 }
 #endif
 
@@ -307,23 +307,23 @@ CompileTextPattern (NSString *string)
   ASSIGN(pattern->string, string);
 
   for (i = 0, n = [string length]; i < n;)
+  {
+    TextPatternItem * item;
+
+    item = ParseTextPatternItem(string, &i);
+    if (item == NULL)
     {
-      TextPatternItem * item;
+      FreeTextPattern (pattern);
 
-      item = ParseTextPatternItem(string, &i);
-      if (item == NULL)
-        {
-          FreeTextPattern (pattern);
-
-          return NULL;
-        }
-
-       // enlarge the pattern buffer
-      pattern->nItems++;
-      pattern->items = (TextPatternItem **) realloc(pattern->items,
-        pattern->nItems * sizeof(TextPatternItem *));
-      pattern->items[pattern->nItems - 1] = item;
+      return NULL;
     }
+
+    // enlarge the pattern buffer
+    pattern->nItems++;
+    pattern->items = (TextPatternItem **) realloc(pattern->items,
+                                                  pattern->nItems * sizeof(TextPatternItem *));
+    pattern->items[pattern->nItems - 1] = item;
+  }
 
   return pattern;
 }
@@ -334,9 +334,9 @@ FreeTextPattern (TextPattern *pattern)
   unsigned int i;
 
   for (i = 0; i < pattern->nItems; i++)
-    {
-      FreeTextPatternItem(pattern->items[i]);
-    }
+  {
+    FreeTextPatternItem(pattern->items[i]);
+  }
 
   free(pattern->items);
 
@@ -351,12 +351,12 @@ IsMemberOfCharacterClass(unichar c, unichar *charClass, unsigned int n)
   unsigned int i;
 
   for (i = 0; i < n; i++)
+  {
+    if (charClass[i] == c)
     {
-      if (charClass[i] == c)
-        {
-          return YES;
-        }
+      return YES;
     }
+  }
 
   return NO;
 }
@@ -371,13 +371,13 @@ my_isalnum (unichar c)
   if ((c >= 'a' && c <= 'z') ||
       (c >= 'A' && c <= 'Z') ||
       (c >= '0' && c <= '9'))
-    {
-      return YES;
-    }
+  {
+    return YES;
+  }
   else
-    {
-      return NO;
-    }
+  {
+    return NO;
+  }
 }
 
 static inline BOOL
@@ -387,156 +387,156 @@ CheckTextPatternItemPresence(TextPatternItem *item,
                              unsigned int *offset)
 {
   switch (item->type)
-    {
+  {
     case SingleCharacterTextPatternItem:
+    {
+      unsigned int i;
+      unsigned int n;
+
+      // read characters while they are equal to our letter
+      for (n = 0, i = *offset;
+           i < stringLength && n < item->maxCount;
+           i++, n++)
       {
-        unsigned int i;
-        unsigned int n;
-
-         // read characters while they are equal to our letter
-        for (n = 0, i = *offset;
-             i < stringLength && n < item->maxCount;
-             i++, n++)
-          {
-            if (string[i] != item->data.singleChar)
-              {
-                break;
-              }
-          }
-
-        if (n >= item->minCount)
-          {
-            *offset = i;
-            return YES;
-          }
-        else
-          {
-            return NO;
-          }
+        if (string[i] != item->data.singleChar)
+        {
+          break;
+        }
       }
-      break;
-    case MultipleCharactersTextPatternItem:
+
+      if (n >= item->minCount)
       {
-        unsigned int i;
-        unsigned int n;
-
-        for (n = 0, i = *offset;
-             i < stringLength && n < item->maxCount;
-             i++, n++)
-          {
-            if (!IsMemberOfCharacterClass(string[i],
-                                          item->data.multiChar.characters,
-                                          item->data.multiChar.nCharacters))
-              {
-                break;
-              }
-          }
-
-        if (n >= item->minCount)
-          {
-            *offset = i;
-            return YES;
-          }
-        else
-          {
-            return NO;
-          }
-      }
-      break;
-    case AnyCharacterTextPatternItem:
-      {
-        unsigned int i, n;
-
-        for (i = *offset, n = 0; n < item->minCount; i++, n++)
-          {
-            if (i >= stringLength)
-              {
-                return NO;
-              }
-          }
-
         *offset = i;
         return YES;
       }
+      else
+      {
+        return NO;
+      }
+    }
+      break;
+    case MultipleCharactersTextPatternItem:
+    {
+      unsigned int i;
+      unsigned int n;
+
+      for (n = 0, i = *offset;
+           i < stringLength && n < item->maxCount;
+           i++, n++)
+      {
+        if (!IsMemberOfCharacterClass(string[i],
+                                      item->data.multiChar.characters,
+                                      item->data.multiChar.nCharacters))
+        {
+          break;
+        }
+      }
+
+      if (n >= item->minCount)
+      {
+        *offset = i;
+        return YES;
+      }
+      else
+      {
+        return NO;
+      }
+    }
+      break;
+    case AnyCharacterTextPatternItem:
+    {
+      unsigned int i, n;
+
+      for (i = *offset, n = 0; n < item->minCount; i++, n++)
+      {
+        if (i >= stringLength)
+        {
+          return NO;
+        }
+      }
+
+      *offset = i;
+      return YES;
+    }
       break;
     case BeginningOfWordTextPatternItem:
+    {
+      unsigned int i = *offset;
+
+      if (i >= stringLength)
       {
-        unsigned int i = *offset;
-
-        if (i >= stringLength)
-          {
-            return NO;
-          }
-
-        if (i > 0)
-          {
-            if (my_isalnum(string[i - 1]))
-              {
-                return NO;
-              }
-            else
-              {
-                return YES;
-              }
-          }
-        else
-          {
-            return YES;
-          }
+        return NO;
       }
+
+      if (i > 0)
+      {
+        if (my_isalnum(string[i - 1]))
+        {
+          return NO;
+        }
+        else
+        {
+          return YES;
+        }
+      }
+      else
+      {
+        return YES;
+      }
+    }
       break;
     case EndingOfWordTextPatternItem:
+    {
+      unsigned int i = *offset;
+
+      if (i >= stringLength)
       {
-        unsigned int i = *offset;
-
-        if (i >= stringLength)
-          {
-            return YES;
-          }
-
-        if (!my_isalnum(string[i]))
-          {
-            return YES;
-          }
-        else
-          {
-            return NO;
-          }
+        return YES;
       }
+
+      if (!my_isalnum(string[i]))
+      {
+        return YES;
+      }
+      else
+      {
+        return NO;
+      }
+    }
       break;
     case BeginningOfLineTextPatternItem:
-      {
-        unsigned int i = *offset;
+    {
+      unsigned int i = *offset;
 
-        if (i > 0)
-          {
-            return (string[i - 1] == '\n' || string[i - 1] == '\r');
-          }
-        else
-          {
-            return YES;
-          }
+      if (i > 0)
+      {
+        return (string[i - 1] == '\n' || string[i - 1] == '\r');
       }
+      else
+      {
+        return YES;
+      }
+    }
       break;
     case EndingOfLineTextPatternItem:
+    {
+      unsigned int i = *offset;
+
+      if (i + 1 < stringLength)
       {
-        unsigned int i = *offset;
-
-        if (i + 1 < stringLength)
-          {
-            return (string[i + 1] == '\n' || string[i + 1] == '\r');
-          }
-        else
-          {
-            return YES;
-          }
+        return (string[i + 1] == '\n' || string[i + 1] == '\r');
       }
-      break;
+      else
+      {
+        return YES;
+      }
     }
+      break;
+  }
 
-/*  [NSException raise: NSInternalInconsistencyException
-              format: _(@"Unknown text pattern item type %i encountered."),
-    item->type];*/
+  /*  [NSException raise: NSInternalInconsistencyException
+   format: _(@"Unknown text pattern item type %i encountered."),
+   item->type];*/
 
   return NO;
 }
@@ -552,24 +552,24 @@ CheckTextPatternPresenceInString(TextPattern *pattern,
   off = index;
 
   for (i = 0; i < pattern->nItems; i++)
+  {
+    if (!CheckTextPatternItemPresence(pattern->items[i],
+                                      string,
+                                      stringLength,
+                                      &off))
     {
-      if (!CheckTextPatternItemPresence(pattern->items[i],
-                                        string,
-                                        stringLength,
-                                        &off))
-        {
-          break;
-        }
+      break;
     }
+  }
 
   if (i == pattern->nItems)
-    {
-      return off - index;
-    }
+  {
+    return off - index;
+  }
   else
-    {
-      return 0;
-    }
+  {
+    return 0;
+  }
 }
 
 unichar *PermissibleCharactersAtPatternBeginning(TextPattern *pattern)
@@ -577,37 +577,37 @@ unichar *PermissibleCharactersAtPatternBeginning(TextPattern *pattern)
   unsigned int i;
 
   for (i = 0; i < pattern->nItems; i++)
+  {
+    switch(pattern->items[i]->type)
     {
-      switch(pattern->items[i]->type)
-        {
-        case SingleCharacterTextPatternItem:
-          {
-            unichar * buf;
+      case SingleCharacterTextPatternItem:
+      {
+        unichar * buf;
 
-            buf = malloc(2 * sizeof(unichar));
-            buf[0] = pattern->items[i]->data.singleChar;
-            buf[1] = 0;
+        buf = malloc(2 * sizeof(unichar));
+        buf[0] = pattern->items[i]->data.singleChar;
+        buf[1] = 0;
 
-            return buf;
-          }
-        case MultipleCharactersTextPatternItem:
-          {
-            unichar * buf;
-            unsigned int n = pattern->items[i]->data.multiChar.nCharacters + 1;
+        return buf;
+      }
+      case MultipleCharactersTextPatternItem:
+      {
+        unichar * buf;
+        unsigned int n = pattern->items[i]->data.multiChar.nCharacters + 1;
 
-            buf = malloc(n * sizeof(unichar));
-            memcpy(buf, pattern->items[i]->data.multiChar.characters, n *
-              sizeof(unichar));
-            buf[n - 1] = 0;
+        buf = malloc(n * sizeof(unichar));
+        memcpy(buf, pattern->items[i]->data.multiChar.characters, n *
+               sizeof(unichar));
+        buf[n - 1] = 0;
 
-            return buf;
-          }
-        case AnyCharacterTextPatternItem:
-          return (unichar *) -1;
+        return buf;
+      }
+      case AnyCharacterTextPatternItem:
+        return (unichar *) -1;
 
-        default: break;
-        }
+      default: break;
     }
+  }
 
   return NULL;
 }

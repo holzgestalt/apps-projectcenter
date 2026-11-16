@@ -45,24 +45,24 @@
 @interface PCEditorFSCPrefs : NSObject <PCPrefsSection>
 {
   id <PCPreferences>   prefs;
-
+  
   IBOutlet NSBox       *editorFSCView;
-
+  
   IBOutlet NSButton    *editorFontButton;
   IBOutlet NSTextField *editorFontField;
   IBOutlet NSButton    *consoleFixedFontButton;
   IBOutlet NSTextField *consoleFixedFontField;
-
+  
   IBOutlet NSTextField *editorLinesField;
   IBOutlet NSTextField *editorColumnsField;
-
+  
   IBOutlet NSColorWell *foregroundColorWell;
   IBOutlet NSColorWell *backgroundColorWell;
   IBOutlet NSColorWell *selectionColorWell;
-
+  
   NSButton             *showTopRulerButton;
   NSButton             *showSideRulerButton;
-
+  
   NSFont               *currentEditorFont;
   NSFont               *currentConsoleFixedFont;
   NSColor              *currentBackgroundColor;

@@ -61,18 +61,18 @@
 - (id)initWithPrefController:(id <PCPreferences>)aPrefs
 {
   self = [super init];
-
+  
   if ([NSBundle loadNibNamed:@"EditorFSCPrefs" owner:self] == NO)
-    {
-      NSLog(@"PCEditorFSCPrefs: error loading NIB file!");
-    }
-
+  {
+    NSLog(@"PCEditorFSCPrefs: error loading NIB file!");
+  }
+  
   prefs = aPrefs;
   currentEditorFont = nil;
   currentConsoleFixedFont = nil;
-
+  
   RETAIN(editorFSCView);
-
+  
   return self;
 }
 
@@ -81,11 +81,11 @@
 #ifdef DEBUG
   NSLog (@"PCEditorFSCPrefs: dealloc");
 #endif
-
+  
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-
+  
   RELEASE(editorFSCView);
-
+  
   [super dealloc];
 }
 
@@ -94,23 +94,23 @@
   NSBox *windowBox = nil;
   NSEnumerator *enumerator;
   NSView *view;
-
+  
   [editorFontButton setTarget:self];
   [editorFontField setAllowsEditingTextAttributes:YES];
-
+  
   [consoleFixedFontButton setTarget:self];
   [consoleFixedFontField setAllowsEditingTextAttributes:YES];
-
+  
   enumerator = [[[editorFSCView contentView] subviews] objectEnumerator];
   while ((view = [enumerator nextObject]) != nil)
+  {
+    if ([view isKindOfClass:[NSBox class]]
+        && [[(NSBox *)view title] isEqualToString:_(@"Tear-Off Window Size")])
     {
-      if ([view isKindOfClass:[NSBox class]]
-          && [[(NSBox *)view title] isEqualToString:_(@"Tear-Off Window Size")])
-        {
-          windowBox = (NSBox *)view;
-          break;
-        }
+      windowBox = (NSBox *)view;
+      break;
     }
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -120,7 +120,7 @@
 - (void)pickFont:(NSFont *)pickedFont
 {
   NSFontManager *fontManager = [NSFontManager sharedFontManager];
-
+  
   [fontManager setSelectedFont:pickedFont isMultiple:NO];
   [fontManager orderFrontFontPanel:self];
 }
@@ -131,35 +131,35 @@
   int      buttonTag;
   NSFont   *font;
   NSString *fontString;
-
+  
   if (![button isKindOfClass:[NSButton class]])
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   font = [sender convertFont:currentEditorFont];
   fontString = [NSString stringWithFormat:@"%@ %0.1f", 
-	     [font fontName], [font pointSize]];
-
+                [font fontName], [font pointSize]];
+  
   buttonTag = [button tag];
   if (buttonTag == 0) // Editor font button
-    {
-      [editorFontField setStringValue:fontString];
-      [editorFontField setFont:font];
-      [prefs setString:[font fontName] forKey:EditorTextFont notify:YES];
-      [prefs setFloat:[font pointSize] 
-	       forKey:EditorTextFontSize
-	       notify:YES];
-    }
+  {
+    [editorFontField setStringValue:fontString];
+    [editorFontField setFont:font];
+    [prefs setString:[font fontName] forKey:EditorTextFont notify:YES];
+    [prefs setFloat:[font pointSize] 
+             forKey:EditorTextFontSize
+             notify:YES];
+  }
   else if (buttonTag == 1) // Console Fixed Font button
-    {
-      [consoleFixedFontField setStringValue:fontString];
-      [consoleFixedFontField setFont:font];
-      [prefs setString:[font fontName] forKey:ConsoleFixedFont notify:YES];
-      [prefs setFloat:[font pointSize] 
-	       forKey:ConsoleFixedFontSize
-	       notify:YES];
-    }
+  {
+    [consoleFixedFontField setStringValue:fontString];
+    [consoleFixedFontField setFont:font];
+    [prefs setString:[font fontName] forKey:ConsoleFixedFont notify:YES];
+    [prefs setFloat:[font pointSize] 
+             forKey:ConsoleFixedFontSize
+             notify:YES];
+  }
 }
 
 
@@ -174,46 +174,46 @@
   NSFont   *editorFont = [NSFont userFixedPitchFontOfSize:0.0];
   NSFont   *consoleFixedFont = [NSFont userFixedPitchFontOfSize:0.0];
   NSString *val;
-
+  
   // Editor font
   fontName = [prefs stringForKey:EditorTextFont 
-		    defaultValue:[editorFont fontName]];
+                    defaultValue:[editorFont fontName]];
   fontSize = [prefs floatForKey:EditorTextFontSize 
-		   defaultValue:[editorFont pointSize]];
+                   defaultValue:[editorFont pointSize]];
   currentEditorFont = [NSFont fontWithName:fontName size:fontSize];
   [editorFontField setStringValue:[NSString stringWithFormat:@"%@ %0.1f", 
-    [currentEditorFont fontName], [currentEditorFont pointSize]]];
+                                   [currentEditorFont fontName], [currentEditorFont pointSize]]];
   [editorFontField setFont:currentEditorFont];
-
+  
   // Console fixed font
   fontName = [prefs stringForKey:ConsoleFixedFont 
-		    defaultValue:[consoleFixedFont fontName]];
+                    defaultValue:[consoleFixedFont fontName]];
   fontSize = [prefs floatForKey:ConsoleFixedFontSize
-		   defaultValue:[consoleFixedFont pointSize]];
+                   defaultValue:[consoleFixedFont pointSize]];
   currentConsoleFixedFont = [NSFont fontWithName:fontName size:fontSize];
   [consoleFixedFontField setStringValue:[NSString stringWithFormat:@"%@ %0.1f", 
-    [currentConsoleFixedFont fontName], [currentConsoleFixedFont pointSize]]];
+                                         [currentConsoleFixedFont fontName], [currentConsoleFixedFont pointSize]]];
   [consoleFixedFontField setFont:currentConsoleFixedFont];
-
+  
   // Editor window size
   val = [prefs stringForKey:EditorLines defaultValue:@"30"];
   [editorLinesField setStringValue:val];
   val = [prefs stringForKey:EditorColumns defaultValue:@"80"];
   [editorColumnsField setStringValue:val];
-
+  
   /* Code editors have no top (tab-stop) ruler any more. */
   [showTopRulerButton setHidden:YES];
   [showSideRulerButton setState:
-    ([prefs boolForKey:EditorShowSideRuler defaultValue:YES]
-      ? NSOnState : NSOffState)];
-
+   ([prefs boolForKey:EditorShowSideRuler defaultValue:YES]
+    ? NSOnState : NSOffState)];
+  
   // Colors
   currentForegroundColor = [prefs colorForKey:EditorForegroundColor defaultValue:[NSColor blackColor]];
   [foregroundColorWell setColor:currentForegroundColor];
-
+  
   currentBackgroundColor = [prefs colorForKey:EditorBackgroundColor defaultValue:[NSColor colorWithCalibratedWhite:0.9 alpha:0]];
   [backgroundColorWell setColor:currentBackgroundColor];
-
+  
   currentSelectionColor = [prefs colorForKey:EditorSelectionColor defaultValue:[NSColor darkGrayColor]];
   [selectionColorWell setColor:currentSelectionColor];
 }
@@ -245,16 +245,16 @@
   NSString *key;
   
   if (sender == editorLinesField)
-    {
-      key = EditorLines;
-      val = [editorLinesField stringValue];
-    }
+  {
+    key = EditorLines;
+    val = [editorLinesField stringValue];
+  }
   else // editorColumnsField
-    {
-      key = EditorColumns;
-      val = [editorColumnsField stringValue];
-    }
-
+  {
+    key = EditorColumns;
+    val = [editorColumnsField stringValue];
+  }
+  
   [prefs setString:val forKey:key notify:YES];
 }
 
@@ -262,30 +262,30 @@
 {
   NSColor  *color;
   NSString *key;
-
+  
   if (sender == foregroundColorWell)
-    {
-      color = [foregroundColorWell color];
-      key = EditorForegroundColor;
-    }
+  {
+    color = [foregroundColorWell color];
+    key = EditorForegroundColor;
+  }
   else if (sender == backgroundColorWell)
-    {
-      color = [backgroundColorWell color];
-      key = EditorBackgroundColor;
-    }
+  {
+    color = [backgroundColorWell color];
+    key = EditorBackgroundColor;
+  }
   else // selectionColorWell
-    {
-      color = [selectionColorWell color];
-      key = EditorSelectionColor;
-    }
-
+  {
+    color = [selectionColorWell color];
+    key = EditorSelectionColor;
+  }
+  
   [prefs setColor:color forKey:key notify:YES];
 }
 
 - (void)setRulerVisibility:(id)sender
 {
   NSString *key;
-
+  
   key = (sender == showTopRulerButton
          ? EditorShowTopRuler : EditorShowSideRuler);
   [prefs setBool:([sender state] == NSOnState) forKey:key notify:YES];

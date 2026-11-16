@@ -1,6 +1,6 @@
 /*
-   GNUstep ProjectCenter - line number ruler for the editor.
-*/
+ GNUstep ProjectCenter - line number ruler for the editor.
+ */
 
 #import "PCLineNumberRulerView.h"
 #import "PCEditorView.h"
@@ -22,47 +22,47 @@
 {
   if ((self = [super initWithScrollView:scrollView
                             orientation:NSVerticalRuler]) != nil)
-    {
-      NSFont *font;
-
-      _textView = textView;
-      font = [NSFont userFixedPitchFontOfSize:10.0];
-      _attributes = [[NSDictionary alloc]
-        initWithObjectsAndKeys:
-          font, NSFontAttributeName,
-          [NSColor darkGrayColor], NSForegroundColorAttributeName,
-          nil];
-      _breakpoints = [[NSMutableSet alloc] init];
-      _showsLineNumbers = YES;
-
-      [self setClientView:textView];
-      [self setRuleThickness:40.0];
-      [self _loadBreakpoints];
-
-      [[[scrollView contentView] superview] setPostsFrameChangedNotifications:YES];
-      [[scrollView contentView] setPostsBoundsChangedNotifications:YES];
-      [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(invalidateLineNumbers:)
-               name:NSViewBoundsDidChangeNotification
-             object:[scrollView contentView]];
-      [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(invalidateLineNumbers:)
-               name:NSTextDidChangeNotification
-             object:textView];
-      [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(breakpointDidChange:)
-               name:PCProjectBreakpointNotification
-             object:nil];
-      [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(debuggerStateDidChange:)
-               name:PCDebuggerStateDidChangeNotification
-             object:nil];
-    }
-
+  {
+    NSFont *font;
+    
+    _textView = textView;
+    font = [NSFont userFixedPitchFontOfSize:10.0];
+    _attributes = [[NSDictionary alloc]
+                   initWithObjectsAndKeys:
+                     font, NSFontAttributeName,
+                   [NSColor darkGrayColor], NSForegroundColorAttributeName,
+                   nil];
+    _breakpoints = [[NSMutableSet alloc] init];
+    _showsLineNumbers = YES;
+    
+    [self setClientView:textView];
+    [self setRuleThickness:40.0];
+    [self _loadBreakpoints];
+    
+    [[[scrollView contentView] superview] setPostsFrameChangedNotifications:YES];
+    [[scrollView contentView] setPostsBoundsChangedNotifications:YES];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(invalidateLineNumbers:)
+     name:NSViewBoundsDidChangeNotification
+     object:[scrollView contentView]];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(invalidateLineNumbers:)
+     name:NSTextDidChangeNotification
+     object:textView];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(breakpointDidChange:)
+     name:PCProjectBreakpointNotification
+     object:nil];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(debuggerStateDidChange:)
+     name:PCDebuggerStateDidChangeNotification
+     object:nil];
+  }
+  
   return self;
 }
 
@@ -77,13 +77,13 @@
 - (NSString *)_filePath
 {
   id editor;
-
+  
   editor = [_textView editor];
   if (editor != nil && [editor respondsToSelector:@selector(path)])
-    {
-      return [editor path];
-    }
-
+  {
+    return [editor path];
+  }
+  
   return nil;
 }
 
@@ -91,18 +91,18 @@
 {
   id editor;
   id editorManager;
-
+  
   editor = [_textView editor];
   if (editor != nil && [editor respondsToSelector:@selector(editorManager)])
+  {
+    editorManager = [editor editorManager];
+    if (editorManager != nil &&
+        [editorManager respondsToSelector:@selector(projectManager)])
     {
-      editorManager = [editor editorManager];
-      if (editorManager != nil &&
-	  [editorManager respondsToSelector:@selector(projectManager)])
-	{
-	  return [[editorManager projectManager] activeProject];
-	}
+      return [[editorManager projectManager] activeProject];
     }
-
+  }
+  
   return nil;
 }
 
@@ -113,48 +113,48 @@
   PCProject *project;
   NSEnumerator *e;
   NSDictionary *dict;
-
+  
   path = [self _filePath];
   project = [self _project];
   if (path == nil || project == nil)
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   items = [project breakpoints];
   e = [items objectEnumerator];
   while ((dict = [e nextObject]) != nil)
+  {
+    if (![dict isKindOfClass:[NSDictionary class]])
     {
-      if (![dict isKindOfClass:[NSDictionary class]])
-        {
-          continue;
-        }
-      if ([[project absolutePathForBreakpointFile:[dict objectForKey:@"File"]]
-	    isEqualToString:path])
-        {
-          NSNumber *line = [dict objectForKey:@"Line"];
-          if (line != nil &&
-	      [project canSetBreakpointForFile:path
-					  line:[line unsignedIntegerValue]])
-            {
-              [_breakpoints addObject:line];
-            }
-        }
+      continue;
     }
+    if ([[project absolutePathForBreakpointFile:[dict objectForKey:@"File"]]
+         isEqualToString:path])
+    {
+      NSNumber *line = [dict objectForKey:@"Line"];
+      if (line != nil &&
+          [project canSetBreakpointForFile:path
+                                      line:[line unsignedIntegerValue]])
+      {
+        [_breakpoints addObject:line];
+      }
+    }
+  }
 }
 
 - (void)_setStoredBreakpointAtLine:(NSUInteger)line enabled:(BOOL)enabled
 {
   NSString *path;
   PCProject *project;
-
+  
   path = [self _filePath];
   project = [self _project];
   if (path == nil || project == nil || line == 0)
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   [project setBreakpointForFile:path line:line enabled:enabled];
 }
 
@@ -164,23 +164,23 @@
   NSUInteger i;
   NSUInteger lineNumber;
   NSUInteger length;
-
+  
   string = [_textView string];
   length = [string length];
   if (index > length)
-    {
-      index = length;
-    }
-
+  {
+    index = length;
+  }
+  
   lineNumber = 1;
   for (i = 0; i < index; i++)
+  {
+    if ([string characterAtIndex:i] == '\n')
     {
-      if ([string characterAtIndex:i] == '\n')
-        {
-          lineNumber++;
-        }
+      lineNumber++;
     }
-
+  }
+  
   return lineNumber;
 }
 
@@ -189,17 +189,17 @@
   NSString *string;
   NSUInteger i;
   NSUInteger count;
-
+  
   string = [_textView string];
   count = 1;
   for (i = 0; i < [string length]; i++)
+  {
+    if ([string characterAtIndex:i] == '\n')
     {
-      if ([string characterAtIndex:i] == '\n')
-        {
-          count++;
-        }
+      count++;
     }
-
+  }
+  
   return count;
 }
 
@@ -208,45 +208,45 @@
   NSUInteger lineCount;
   NSUInteger digits;
   CGFloat width;
-
+  
   if (!_showsLineNumbers)
-    {
-      width = PCBreakpointGutterWidth;
-      if ([self ruleThickness] != width)
-        {
-          [self setRuleThickness:width];
-        }
-      return;
-    }
-
-  lineCount = [self _lineCount];
-  digits = 1;
-  while (lineCount >= 10)
-    {
-      digits++;
-      lineCount /= 10;
-    }
-
-  width = PCBreakpointGutterWidth + 8.0
-        + digits * [[NSFont userFixedPitchFontOfSize:10.0] widthOfString:@"8"];
-  if (width < 44.0)
-    {
-      width = 44.0;
-    }
-
-  if ([self ruleThickness] != width)
+  {
+    width = PCBreakpointGutterWidth;
+    if ([self ruleThickness] != width)
     {
       [self setRuleThickness:width];
     }
+    return;
+  }
+  
+  lineCount = [self _lineCount];
+  digits = 1;
+  while (lineCount >= 10)
+  {
+    digits++;
+    lineCount /= 10;
+  }
+  
+  width = PCBreakpointGutterWidth + 8.0
+  + digits * [[NSFont userFixedPitchFontOfSize:10.0] widthOfString:@"8"];
+  if (width < 44.0)
+  {
+    width = 44.0;
+  }
+  
+  if ([self ruleThickness] != width)
+  {
+    [self setRuleThickness:width];
+  }
 }
 
 - (void)setShowsLineNumbers:(BOOL)flag
 {
   if (_showsLineNumbers == flag)
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   _showsLineNumbers = flag;
   [self _updateRuleThickness];
   [self setNeedsDisplay:YES];
@@ -269,30 +269,30 @@
   NSString *path;
   NSNumber *line;
   NSNumber *enabled;
-
+  
   info = [notification object];
   if (![info isKindOfClass:[NSDictionary class]])
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   path = [info objectForKey:@"File"];
   line = [info objectForKey:@"Line"];
   enabled = [info objectForKey:@"Enabled"];
   if (path == nil || line == nil || ![path isEqualToString:[self _filePath]])
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   if (enabled == nil || [enabled boolValue])
-    {
-      [_breakpoints addObject:line];
-    }
+  {
+    [_breakpoints addObject:line];
+  }
   else
-    {
-      [_breakpoints removeObject:line];
-    }
-
+  {
+    [_breakpoints removeObject:line];
+  }
+  
   [self setNeedsDisplay:YES];
 }
 
@@ -308,25 +308,25 @@
   NSString *file = [info objectForKey:@"File"];
   NSString *path = [self _filePath];
   NSUInteger line = 0;
-
+  
   if ([[info objectForKey:@"State"] isEqual:PCDebuggerStateStopped]
       && file != nil && path != nil
       && [[file stringByStandardizingPath] isEqual:[path stringByStandardizingPath]])
-    {
-      line = [[info objectForKey:@"Line"] unsignedIntegerValue];
-    }
+  {
+    line = [[info objectForKey:@"Line"] unsignedIntegerValue];
+  }
   if (line != _executionLine)
-    {
-      _executionLine = line;
-      [self setNeedsDisplay:YES];
-    }
+  {
+    _executionLine = line;
+    [self setNeedsDisplay:YES];
+  }
 }
 
 static void PCDrawBreakpointTag(NSRect rect, NSColor *fill)
 {
   NSBezierPath *tag = [NSBezierPath bezierPath];
   CGFloat tip = NSHeight(rect) / 2.0;
-
+  
   [tag moveToPoint:NSMakePoint(NSMinX(rect), NSMinY(rect))];
   [tag lineToPoint:NSMakePoint(NSMaxX(rect) - tip, NSMinY(rect))];
   [tag lineToPoint:NSMakePoint(NSMaxX(rect), NSMidY(rect))];
@@ -352,20 +352,20 @@ static void PCDrawBreakpointTag(NSRect rect, NSColor *fill)
   NSRect containerVisibleRect;
   NSUInteger stringLength;
   NSUInteger glyphLimit;
-
+  
   [self _updateRuleThickness];
-
+  
   bounds = [self bounds];
   if (NSIsEmptyRect(bounds))
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   [[NSColor controlBackgroundColor] set];
   NSRectFill(bounds);
   [[[NSColor windowBackgroundColor]
     blendedColorWithFraction:0.08
-                       ofColor:[NSColor blackColor]] set];
+    ofColor:[NSColor blackColor]] set];
   NSRectFill(NSMakeRect(NSMinX(bounds), NSMinY(bounds),
                         PCBreakpointGutterWidth, NSHeight(bounds)));
   [[NSColor grayColor] set];
@@ -373,112 +373,112 @@ static void PCDrawBreakpointTag(NSRect rect, NSColor *fill)
                         1.0, NSHeight(bounds)));
   [[NSColor grayColor] set];
   NSRectFill(NSMakeRect(NSMaxX(bounds) - 1.0, NSMinY(bounds), 1.0, NSHeight(bounds)));
-
+  
   layoutManager = [_textView layoutManager];
   textContainer = [_textView textContainer];
   string = [_textView string];
   stringLength = [string length];
   if (layoutManager == nil || textContainer == nil || stringLength == 0)
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   inset = [_textView textContainerInset];
   visibleRect = [_textView visibleRect];
   containerVisibleRect = visibleRect;
   containerVisibleRect.origin.x -= inset.width;
   containerVisibleRect.origin.y -= inset.height;
-
+  
   glyphRange = [layoutManager glyphRangeForBoundingRect:containerVisibleRect
                                         inTextContainer:textContainer];
   charRange = [layoutManager characterRangeForGlyphRange:glyphRange
                                         actualGlyphRange:NULL];
   if (charRange.location == NSNotFound)
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   lineNumber = [self _lineNumberForCharacterIndex:charRange.location];
   glyphLimit = NSMaxRange(glyphRange);
   if (glyphLimit > [layoutManager numberOfGlyphs])
-    {
-      glyphLimit = [layoutManager numberOfGlyphs];
-    }
-
+  {
+    glyphLimit = [layoutManager numberOfGlyphs];
+  }
+  
   for (glyphIndex = glyphRange.location;
        glyphIndex < glyphLimit;
        glyphIndex++)
+  {
+    NSRect glyphRect;
+    NSRange lineRange;
+    NSString *label;
+    NSSize labelSize;
+    NSPoint point;
+    CGFloat markerY;
+    
+    charRange = [layoutManager characterRangeForGlyphRange:NSMakeRange(glyphIndex, 1)
+                                          actualGlyphRange:NULL];
+    if (charRange.location == NSNotFound || charRange.location >= stringLength)
     {
-      NSRect glyphRect;
-      NSRange lineRange;
-      NSString *label;
-      NSSize labelSize;
-      NSPoint point;
-      CGFloat markerY;
-
-      charRange = [layoutManager characterRangeForGlyphRange:NSMakeRange(glyphIndex, 1)
-                                            actualGlyphRange:NULL];
-      if (charRange.location == NSNotFound || charRange.location >= stringLength)
-        {
-          continue;
-        }
-
-      lineRange = [string lineRangeForRange:NSMakeRange(charRange.location, 0)];
-      if (charRange.location != lineRange.location)
-        {
-          NSRange nextGlyphRange;
-
-          nextGlyphRange = [layoutManager glyphRangeForCharacterRange:lineRange
-                                                  actualCharacterRange:NULL];
-          if (NSMaxRange(nextGlyphRange) > glyphIndex)
-            {
-              glyphIndex = NSMaxRange(nextGlyphRange) - 1;
-            }
-          continue;
-        }
-
-      glyphRect = [layoutManager boundingRectForGlyphRange:NSMakeRange(glyphIndex, 1)
-                                           inTextContainer:textContainer];
-      if (_showsLineNumbers)
-        {
-          label = [NSString stringWithFormat:@"%lu", (unsigned long)lineNumber];
-          labelSize = [label sizeWithAttributes:_attributes];
-          point = NSMakePoint(NSMaxX(bounds) - labelSize.width - 5.0,
-                             NSMinY(glyphRect) + inset.height
-                               - NSMinY(visibleRect));
-          [label drawAtPoint:point withAttributes:_attributes];
-        }
-
-      markerY = NSMinY(glyphRect) + inset.height - NSMinY(visibleRect);
-      /* Xcode: a blue tag across the gutter for a breakpoint, a green one
-       * for the line where the program is paused. */
-      if ([_breakpoints containsObject:[NSNumber numberWithUnsignedInteger:lineNumber]])
-        {
-          PCDrawBreakpointTag(NSMakeRect(1.0, markerY + 1.0, NSMaxX(bounds) - 2.0,
-                                         NSHeight(glyphRect) - 2.0),
-                              [NSColor colorWithCalibratedRed:0.20 green:0.47 blue:0.85 alpha:1.0]);
-          if (_showsLineNumbers)
-            {
-              NSMutableDictionary *white = [[_attributes mutableCopy] autorelease];
-              NSString *number = [NSString stringWithFormat:@"%lu", (unsigned long)lineNumber];
-              NSSize size;
-
-              [white setObject:[NSColor whiteColor] forKey:NSForegroundColorAttributeName];
-              size = [number sizeWithAttributes:white];
-              [number drawAtPoint:NSMakePoint(NSMaxX(bounds) - size.width - 5.0,
-                                              NSMinY(glyphRect) + inset.height - NSMinY(visibleRect))
-                   withAttributes:white];
-            }
-        }
-      if (lineNumber == _executionLine)
-        {
-          PCDrawBreakpointTag(NSMakeRect(1.0, markerY + 3.0, PCBreakpointGutterWidth - 2.0,
-                                         MAX(4.0, NSHeight(glyphRect) - 6.0)),
-                              [NSColor colorWithCalibratedRed:0.30 green:0.70 blue:0.30 alpha:1.0]);
-        }
-
-      lineNumber++;
+      continue;
     }
+    
+    lineRange = [string lineRangeForRange:NSMakeRange(charRange.location, 0)];
+    if (charRange.location != lineRange.location)
+    {
+      NSRange nextGlyphRange;
+      
+      nextGlyphRange = [layoutManager glyphRangeForCharacterRange:lineRange
+                                             actualCharacterRange:NULL];
+      if (NSMaxRange(nextGlyphRange) > glyphIndex)
+      {
+        glyphIndex = NSMaxRange(nextGlyphRange) - 1;
+      }
+      continue;
+    }
+    
+    glyphRect = [layoutManager boundingRectForGlyphRange:NSMakeRange(glyphIndex, 1)
+                                         inTextContainer:textContainer];
+    if (_showsLineNumbers)
+    {
+      label = [NSString stringWithFormat:@"%lu", (unsigned long)lineNumber];
+      labelSize = [label sizeWithAttributes:_attributes];
+      point = NSMakePoint(NSMaxX(bounds) - labelSize.width - 5.0,
+                          NSMinY(glyphRect) + inset.height
+                          - NSMinY(visibleRect));
+      [label drawAtPoint:point withAttributes:_attributes];
+    }
+    
+    markerY = NSMinY(glyphRect) + inset.height - NSMinY(visibleRect);
+    /* Xcode: a blue tag across the gutter for a breakpoint, a green one
+     * for the line where the program is paused. */
+    if ([_breakpoints containsObject:[NSNumber numberWithUnsignedInteger:lineNumber]])
+    {
+      PCDrawBreakpointTag(NSMakeRect(1.0, markerY + 1.0, NSMaxX(bounds) - 2.0,
+                                     NSHeight(glyphRect) - 2.0),
+                          [NSColor colorWithCalibratedRed:0.20 green:0.47 blue:0.85 alpha:1.0]);
+      if (_showsLineNumbers)
+      {
+        NSMutableDictionary *white = [[_attributes mutableCopy] autorelease];
+        NSString *number = [NSString stringWithFormat:@"%lu", (unsigned long)lineNumber];
+        NSSize size;
+        
+        [white setObject:[NSColor whiteColor] forKey:NSForegroundColorAttributeName];
+        size = [number sizeWithAttributes:white];
+        [number drawAtPoint:NSMakePoint(NSMaxX(bounds) - size.width - 5.0,
+                                        NSMinY(glyphRect) + inset.height - NSMinY(visibleRect))
+             withAttributes:white];
+      }
+    }
+    if (lineNumber == _executionLine)
+    {
+      PCDrawBreakpointTag(NSMakeRect(1.0, markerY + 3.0, PCBreakpointGutterWidth - 2.0,
+                                     MAX(4.0, NSHeight(glyphRect) - 6.0)),
+                          [NSColor colorWithCalibratedRed:0.30 green:0.70 blue:0.30 alpha:1.0]);
+    }
+    
+    lineNumber++;
+  }
 }
 
 - (void)drawRect:(NSRect)rect
@@ -496,27 +496,27 @@ static void PCDrawBreakpointTag(NSRect rect, NSColor *fill)
   NSPoint containerPoint;
   NSUInteger glyphIndex;
   NSRange charRange;
-
+  
   string = [_textView string];
   if ([string length] == 0)
-    {
-      return 1;
-    }
-
+  {
+    return 1;
+  }
+  
   layoutManager = [_textView layoutManager];
   textContainer = [_textView textContainer];
   visibleRect = [_textView visibleRect];
   inset = [_textView textContainerInset];
   containerPoint = NSMakePoint(0.0,
-    NSMinY(visibleRect) + point.y - inset.height);
-
+                               NSMinY(visibleRect) + point.y - inset.height);
+  
   glyphIndex = [layoutManager glyphIndexForPoint:containerPoint
                                  inTextContainer:textContainer];
   if (glyphIndex >= [string length])
-    {
-      glyphIndex = [string length] - 1;
-    }
-
+  {
+    glyphIndex = [string length] - 1;
+  }
+  
   charRange = [layoutManager characterRangeForGlyphRange:NSMakeRange(glyphIndex, 1)
                                         actualGlyphRange:NULL];
   return [self _lineNumberForCharacterIndex:charRange.location];
@@ -531,52 +531,52 @@ static void PCDrawBreakpointTag(NSRect rect, NSColor *fill)
   PCProject *project;
   BOOL enabled;
   BOOL hasBreakpoint;
-
+  
   point = [self convertPoint:[event locationInWindow] fromView:nil];
   if (point.x >= PCBreakpointGutterWidth)
-    {
-      return;
-    }
+  {
+    return;
+  }
   line = [self _lineNumberForPoint:point];
   lineNumber = [NSNumber numberWithUnsignedInteger:line];
   path = [self _filePath];
   project = [self _project];
-
+  
   if (path == nil || project == nil)
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   if (![project canSetBreakpointForFile:path line:line])
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   hasBreakpoint = [_breakpoints containsObject:lineNumber];
   if (hasBreakpoint)
-    {
-      [_breakpoints removeObject:lineNumber];
-      enabled = NO;
-    }
+  {
+    [_breakpoints removeObject:lineNumber];
+    enabled = NO;
+  }
   else if (!hasBreakpoint)
-    {
-      [_breakpoints addObject:lineNumber];
-      enabled = YES;
-    }
+  {
+    [_breakpoints addObject:lineNumber];
+    enabled = YES;
+  }
   else
-    {
-      return;
-    }
-
+  {
+    return;
+  }
+  
   [self _setStoredBreakpointAtLine:line enabled:enabled];
   [[NSNotificationCenter defaultCenter]
-    postNotificationName:PCProjectBreakpointNotification
-                  object:[NSDictionary dictionaryWithObjectsAndKeys:
-                    path, @"File",
-                    lineNumber, @"Line",
-                    [NSNumber numberWithBool:enabled], @"Enabled",
-                    nil]];
-
+   postNotificationName:PCProjectBreakpointNotification
+   object:[NSDictionary dictionaryWithObjectsAndKeys:
+           path, @"File",
+           lineNumber, @"Line",
+           [NSNumber numberWithBool:enabled], @"Enabled",
+           nil]];
+  
   [self setNeedsDisplay:YES];
 }
 

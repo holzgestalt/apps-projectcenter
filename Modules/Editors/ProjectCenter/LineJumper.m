@@ -6,10 +6,10 @@ static id sharedLineJumper = nil;
 
 + (id)sharedInstance
 {
-  if (!sharedLineJumper) 
-    {
-      sharedLineJumper = [[self allocWithZone:[[NSApplication sharedApplication] zone]] init];
-    }
+  if (!sharedLineJumper)
+  {
+    sharedLineJumper = [[self allocWithZone:[[NSApplication sharedApplication] zone]] init];
+  }
   return sharedLineJumper;
 }
 
@@ -24,15 +24,15 @@ static id sharedLineJumper = nil;
 - (void)loadUI
 {
   if (!lineField)
+  {
+    if (![NSBundle loadNibNamed:@"LineJumper" owner:self])
     {
-      if (![NSBundle loadNibNamed:@"LineJumper" owner:self])
-        {
-          NSLog(@"Failed to load LineJumper.nib");
-          NSBeep();
-        }
-      if (self == sharedLineJumper)
-        [[lineField window] setFrameAutosaveName:@"GoTo Line"];
+      NSLog(@"Failed to load LineJumper.nib");
+      NSBeep();
     }
+    if (self == sharedLineJumper)
+      [[lineField window] setFrameAutosaveName:@"GoTo Line"];
+  }
 }
 
 - (NSTextView<CodeEditorView> *)editorViewToUse
@@ -45,9 +45,9 @@ static id sharedLineJumper = nil;
 
 - (NSPanel *)linePanel
 {
-    if (!lineField)
-      [self loadUI];
-    return (NSPanel *)[lineField window];
+  if (!lineField)
+    [self loadUI];
+  return (NSPanel *)[lineField window];
 }
 
 - (void)orderFrontLinePanel:(id)sender
@@ -65,9 +65,9 @@ static id sharedLineJumper = nil;
   line = (NSUInteger)[lineField integerValue];
   cev = [self editorViewToUse];
   if (cev)
-    {
-      [cev goToLineNumber:line];
-    }
+  {
+    [cev goToLineNumber:line];
+  }
 }
 
 @end

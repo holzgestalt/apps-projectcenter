@@ -1,24 +1,24 @@
 /*
-   GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
+ GNUstep ProjectCenter - http://www.gnustep.org/experience/ProjectCenter.html
 
-   Copyright (C) 2001 Free Software Foundation
+ Copyright (C) 2001 Free Software Foundation
 
-   This file is part of GNUstep.
+ This file is part of GNUstep.
 
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
+ This application is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
 
-   This application is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+ This application is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public
-   License along with this library; if not, write to the Free
-   Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
-*/
+ You should have received a copy of the GNU General Public
+ License along with this library; if not, write to the Free
+ Software Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
+ */
 #import <ProjectCenter/PCLogController.h>
 #import <ProjectCenter/ProjectCenter.h>
 
@@ -33,22 +33,22 @@
 
 - (id)init
 {
-  if ((self = [super init])) 
-    {
-      [[NSNotificationCenter defaultCenter]
-	addObserver:self 
-	   selector:@selector(editorDidBecomeActive:)
-	       name:PCEditorDidBecomeActiveNotification 
-	     object:nil];
+  if ((self = [super init]))
+  {
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(editorDidBecomeActive:)
+     name:PCEditorDidBecomeActiveNotification
+     object:nil];
 
-      [[NSNotificationCenter defaultCenter]
-	addObserver:self 
-	   selector:@selector(editorDidResignActive:)
-	       name:PCEditorDidResignActiveNotification 
-	     object:nil];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(editorDidResignActive:)
+     name:PCEditorDidResignActiveNotification
+     object:nil];
 
-      editorIsActive = NO;
-    }
+    editorIsActive = NO;
+  }
 
   return self;
 }
@@ -184,8 +184,8 @@
 - (void)fileOpenQuickly:(id)sender
 {
   NSRunAlertPanel(@"PCMenuController: Sorry!",
-		  @"This feature is not finished yet",
-		  @"OK",nil,nil);
+                  @"This feature is not finished yet",
+                  @"OK",nil,nil);
 }
 
 - (void)fileRename:(id)sender
@@ -193,16 +193,16 @@
   // Show Inspector panel with "File Attributes" section
   [projectManager renameFile];
 
-/*  NSRunAlertPanel(@"PCMenuController: Sorry!",
-		  @"This feature is not finished yet",
-		  @"OK",nil,nil);*/
+  /*  NSRunAlertPanel(@"PCMenuController: Sorry!",
+   @"This feature is not finished yet",
+   @"OK",nil,nil);*/
 }
 
 - (void)fileNewUntitled:(id)sender
 {
   NSRunAlertPanel(@"PCMenuController: Sorry!",
-		  @"This feature is not finished yet",
-		  @"OK",nil,nil);
+                  @"This feature is not finished yet",
+                  @"OK",nil,nil);
 }
 
 // Tools
@@ -211,13 +211,13 @@
   [[[projectManager rootActiveProject] projectWindow] toggleToolbar];
 
   if ([[sender title] isEqualToString:@"Hide Tool Bar"])
-    {
-      [sender setTitle:@"Show Tool Bar"];
-    }
+  {
+    [sender setTitle:@"Show Tool Bar"];
+  }
   else
-    {
-      [sender setTitle:@"Hide Tool Bar"];
-    }
+  {
+    [sender setTitle:@"Hide Tool Bar"];
+  }
 }
 
 - (void)showInspector:(id)sender
@@ -296,7 +296,7 @@
 //==== Delegate stuff
 //============================================================================
 
-- (BOOL)validateMenuItem:(id <NSMenuItem>)menuItem
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem
 {
   NSString         *menuTitle = [[menuItem menu] title];
   PCProject        *aProject = [projectManager activeProject];
@@ -304,194 +304,194 @@
   PCProjectBrowser *projectBrowser = [aProject projectBrowser];
 
   if ([[aProject projectDict] objectForKey:@"XCODE_PROJECT_PATH"])
+  {
+    NSString *title = [menuItem title];
+    if ([menuTitle isEqual:@"Project"] &&
+        [@[@"Save", @"Add Files...", @"Remove Files...", @"New Subproject...", @"Add Subproject..."] containsObject:title])
+      return NO;
+    if ([menuTitle isEqual:@"File"] && [@[@"New in Project", @"Rename"] containsObject:title])
+      return NO;
+  }
+
+  if ([[projectManager loadedProjects] count] == 0)
+  {
+    // Project related menu items
+    if ([menuTitle isEqualToString: @"Project"])
     {
-      NSString *title = [menuItem title];
-      if ([menuTitle isEqual:@"Project"] &&
-          [@[@"Save", @"Add Files...", @"Remove Files...", @"New Subproject...", @"Add Subproject..."] containsObject:title])
+      if ([[menuItem title] isEqualToString:@"Save"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Add Files..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Save Files..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Remove Files..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"New Subproject..."])
         return NO;
-      if ([menuTitle isEqual:@"File"] && [@[@"New in Project", @"Rename"] containsObject:title])
+      if ([[menuItem title] isEqualToString:@"Add Subproject..."])
         return NO;
+      if ([[menuItem title] isEqualToString:@"Close"]) return NO;
     }
 
-  if ([[projectManager loadedProjects] count] == 0) 
+    // File related menu items
+    if ([menuTitle isEqualToString: @"File"] && !editorIsActive)
     {
-      // Project related menu items
-      if ([menuTitle isEqualToString: @"Project"])
-	{
-	  if ([[menuItem title] isEqualToString:@"Save"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Add Files..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Save Files..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Remove Files..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"New Subproject..."]) 
-	    return NO;
-	  if ([[menuItem title] isEqualToString:@"Add Subproject..."]) 
-	    return NO;
-	  if ([[menuItem title] isEqualToString:@"Close"]) return NO;
-	}
-
-      // File related menu items
-      if ([menuTitle isEqualToString: @"File"] && !editorIsActive)
-	{
-	  if ([[menuItem title] isEqualToString:@"New in Project"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Save"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Save As..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Save To..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Revert to Saved"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Close"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Open Quickly..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Rename"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"New Untitled"]) return NO;
-	}
-
-      // Tools menu items
-      if ([menuTitle isEqualToString: @"Tools"])
-	{
-	  if ([[menuItem title] isEqualToString:@"Inspector..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Hide Tool Bar"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Show Tool Bar"]) return NO;
-	}
-      if ([menuTitle isEqualToString: @"Project Build"])
-	{
-	  if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Build"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Next Error"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Previous Error"]) return NO;
-	}
-      if ([menuTitle isEqualToString: @"Project Find"])
-	{
-	  if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Find Preferences"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Find Definitions"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Find Text"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Find Regular Expr"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Next match"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Previous match"]) return NO;
-	}
-      if ([menuTitle isEqualToString: @"Loaded Files"])
-	{
-	  if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Sort by Time Viewed"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Sort by Name"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Next File"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Previous File"]) return NO;
-	}
-      if ([menuTitle isEqualToString: @"Launcher"])
-	{
-	  if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Run"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Debug"]) return NO;
-	}
-      if ([menuTitle isEqualToString: @"Indexer"])
-	{
-	  if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Purge Indices"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Index Subproject"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Index File"]) return NO;
-	}
-      return YES;
+      if ([[menuItem title] isEqualToString:@"New in Project"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Save"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Save As..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Save To..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Revert to Saved"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Close"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Open Quickly..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Rename"]) return NO;
+      if ([[menuItem title] isEqualToString:@"New Untitled"]) return NO;
     }
+
+    // Tools menu items
+    if ([menuTitle isEqualToString: @"Tools"])
+    {
+      if ([[menuItem title] isEqualToString:@"Inspector..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Hide Tool Bar"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Show Tool Bar"]) return NO;
+    }
+    if ([menuTitle isEqualToString: @"Project Build"])
+    {
+      if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Build"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Next Error"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Previous Error"]) return NO;
+    }
+    if ([menuTitle isEqualToString: @"Project Find"])
+    {
+      if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Find Preferences"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Find Definitions"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Find Text"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Find Regular Expr"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Next match"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Previous match"]) return NO;
+    }
+    if ([menuTitle isEqualToString: @"Loaded Files"])
+    {
+      if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Sort by Time Viewed"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Sort by Name"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Next File"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Previous File"]) return NO;
+    }
+    if ([menuTitle isEqualToString: @"Launcher"])
+    {
+      if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Run"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Debug"]) return NO;
+    }
+    if ([menuTitle isEqualToString: @"Indexer"])
+    {
+      if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Purge Indices"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Index Subproject"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Index File"]) return NO;
+    }
+    return YES;
+  }
 
   // Project related menu items
-  if ([menuTitle isEqualToString: @"Project"] 
+  if ([menuTitle isEqualToString: @"Project"]
       && [projectBrowser nameOfSelectedFile] == nil
       && [projectBrowser selectedFiles] == nil)
-    {
-      if ([[menuItem title] isEqualToString:@"Remove Files..."]) return NO;
-    }
-  if ([menuTitle isEqualToString: @"Project"] 
+  {
+    if ([[menuItem title] isEqualToString:@"Remove Files..."]) return NO;
+  }
+  if ([menuTitle isEqualToString: @"Project"]
       && [[projectEditor allEditors] count] == 0)
-    {
-      if ([[menuItem title] isEqualToString:@"Save Files..."]) return NO;
-    }
-  if ([menuTitle isEqualToString: @"Project"] 
+  {
+    if ([[menuItem title] isEqualToString:@"Save Files..."]) return NO;
+  }
+  if ([menuTitle isEqualToString: @"Project"]
       && [projectBrowser nameOfSelectedCategory] == nil)
-    {
-      if ([[menuItem title] isEqualToString:@"Add Subproject..."]) return NO;
-      if ([[menuItem title] isEqualToString:@"Add Files..."]) return NO;
-    }
-  if ([menuTitle isEqualToString: @"Project"] 
-      && [[projectBrowser nameOfSelectedCategory] 
-         isEqualToString:@"Subprojects"])
-    {
-      if ([[menuItem title] isEqualToString:@"Add Files..."]) return NO;
-    }
-  if ([menuTitle isEqualToString: @"Project"] 
+  {
+    if ([[menuItem title] isEqualToString:@"Add Subproject..."]) return NO;
+    if ([[menuItem title] isEqualToString:@"Add Files..."]) return NO;
+  }
+  if ([menuTitle isEqualToString: @"Project"]
+      && [[projectBrowser nameOfSelectedCategory]
+          isEqualToString:@"Subprojects"])
+  {
+    if ([[menuItem title] isEqualToString:@"Add Files..."]) return NO;
+  }
+  if ([menuTitle isEqualToString: @"Project"]
       && ![[projectBrowser nameOfSelectedRootCategory] isEqualToString:@"Subprojects"])
-    {
-      if ([[menuItem title] isEqualToString:@"Add Subproject..."]) return NO;
-    }
+  {
+    if ([[menuItem title] isEqualToString:@"Add Subproject..."]) return NO;
+  }
 
   // File related menu items
   if (([menuTitle isEqualToString: @"File"]))
+  {
+    if (!editorIsActive)
     {
-      if (!editorIsActive)
-	{
-	  if ([[menuItem title] isEqualToString:@"Save"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Save As..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Save To..."]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Revert to Saved"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Close"]) return NO;
-	}
+      if ([[menuItem title] isEqualToString:@"Save"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Save As..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Save To..."]) return NO;
+      if ([[menuItem title] isEqualToString:@"Revert to Saved"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Close"]) return NO;
     }
+  }
   if ([projectBrowser nameOfSelectedFile] == nil)
-    {
-      if ([[menuItem title] isEqualToString:@"Rename"]) return NO;
-    }
+  {
+    if ([[menuItem title] isEqualToString:@"Rename"]) return NO;
+  }
 
   // Toolbar
   if ([[menuItem title] isEqualToString:@"Hide Tool Bar"]
       && ![[[projectManager activeProject] projectWindow] isToolbarVisible])
-    {
-      [menuItem setTitle:@"Show Tool Bar"];
-    }
+  {
+    [menuItem setTitle:@"Show Tool Bar"];
+  }
   if ([[menuItem title] isEqualToString:@"Show Tool Bar"]
       && [[[projectManager activeProject] projectWindow] isToolbarVisible])
-    {
-      [menuItem setTitle:@"Hide Tool Bar"];
-    }
-    
+  {
+    [menuItem setTitle:@"Hide Tool Bar"];
+  }
+
   // Project Build related
   if (([menuTitle isEqualToString: @"Project Build"]))
+  {
+    if ([[[projectManager activeProject] projectBuilder] isBuilding]
+        || [[[projectManager activeProject] projectBuilder] isCleaning])
     {
-      if ([[[projectManager activeProject] projectBuilder] isBuilding]
-	  || [[[projectManager activeProject] projectBuilder] isCleaning])
-	{
-	  if ([[menuItem title] isEqualToString:@"Build"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Next error"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Previous error"]) return NO;
-	}
-      else
-	{
-	  if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
-	}
+      if ([[menuItem title] isEqualToString:@"Build"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Next error"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Previous error"]) return NO;
     }
-    
+    else
+    {
+      if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
+    }
+  }
+
   // Project Launcher related
   if (([menuTitle isEqualToString: @"Launcher"]))
+  {
+    if ([[[projectManager activeProject] projectLauncher] isRunning]
+        || [[[projectManager activeProject] projectLauncher] isDebugging])
     {
-      if ([[[projectManager activeProject] projectLauncher] isRunning]
-	  || [[[projectManager activeProject] projectLauncher] isDebugging])
-	{
-	  if ([[menuItem title] isEqualToString:@"Run"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Debug"]) return NO;
-	}
+      if ([[menuItem title] isEqualToString:@"Run"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Debug"]) return NO;
     }
-    
+  }
+
   // Loaded Files related
   if (([menuTitle isEqualToString: @"Loaded Files"]))
+  {
+    if ([[[aProject projectLoadedFiles] editedFilesRep] count] <= 0)
     {
-      if ([[[aProject projectLoadedFiles] editedFilesRep] count] <= 0)
-	{
-	  if ([[menuItem title] isEqualToString:@"Sort by Time Viewed"])
-	    return NO;
-	  if ([[menuItem title] isEqualToString:@"Sort by Name"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Next File"]) return NO;
-	  if ([[menuItem title] isEqualToString:@"Previous File"]) return NO;
-	}
+      if ([[menuItem title] isEqualToString:@"Sort by Time Viewed"])
+        return NO;
+      if ([[menuItem title] isEqualToString:@"Sort by Name"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Next File"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Previous File"]) return NO;
     }
+  }
 
   return YES;
 }

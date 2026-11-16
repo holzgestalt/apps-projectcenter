@@ -1,25 +1,25 @@
 /*
-    SyntaxDefinition.h
+ SyntaxDefinition.h
 
-    Implementation of the SyntaxDefinition class for the
-    ProjectManager application.
+ Implementation of the SyntaxDefinition class for the
+ ProjectManager application.
 
-    Copyright (C) 2005  Saso Kiselkov
+ Copyright (C) 2005  Saso Kiselkov
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
-*/
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA
+ */
 
 #import "SyntaxDefinition.h"
 
@@ -39,77 +39,77 @@ NSDictionary * ParseSyntaxGraphics(NSDictionary * specification)
 
   value = [specification objectForKey: @"ForegroundColor"];
   if (value != nil)
+  {
+    float r, g, b, a;
+    NSScanner * scanner = [NSScanner scannerWithString: value];
+
+    if ([scanner scanFloat: &r] && [scanner scanFloat: &g] &&
+        [scanner scanFloat: &b])
     {
-      float r, g, b, a;
-      NSScanner * scanner = [NSScanner scannerWithString: value];
+      if ([scanner scanFloat: &a] == NO)
+      {
+        a = 1.0;
+      }
 
-      if ([scanner scanFloat: &r] && [scanner scanFloat: &g] &&
-          [scanner scanFloat: &b])
-        {
-          if ([scanner scanFloat: &a] == NO)
-            {
-              a = 1.0;
-            }
-
-          [dict setObject: [NSColor colorWithCalibratedRed: r
-                                                     green: g
-                                                      blue: b
-                                                     alpha: a]
-                   forKey: @"ForegroundColor"];
-        }
-      else
-        {
-          NSLog(_(@"Invalid ForegroundColor specification \"%@\" found: "
-                  @"the correct format is \"r g b [a]\" where each component"
-                  @"is a real number in the range of 0.0 thru 1.0 inclusive, "
-                  @"specifying the red, green, blue and alpha (optional) "
-                  @"components of the desired color."), value);
-        }
+      [dict setObject: [NSColor colorWithCalibratedRed: r
+                                                 green: g
+                                                  blue: b
+                                                 alpha: a]
+               forKey: @"ForegroundColor"];
     }
+    else
+    {
+      NSLog(_(@"Invalid ForegroundColor specification \"%@\" found: "
+              @"the correct format is \"r g b [a]\" where each component"
+              @"is a real number in the range of 0.0 thru 1.0 inclusive, "
+              @"specifying the red, green, blue and alpha (optional) "
+              @"components of the desired color."), value);
+    }
+  }
 
   value = [specification objectForKey: @"BackgroundColor"];
   if (value != nil)
+  {
+    float r, g, b, a;
+    NSScanner * scanner = [NSScanner scannerWithString: value];
+
+    if ([scanner scanFloat: &r] && [scanner scanFloat: &g] &&
+        [scanner scanFloat: &b])
     {
-      float r, g, b, a;
-      NSScanner * scanner = [NSScanner scannerWithString: value];
+      if ([scanner scanFloat: &a] == NO)
+      {
+        a = 1.0;
+      }
 
-      if ([scanner scanFloat: &r] && [scanner scanFloat: &g] &&
-          [scanner scanFloat: &b])
-        {
-          if ([scanner scanFloat: &a] == NO)
-            {
-              a = 1.0;
-            }
-
-          [dict setObject: [NSColor colorWithCalibratedRed: r
-                                                     green: g
-                                                      blue: b
-                                                     alpha: a]
-                   forKey: @"BackgroundColor"];
-        }
-      else
-        {
-          NSLog(_(@"Invalid BackgroundColor specification \"%@\" found: "
-                  @"the correct format is \"r g b [a]\" where each component"
-                  @"is a real number in the range of 0.0 thru 1.0 inclusive, "
-                  @"specifying the red, green, blue and alpha (optional) "
-                  @"components of the desired color."), value);
-        }
+      [dict setObject: [NSColor colorWithCalibratedRed: r
+                                                 green: g
+                                                  blue: b
+                                                 alpha: a]
+               forKey: @"BackgroundColor"];
     }
+    else
+    {
+      NSLog(_(@"Invalid BackgroundColor specification \"%@\" found: "
+              @"the correct format is \"r g b [a]\" where each component"
+              @"is a real number in the range of 0.0 thru 1.0 inclusive, "
+              @"specifying the red, green, blue and alpha (optional) "
+              @"components of the desired color."), value);
+    }
+  }
 
   value = [specification objectForKey: @"Bold"];
   if (value != nil)
-    {
-      [dict setObject: [NSNumber numberWithBool: [value boolValue]]
-               forKey: @"Bold"];
-    }
+  {
+    [dict setObject: [NSNumber numberWithBool: [value boolValue]]
+             forKey: @"Bold"];
+  }
 
   value = [specification objectForKey: @"Italic"];
   if (value != nil)
-    {
-      [dict setObject: [NSNumber numberWithBool: [value boolValue]]
-               forKey: @"Italic"];
-    }
+  {
+    [dict setObject: [NSNumber numberWithBool: [value boolValue]]
+             forKey: @"Italic"];
+  }
 
   return [[dict copy] autorelease];
 }
@@ -121,24 +121,24 @@ MarkTextPatternBeginningCharacters(TextPattern * pattern,
   unichar * chars = PermissibleCharactersAtPatternBeginning(pattern);
 
   if (chars == (unichar *) -1)
-    {
-      memset(buffer, 1, 128);
-    }
+  {
+    memset(buffer, 1, 128);
+  }
   else if (chars != NULL)
+  {
+    unsigned int i;
+    unichar c;
+
+    for (i = 0; (c = chars[i]) != 0; i++)
     {
-      unsigned int i;
-      unichar c;
-
-      for (i = 0; (c = chars[i]) != 0; i++)
-        {
-          if (c < bufSize)
-            {
-              buffer[c] = 1;
-            }
-        }
-
-      free(chars);
+      if (c < bufSize)
+      {
+        buffer[c] = 1;
+      }
     }
+
+    free(chars);
+  }
 }
 
 static NSDictionary * syntaxes = nil;
@@ -175,24 +175,24 @@ static NSMutableDictionary * syntaxDefinitions = nil;
   dict = [NSMutableDictionary dictionary];
   e = [filePaths objectEnumerator];
   while ((filePath = [e nextObject]) != nil)
+  {
+    NSDictionary * syntax;
+
+
+    syntax = [NSDictionary dictionaryWithContentsOfFile: filePath];
+    if (syntax != nil)
     {
-      NSDictionary * syntax;
+      NSEnumerator * ee = [[syntax objectForKey: @"FileTypes"]
+                           objectEnumerator];
+      NSString * fileType;
 
-
-      syntax = [NSDictionary dictionaryWithContentsOfFile: filePath];
-      if (syntax != nil)
-        {
-          NSEnumerator * ee = [[syntax objectForKey: @"FileTypes"]
-            objectEnumerator];
-          NSString * fileType;
-
-          while ((fileType = [ee nextObject]) != nil)
-            {
-              [dict setObject: [syntax objectForKey: @"Contexts"]
-                       forKey: fileType];
-            }
-        }
+      while ((fileType = [ee nextObject]) != nil)
+      {
+        [dict setObject: [syntax objectForKey: @"Contexts"]
+                 forKey: fileType];
+      }
     }
+  }
 
   ASSIGNCOPY(syntaxes, dict);
 }
@@ -204,10 +204,10 @@ static NSMutableDictionary * syntaxDefinitions = nil;
 + (void)initialize
 {
   if (syntaxes == nil)
-    {
-      [self loadSyntaxDefinitions];
-      syntaxDefinitions = [NSMutableDictionary new];
-    }
+  {
+    [self loadSyntaxDefinitions];
+    syntaxDefinitions = [NSMutableDictionary new];
+  }
 }
 
 + syntaxDefinitionForFileType:(NSString *)fileType
@@ -217,177 +217,177 @@ static NSMutableDictionary * syntaxDefinitions = nil;
 
   def = [syntaxDefinitions objectForKey: fileType];
   if (def == nil)
+  {
+    NSArray * contexts = [syntaxes objectForKey: fileType];
+
+    if (contexts != nil)
     {
-      NSArray * contexts = [syntaxes objectForKey: fileType];
+      def = [[[SyntaxDefinition alloc]
+              initWithContextList: contexts
+              textStorage: aTextStorage]
+             autorelease];
 
-      if (contexts != nil)
-        {
-          def = [[[SyntaxDefinition alloc]
-            initWithContextList: contexts
-                    textStorage: aTextStorage]
-            autorelease];
+      if (def != nil)
+      {
+        [syntaxDefinitions setObject: def forKey: fileType];
+      }
 
-          if (def != nil)
-            {
-              [syntaxDefinitions setObject: def forKey: fileType];
-            }
-
-          return def;
-        }
-      else
-        {
-          return nil;
-        }
-    }
-  else
-    {
       return def;
     }
+    else
+    {
+      return nil;
+    }
+  }
+  else
+  {
+    return def;
+  }
 }
 
 - initWithContextList:(NSArray *)contexts
           textStorage:(NSTextStorage *)aTextStorage
 {
   if ([self init])
+  {
+    NSUInteger i, n;
+    NSMutableArray * contextGraphicsTmp = [NSMutableArray array],
+    * keywordGraphicsTmp = [NSMutableArray array];
+
+    ASSIGN(textStorage, aTextStorage);
+
+    // compile the syntax definition
+    for (i = 0, n = [contexts count]; i < n; i++)
     {
-      NSUInteger i, n;
-      NSMutableArray * contextGraphicsTmp = [NSMutableArray array],
-                     * keywordGraphicsTmp = [NSMutableArray array];
+      NSUInteger j, keywordCount, skipCount;
+      NSDictionary * context = [contexts objectAtIndex: i];
+      NSArray * ctxtKeywords, * skips;
+      NSMutableArray * contextKeywordsGraphicsTmp;
 
-      ASSIGN(textStorage, aTextStorage);
+      // context beginning/ending missing?
+      if (([context objectForKey: @"Beginning"] == nil ||
+           [context objectForKey: @"Ending"] == nil) &&
+          i > 0)
+      {
+        NSLog(@"Syntax compilation error: context %" PRIuPTR "  missing "
+              @"beginning or ending symbol.", i);
 
-      // compile the syntax definition
-      for (i = 0, n = [contexts count]; i < n; i++)
-        {
-          NSUInteger j, keywordCount, skipCount;
-          NSDictionary * context = [contexts objectAtIndex: i];
-          NSArray * ctxtKeywords, * skips;
-          NSMutableArray * contextKeywordsGraphicsTmp;
+        [self release];
+        return nil;
+      }
 
-          // context beginning/ending missing?
-          if (([context objectForKey: @"Beginning"] == nil ||
-               [context objectForKey: @"Ending"] == nil) &&
-              i > 0)
-            {
-              NSLog(@"Syntax compilation error: context %" PRIuPTR "  missing "
-                      @"beginning or ending symbol.", i);
+      // process context beginnings/endings
+      if (i > 0)
+      {
+        contextBeginnings = realloc(contextBeginnings, i *
+                                    sizeof(TextPattern *));
+        contextBeginnings[i - 1] = CompileTextPattern([context
+                                                       objectForKey: @"Beginning"]);
 
-              [self release];
-              return nil;
-            }
+        MarkTextPatternBeginningCharacters(contextBeginnings[i - 1],
+                                           contextBeginningChars, sizeof(contextBeginningChars));
 
-          // process context beginnings/endings
-          if (i > 0)
-            {
-              contextBeginnings = realloc(contextBeginnings, i *
-                sizeof(TextPattern *));
-              contextBeginnings[i - 1] = CompileTextPattern([context
-                objectForKey: @"Beginning"]);
+        contextEndings = realloc(contextEndings, i *
+                                 sizeof(TextPattern *));
+        contextEndings[i - 1] = CompileTextPattern([context
+                                                    objectForKey: @"Ending"]);
+      }
 
-              MarkTextPatternBeginningCharacters(contextBeginnings[i - 1],
-                contextBeginningChars, sizeof(contextBeginningChars));
+      // process context skips
+      contextSkipChars = realloc(contextSkipChars, (i + 1) *
+                                 sizeof(char *));
+      contextSkipChars[i] = calloc(128, sizeof(char));
+      contextSkips = realloc(contextSkips, sizeof(TextPattern **) *
+                             (i + 1));
+      contextSkips[i] = NULL;
+      skips = [context objectForKey: @"ContextSkips"];
+      for (j = 0, skipCount = [skips count]; j < skipCount; j++)
+      {
+        NSString * skip = [skips objectAtIndex: j];
 
-              contextEndings = realloc(contextEndings, i *
-                sizeof(TextPattern *));
-              contextEndings[i - 1] = CompileTextPattern([context
-                objectForKey: @"Ending"]);
-            }
+        contextSkips[i] = realloc(contextSkips[i], (j + 1) *
+                                  sizeof(TextPattern *));
+        contextSkips[i][j] = CompileTextPattern(skip);
+        MarkTextPatternBeginningCharacters(contextSkips[i][j],
+                                           contextSkipChars[i], 128);
+      }
+      contextSkips[i] = realloc(contextSkips[i], (j + 1) *
+                                sizeof(TextPattern *));
+      contextSkips[i][j] = NULL;
 
-          // process context skips
-          contextSkipChars = realloc(contextSkipChars, (i + 1) *
-            sizeof(char *));
-          contextSkipChars[i] = calloc(128, sizeof(char));
-          contextSkips = realloc(contextSkips, sizeof(TextPattern **) *
-            (i + 1));
-          contextSkips[i] = NULL;
-          skips = [context objectForKey: @"ContextSkips"];
-          for (j = 0, skipCount = [skips count]; j < skipCount; j++)
-            {
-              NSString * skip = [skips objectAtIndex: j];
+      // process context graphics
+      [contextGraphicsTmp addObject: ParseSyntaxGraphics(context)];
 
-              contextSkips[i] = realloc(contextSkips[i], (j + 1) *
-                sizeof(TextPattern *));
-              contextSkips[i][j] = CompileTextPattern(skip);
-              MarkTextPatternBeginningCharacters(contextSkips[i][j],
-                contextSkipChars[i], 128);
-            }
-          contextSkips[i] = realloc(contextSkips[i], (j + 1) *
-            sizeof(TextPattern *));
-          contextSkips[i][j] = NULL;
-
-          // process context graphics
-          [contextGraphicsTmp addObject: ParseSyntaxGraphics(context)];
-
-          keywords = realloc(keywords, (i + 1) * sizeof(TextPattern **));
-          keywords[i] = NULL;
-
-          ctxtKeywords = [context objectForKey: @"Keywords"];
-          contextKeywordsGraphicsTmp = [NSMutableArray arrayWithCapacity:
-            [ctxtKeywords count]];
-
-          // run through all keywords in the context
-          for (j = 0, keywordCount = [ctxtKeywords count];
-               j < keywordCount;
-               j++)
-            {
-              NSDictionary * keyword = [ctxtKeywords objectAtIndex: j];
-              NSString * keywordString = [keyword objectForKey: @"Pattern"];
-              TextPattern * pattern;
-
-              if (keywordString == nil)
-                {
-                  NSLog(_(@"Missing keyword pattern declaration "
-                          @"in context %i keyword %i. Ignoring all the "
-                          @"remaining of the keywords in this context."),
-			  (int)i, (int)j);
-                  break;
-                }
-              pattern = CompileTextPattern(keywordString);
-              if (pattern == NULL)
-                {
-                  break;
-                }
-
-              keywords[i] = realloc(keywords[i],
-                                    (j + 1) * sizeof(TextPattern *));
-              keywords[i][j] = pattern;
-
-              [contextKeywordsGraphicsTmp addObject:
-                ParseSyntaxGraphics(keyword)];
-            }
-
-          // append a trailing NULL to terminate the list
-          keywords[i] = realloc(keywords[i], (j + 1) * sizeof(TextPattern *));
-          keywords[i][j] = NULL;
-
-          [keywordGraphicsTmp addObject: [[contextKeywordsGraphicsTmp
-            copy] autorelease]];
-        }
-
-      // terminate the keywords array by appending a trailing NULL pointer
       keywords = realloc(keywords, (i + 1) * sizeof(TextPattern **));
       keywords[i] = NULL;
 
-      // begining and ending arrays don't include the default context!
-      // Thus it is indexed by 'i' not 'i + 1'
-      contextBeginnings = realloc(contextBeginnings, i *
-        sizeof(TextPattern **));
-      contextBeginnings[i - 1] = NULL;
-      contextEndings = realloc(contextEndings, i * sizeof(TextPattern **));
-      contextEndings[i - 1] = NULL;
+      ctxtKeywords = [context objectForKey: @"Keywords"];
+      contextKeywordsGraphicsTmp = [NSMutableArray arrayWithCapacity:
+                                    [ctxtKeywords count]];
 
-      contextSkipChars = realloc(contextSkipChars, (i + 1) * sizeof(char *));
-      contextSkipChars[i] = NULL;
+      // run through all keywords in the context
+      for (j = 0, keywordCount = [ctxtKeywords count];
+           j < keywordCount;
+           j++)
+      {
+        NSDictionary * keyword = [ctxtKeywords objectAtIndex: j];
+        NSString * keywordString = [keyword objectForKey: @"Pattern"];
+        TextPattern * pattern;
 
-      ASSIGNCOPY(contextGraphics, contextGraphicsTmp);
-      ASSIGNCOPY(keywordGraphics, keywordGraphicsTmp);
+        if (keywordString == nil)
+        {
+          NSLog(_(@"Missing keyword pattern declaration "
+                  @"in context %i keyword %i. Ignoring all the "
+                  @"remaining of the keywords in this context."),
+                (int)i, (int)j);
+          break;
+        }
+        pattern = CompileTextPattern(keywordString);
+        if (pattern == NULL)
+        {
+          break;
+        }
 
-      return self;
+        keywords[i] = realloc(keywords[i],
+                              (j + 1) * sizeof(TextPattern *));
+        keywords[i][j] = pattern;
+
+        [contextKeywordsGraphicsTmp addObject:
+         ParseSyntaxGraphics(keyword)];
+      }
+
+      // append a trailing NULL to terminate the list
+      keywords[i] = realloc(keywords[i], (j + 1) * sizeof(TextPattern *));
+      keywords[i][j] = NULL;
+
+      [keywordGraphicsTmp addObject: [[contextKeywordsGraphicsTmp
+                                       copy] autorelease]];
     }
+
+    // terminate the keywords array by appending a trailing NULL pointer
+    keywords = realloc(keywords, (i + 1) * sizeof(TextPattern **));
+    keywords[i] = NULL;
+
+    // begining and ending arrays don't include the default context!
+    // Thus it is indexed by 'i' not 'i + 1'
+    contextBeginnings = realloc(contextBeginnings, i *
+                                sizeof(TextPattern **));
+    contextBeginnings[i - 1] = NULL;
+    contextEndings = realloc(contextEndings, i * sizeof(TextPattern **));
+    contextEndings[i - 1] = NULL;
+
+    contextSkipChars = realloc(contextSkipChars, (i + 1) * sizeof(char *));
+    contextSkipChars[i] = NULL;
+
+    ASSIGNCOPY(contextGraphics, contextGraphicsTmp);
+    ASSIGNCOPY(keywordGraphics, keywordGraphicsTmp);
+
+    return self;
+  }
   else
-    {
-      return nil;
-    }
+  {
+    return nil;
+  }
 }
 
 - (void) dealloc
@@ -399,50 +399,50 @@ static NSMutableDictionary * syntaxDefinitions = nil;
 
   // free context beginnings
   for (i = 0; (pattern = contextBeginnings[i]) != NULL; i++)
-    {
-      FreeTextPattern(pattern);
-    }
+  {
+    FreeTextPattern(pattern);
+  }
   free(contextBeginnings);
 
   // free context endings
   for (i = 0; (pattern = contextEndings[i]) != NULL; i++)
-    {
-      FreeTextPattern(pattern);
-    }
+  {
+    FreeTextPattern(pattern);
+  }
   free(contextEndings);
 
   // free context skip characters
   for (i = 0; (buf = contextSkipChars[i]) != NULL; i++)
-    {
-      free(buf);
-    }
+  {
+    free(buf);
+  }
   free(contextSkipChars);
 
   // free context skips
   for (i = 0; (patternList = contextSkips[i]) != NULL; i++)
-    {
-      unsigned int j;
+  {
+    unsigned int j;
 
-      for (j = 0; (pattern = patternList[j]) != NULL; j++)
-        {
-          FreeTextPattern(pattern);
-        }
-      free(patternList);
+    for (j = 0; (pattern = patternList[j]) != NULL; j++)
+    {
+      FreeTextPattern(pattern);
     }
+    free(patternList);
+  }
   free(contextSkips);
 
   // free keywords
   for (i = 0; (patternList = keywords[i]) != NULL; i++)
+  {
+    unsigned int j;
+
+    for (j = 0; (pattern = patternList[j]) != NULL; j++)
     {
-      unsigned int j;
-
-      for (j = 0; (pattern = patternList[j]) != NULL; j++)
-        {
-          FreeTextPattern(pattern);
-        }
-
-      free(patternList);
+      FreeTextPattern(pattern);
     }
+
+    free(patternList);
+  }
   free(keywords);
 
   TEST_RELEASE(textStorage);
@@ -496,31 +496,31 @@ static NSMutableDictionary * syntaxDefinitions = nil;
 - (NSColor *)foregroundColorForContext:(NSUInteger)context
 {
   return [[contextGraphics
-    objectAtIndex: context]
-    objectForKey: @"ForegroundColor"];
+           objectAtIndex: context]
+          objectForKey: @"ForegroundColor"];
 }
 
 - (NSColor *)backgroundColorForContext:(NSUInteger)context
 {
   return [[contextGraphics
-    objectAtIndex: context]
-    objectForKey: @"BackgroundColor"];
+           objectAtIndex: context]
+          objectForKey: @"BackgroundColor"];
 }
 
 - (BOOL)isItalicFontForContext:(NSUInteger)context
 {
   return [[[contextGraphics
-    objectAtIndex: context]
-    objectForKey: @"Italic"]
-    boolValue];
+            objectAtIndex: context]
+           objectForKey: @"Italic"]
+          boolValue];
 }
 
 - (BOOL)isBoldFontForContext:(NSUInteger)context
 {
   return [[[contextGraphics
-    objectAtIndex: context]
-    objectForKey: @"Bold"]
-    boolValue];
+            objectAtIndex: context]
+           objectForKey: @"Bold"]
+          boolValue];
 }
 
 /**
@@ -538,27 +538,27 @@ static NSMutableDictionary * syntaxDefinitions = nil;
  * index of the keyword in the array returned by -keywordsInContext:.
  */
 - (NSColor *)foregroundColorForKeyword:(NSUInteger)keyword
-			     inContext:(NSUInteger)context
+                             inContext:(NSUInteger)context
 {
   return [[[keywordGraphics objectAtIndex:context]
-			    objectAtIndex:keyword]
-			     objectForKey:@"ForegroundColor"];
+           objectAtIndex:keyword]
+          objectForKey:@"ForegroundColor"];
 }
 
 - (NSColor *)backgroundColorForKeyword:(NSUInteger)keyword
-			     inContext:(NSUInteger)context
+                             inContext:(NSUInteger)context
 {
   return [[[keywordGraphics objectAtIndex:context]
-			    objectAtIndex:keyword]
-			     objectForKey:@"BackgroundColor"];
+           objectAtIndex:keyword]
+          objectForKey:@"BackgroundColor"];
 }
 - (BOOL)isItalicFontForKeyword:(NSUInteger)keyword
-		     inContext:(NSUInteger)context
+                     inContext:(NSUInteger)context
 {
   return [[[[keywordGraphics objectAtIndex:context]
-			     objectAtIndex:keyword]
-			      objectForKey:@"Italic"]
-			      boolValue];
+            objectAtIndex:keyword]
+           objectForKey:@"Italic"]
+          boolValue];
 }
 
 /**
@@ -566,12 +566,12 @@ static NSMutableDictionary * syntaxDefinitions = nil;
  * should be bold and NO if it should be normal weigth.
  */
 - (BOOL)isBoldFontForKeyword:(NSUInteger)keyword
-       		   inContext:(NSUInteger)context
+                   inContext:(NSUInteger)context
 {
   return [[[[keywordGraphics objectAtIndex:context]
-			     objectAtIndex:keyword]
-			      objectForKey:@"Bold"]
-			      boolValue];
+            objectAtIndex:keyword]
+           objectForKey:@"Bold"]
+          boolValue];
 }
 
 @end
