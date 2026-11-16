@@ -75,6 +75,7 @@ ProjectCenter_OBJC_FILES = \
   PCProjectManager.m \
   PCXcodeProject.m \
   PCNavigators.m \
+  PCXcodeProjectEditor.m \
   PCProject.m \
   PCProjectWindow.m \
   PCProjectInspector.m \

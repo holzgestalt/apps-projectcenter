@@ -30,6 +30,7 @@
 #import <ProjectCenter/PCProject.h>
 #import "../Headers/ProjectCenter/PCProjectBrowser.h"
 #import <ProjectCenter/PCProjectEditor.h>
+#import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCFileNameField.h>
 
 #import <ProjectCenter/PCLogController.h>
@@ -546,6 +547,8 @@ static NSTableCellView *SourceCell(void)
   PCSourceItem *item = [self selectedItem];
   if (item && item->file && ![item->category isEqual:@"Libraries"])
     [[item->owner projectEditor] openEditorForCategoryPath:sourcePath windowed:NO];
+  else if (item && item->projectRoot)
+    [[project projectWindow] showProjectOverview];
   [[NSNotificationCenter defaultCenter] postNotificationName:PCBrowserDidSetPathNotification object:self];
 }
 - (void)doubleClick:(id)sender

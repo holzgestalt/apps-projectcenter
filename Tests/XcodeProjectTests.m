@@ -21,8 +21,19 @@ int main(int argc, char **argv)
       NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
       NSString *bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
       NSString *fixture = @"// !$*UTF8*$!\n{objectVersion=77; rootObject=PROJ; objects={"
-        "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(TARGET,AGG);};"
-        "TARGET={isa=PBXNativeTarget;name=Sample;productType=\"com.apple.product-type.application\";};"
+        "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(TARGET,AGG);developmentRegion=en;knownRegions=(en,Base);buildConfigurationList=PLIST;};"
+        "PLIST={isa=XCConfigurationList;buildConfigurations=(PDEBUG);};"
+        "PDEBUG={isa=XCBuildConfiguration;name=Debug;buildSettings={MACOSX_DEPLOYMENT_TARGET=11;};};"
+        "TARGET={isa=PBXNativeTarget;name=Sample;productName=Sample;productType=\"com.apple.product-type.application\";"
+        "buildConfigurationList=TLIST;buildPhases=(SOURCES,SCRIPT);dependencies=(DEP);};"
+        "TLIST={isa=XCConfigurationList;buildConfigurations=(TDEBUG,TRELEASE);};"
+        "TDEBUG={isa=XCBuildConfiguration;name=Debug;buildSettings={PRODUCT_BUNDLE_IDENTIFIER=org.example.Sample;GCC_PREPROCESSOR_DEFINITIONS=(\"DEBUG=1\",\"$(inherited)\");};};"
+        "TRELEASE={isa=XCBuildConfiguration;name=Release;baseConfigurationReference=XCCONFIG;buildSettings={PRODUCT_BUNDLE_IDENTIFIER=org.example.Sample;};};"
+        "XCCONFIG={isa=PBXFileReference;path=release.xcconfig;sourceTree=\"<group>\";};"
+        "SOURCES={isa=PBXSourcesBuildPhase;files=(BMAIN);};"
+        "BMAIN={isa=PBXBuildFile;fileRef=MAIN;};"
+        "SCRIPT={isa=PBXShellScriptBuildPhase;name=\"Make Version\";shellScript=\"echo hi\";files=();};"
+        "DEP={isa=PBXTargetDependency;target=AGG;};"
         "AGG={isa=PBXAggregateTarget;name=Scripts;};"
         "ROOT={isa=PBXGroup;children=(SRC,SYNC,SDK,VARIANT,ROOT);sourceTree=\"<group>\";};"
         "SRC={isa=PBXGroup;path=Sources;sourceTree=\"<group>\";children=(MAIN,HEADER,ABS);};"
@@ -61,6 +72,20 @@ int main(int argc, char **argv)
       Check([[[[modern objectAtIndex:1] objectForKey:@"Children"] valueForKey:@"File"] isEqual:@[@"Modern/Nested/New.m"]], @"synchronized subfolder file");
       Check([[[[groups objectAtIndex:2] objectForKey:@"Children"] valueForKey:@"File"] isEqual:@[@"Base.lproj/MainMenu.xib"]], @"variant group localization");
       Check([PCXcodeProject projectAtPath:[bundle stringByAppendingPathComponent:@"project.pbxproj"] error:&error] != nil, @"pbxproj entry point");
+      NSDictionary *overview = [PCXcodeProject overviewOfProjectAtPath:bundle error:&error];
+      Check([[overview objectForKey:@"Name"] isEqual:@"Sample"] && [[overview objectForKey:@"DevelopmentRegion"] isEqual:@"en"], @"overview project name and region");
+      Check([[[[overview objectForKey:@"Configurations"] objectAtIndex:0] objectForKey:@"Settings"] objectForKey:@"MACOSX_DEPLOYMENT_TARGET"] != nil, @"overview project build settings");
+      NSArray *overviewTargets = [overview objectForKey:@"Targets"];
+      Check([[overviewTargets valueForKey:@"Name"] isEqual:(@[@"Sample", @"Scripts"])] && [[[overviewTargets objectAtIndex:1] objectForKey:@"Kind"] isEqual:@"Aggregate"], @"overview lists all targets");
+      NSDictionary *sampleTarget = [overviewTargets objectAtIndex:0];
+      Check([[[sampleTarget objectForKey:@"Configurations"] valueForKey:@"Name"] isEqual:(@[@"Debug", @"Release"])]
+            && [[[[sampleTarget objectForKey:@"Configurations"] objectAtIndex:1] objectForKey:@"Base"] isEqual:@"release.xcconfig"], @"overview target configurations and base xcconfig");
+      Check([[[[[sampleTarget objectForKey:@"Configurations"] objectAtIndex:0] objectForKey:@"Settings"] objectForKey:@"GCC_PREPROCESSOR_DEFINITIONS"] count] == 2, @"list-valued build setting");
+      NSArray *samplePhases = [sampleTarget objectForKey:@"Phases"];
+      Check([[samplePhases valueForKey:@"Name"] isEqual:(@[@"Compile Sources", @"Make Version"])]
+            && [[[samplePhases objectAtIndex:0] objectForKey:@"Files"] isEqual:@[@"Café file.m"]]
+            && [[[samplePhases objectAtIndex:1] objectForKey:@"Script"] isEqual:@"echo hi"], @"overview build phases");
+      Check([[sampleTarget objectForKey:@"Dependencies"] isEqual:@[@"Scripts"]], @"overview target dependencies");
       Write(root, @"GNUstep/ProjectCenter.plist", @"{TargetName=Sample;BuildScript=build.sh;Executable=output/Sample.app/Sample;}");
       dict = [PCXcodeProject projectAtPath:bundle error:&error];
       Check([[dict objectForKey:@"XCODE_BuildScript"] isEqual:[root stringByAppendingPathComponent:@"build.sh"]], @"build script path resolution");

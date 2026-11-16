@@ -38,6 +38,7 @@
 #import <ProjectCenter/PCProjectLoadedFiles.h>
 #import <ProjectCenter/PCProjectInspector.h>
 #import "PCNavigators.h"
+#import "PCXcodeProjectEditor.h"
 
 #import <Protocols/Preferences.h>
 #import <Protocols/CodeEditorView.h>
@@ -180,6 +181,25 @@
     {
       [self selectNavigatorAtIndex:2];
     }
+}
+
+- (void)showProjectOverview
+{
+  if (![[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"])
+    {
+      return;
+    }
+  if (xcodeProjectEditor == nil)
+    {
+      xcodeProjectEditor = [[PCXcodeProjectEditor alloc] initWithProject:project];
+    }
+  [xcodeProjectEditor reload];
+  [self setCustomContentView:[xcodeProjectEditor view]];
+}
+
+- (id)xcodeProjectEditor
+{
+  return xcodeProjectEditor;
 }
 
 - (void)showDebugArea:(NSView *)view
@@ -503,6 +523,7 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   RELEASE(navigatorArea);
   RELEASE(breakpointNavigator);
   RELEASE(debugNavigator);
+  RELEASE(xcodeProjectEditor);
   RELEASE(toolbarView);
   RELEASE(statusLine);
 

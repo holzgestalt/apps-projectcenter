@@ -106,6 +106,76 @@ static NSDictionary *ReadGroup(NSString *identifier, NSString *parent, NSString 
   return [[group objectForKey:@"Children"] count] ? group : nil;
 }
 
+static NSString *ObjectName(NSDictionary *objects, NSString *identifier)
+{
+  NSDictionary *object = [objects objectForKey:identifier];
+  NSString *name;
+
+  if (![object isKindOfClass:[NSDictionary class]]) return nil;
+  name = [object objectForKey:@"name"];
+  if (![name isKindOfClass:[NSString class]] || ![name length])
+    name = [[object objectForKey:@"path"] lastPathComponent];
+  if (![name isKindOfClass:[NSString class]] || ![name length])
+    name = [object objectForKey:@"productName"];
+  return [name isKindOfClass:[NSString class]] ? name : nil;
+}
+
+static NSArray *Configurations(NSDictionary *objects, NSString *listIdentifier)
+{
+  NSMutableArray *result = [NSMutableArray array];
+  NSDictionary *list = [objects objectForKey:listIdentifier];
+
+  for (NSString *identifier in [list objectForKey:@"buildConfigurations"])
+    {
+      NSDictionary *configuration = [objects objectForKey:identifier];
+      NSDictionary *settings = [configuration objectForKey:@"buildSettings"];
+      NSString *base = ObjectName(objects, [configuration objectForKey:@"baseConfigurationReference"]);
+      NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+
+      if (![configuration isKindOfClass:[NSDictionary class]]) continue;
+      [entry setObject:([configuration objectForKey:@"name"] ? [configuration objectForKey:@"name"] : @"") forKey:@"Name"];
+      [entry setObject:([settings isKindOfClass:[NSDictionary class]] ? settings : [NSDictionary dictionary]) forKey:@"Settings"];
+      if (base) [entry setObject:base forKey:@"Base"];
+      [result addObject:entry];
+    }
+  return result;
+}
+
+static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
+{
+  static NSDictionary *names = nil;
+  NSDictionary *phase = [objects objectForKey:identifier];
+  NSString *isa = [phase objectForKey:@"isa"];
+  NSMutableArray *files = [NSMutableArray array];
+  NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+  NSString *name = [phase objectForKey:@"name"];
+
+  if (names == nil)
+    names = [[NSDictionary alloc] initWithObjectsAndKeys:
+      @"Compile Sources", @"PBXSourcesBuildPhase",
+      @"Link Binary With Libraries", @"PBXFrameworksBuildPhase",
+      @"Copy Bundle Resources", @"PBXResourcesBuildPhase",
+      @"Headers", @"PBXHeadersBuildPhase",
+      @"Copy Files", @"PBXCopyFilesBuildPhase",
+      @"Run Script", @"PBXShellScriptBuildPhase", nil];
+  if (![phase isKindOfClass:[NSDictionary class]]) return nil;
+  for (NSString *buildFile in [phase objectForKey:@"files"])
+    {
+      NSDictionary *file = [objects objectForKey:buildFile];
+      NSString *fileName = ObjectName(objects, [file objectForKey:@"fileRef"]);
+      if (!fileName) fileName = ObjectName(objects, [file objectForKey:@"productRef"]);
+      if (fileName) [files addObject:fileName];
+    }
+  if (![name isKindOfClass:[NSString class]] || ![name length])
+    name = [names objectForKey:isa] ? [names objectForKey:isa] : isa;
+  [entry setObject:name forKey:@"Name"];
+  [entry setObject:([names objectForKey:isa] ? [names objectForKey:isa] : (isa ? isa : @"")) forKey:@"Kind"];
+  [entry setObject:files forKey:@"Files"];
+  if ([[phase objectForKey:@"shellScript"] isKindOfClass:[NSString class]])
+    [entry setObject:[phase objectForKey:@"shellScript"] forKey:@"Script"];
+  return entry;
+}
+
 @implementation PCXcodeProject
 + (NSDictionary *)projectAtPath:(NSString *)path error:(NSString **)error
 {
@@ -190,5 +260,74 @@ static NSDictionary *ReadGroup(NSString *identifier, NSString *parent, NSString 
       if (error) *error = [exception reason];
       return nil;
     }
+}
+
++ (NSDictionary *)overviewOfProjectAtPath:(NSString *)path error:(NSString **)error
+{
+  NSDictionary *plist, *objects, *project;
+  NSMutableArray *targets = [NSMutableArray array];
+  NSMutableDictionary *overview = [NSMutableDictionary dictionary];
+
+  if (error) *error = nil;
+  path = [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+  if ([[path lastPathComponent] isEqual:@"project.pbxproj"])
+    path = [path stringByDeletingLastPathComponent];
+  plist = [NSDictionary dictionaryWithContentsOfFile:[path stringByAppendingPathComponent:@"project.pbxproj"]];
+  objects = [plist objectForKey:@"objects"];
+  project = [objects objectForKey:[plist objectForKey:@"rootObject"]];
+  if (![objects isKindOfClass:[NSDictionary class]] || ![[project objectForKey:@"isa"] isEqual:@"PBXProject"])
+    {
+      if (error) *error = [NSString stringWithFormat:@"Not a readable Xcode project: %@", path];
+      return nil;
+    }
+  [overview setObject:[[path lastPathComponent] stringByDeletingPathExtension] forKey:@"Name"];
+  if ([plist objectForKey:@"objectVersion"])
+    [overview setObject:[plist objectForKey:@"objectVersion"] forKey:@"Format"];
+  if ([project objectForKey:@"developmentRegion"])
+    [overview setObject:[project objectForKey:@"developmentRegion"] forKey:@"DevelopmentRegion"];
+  if ([[project objectForKey:@"knownRegions"] isKindOfClass:[NSArray class]])
+    [overview setObject:[project objectForKey:@"knownRegions"] forKey:@"KnownRegions"];
+  [overview setObject:Configurations(objects, [project objectForKey:@"buildConfigurationList"]) forKey:@"Configurations"];
+
+  for (NSString *identifier in [project objectForKey:@"targets"])
+    {
+      NSDictionary *target = [objects objectForKey:identifier];
+      NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+      NSMutableArray *phases = [NSMutableArray array];
+      NSMutableArray *dependencies = [NSMutableArray array];
+      NSString *isa = [target objectForKey:@"isa"];
+
+      if (![target isKindOfClass:[NSDictionary class]]) continue;
+      [entry setObject:(ObjectName(objects, identifier) ? ObjectName(objects, identifier) : identifier) forKey:@"Name"];
+      [entry setObject:([isa isEqual:@"PBXNativeTarget"] ? @"Native"
+                        : [isa isEqual:@"PBXAggregateTarget"] ? @"Aggregate"
+                        : [isa isEqual:@"PBXLegacyTarget"] ? @"External" : (isa ? isa : @""))
+                forKey:@"Kind"];
+      if ([target objectForKey:@"productType"])
+        [entry setObject:[target objectForKey:@"productType"] forKey:@"ProductType"];
+      if ([target objectForKey:@"productName"])
+        [entry setObject:[target objectForKey:@"productName"] forKey:@"ProductName"];
+      [entry setObject:Configurations(objects, [target objectForKey:@"buildConfigurationList"]) forKey:@"Configurations"];
+      for (NSString *phase in [target objectForKey:@"buildPhases"])
+        {
+          NSDictionary *description = Phase(objects, phase);
+          if (description) [phases addObject:description];
+        }
+      [entry setObject:phases forKey:@"Phases"];
+      for (NSString *dependency in [target objectForKey:@"dependencies"])
+        {
+          NSString *name = ObjectName(objects, [[objects objectForKey:dependency] objectForKey:@"target"]);
+          if (!name) name = [[objects objectForKey:dependency] objectForKey:@"name"];
+          if ([name isKindOfClass:[NSString class]]) [dependencies addObject:name];
+        }
+      [entry setObject:dependencies forKey:@"Dependencies"];
+      if ([target objectForKey:@"buildToolPath"])
+        [entry setObject:[NSString stringWithFormat:@"%@ %@", [target objectForKey:@"buildToolPath"],
+          [target objectForKey:@"buildArgumentsString"] ? [target objectForKey:@"buildArgumentsString"] : @""]
+                  forKey:@"BuildTool"];
+      [targets addObject:entry];
+    }
+  [overview setObject:targets forKey:@"Targets"];
+  return overview;
 }
 @end

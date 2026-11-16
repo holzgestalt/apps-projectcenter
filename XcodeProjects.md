@@ -59,6 +59,18 @@ application targets, select one with `TargetName` below. Framework/tool-only
 projects, `.xcworkspace`, scheme selection, build-setting expansion, Swift
 packages and Xcode project editing are not implemented.
 
+## Project and targets
+
+Select the project row at the top of the navigator to see the project as
+Xcode shows it: the project and its targets on the left; General, Build
+Settings and Build Phases on the right. General shows the target type,
+product name, bundle identifier, deployment target, version, configurations
+(with their base `.xcconfig` files) and dependencies, and for the target
+ProjectCenter builds also the GNUstep build script and executable. Build
+Settings lists each setting per configuration, target values over project
+values. Settings that come only from `.xcconfig` files are not shown.
+Everything here is read-only.
+
 ## Debugging
 
 Run (toolbar) starts the program under gdb, like Xcode; Stop ends the session.

@@ -63,6 +63,7 @@
   NSTabView   *navigatorTabs;
   id          breakpointNavigator;
   id          debugNavigator;
+  id          xcodeProjectEditor;  // shown when the project row is selected
   NSSplitView *contentSplit;   // editor above the collapsible bottom area
   NSBox       *bottomView;     // build or run output
   CGFloat     bottomHeight;
@@ -97,6 +98,9 @@
 - (void)showProjectEditor:(id)sender;
 - (void)toggleNavigator:(id)sender;
 - (void)showDebugArea:(NSView *)view;
+/* Xcode projects: targets, build settings and phases in the editor area. */
+- (void)showProjectOverview;
+- (id)xcodeProjectEditor;
 /* Sidebar tabs, as in Xcode: project, breakpoints, debug (call stack). */
 - (void)selectNavigatorAtIndex:(NSInteger)index;
 - (NSInteger)selectedNavigatorIndex;

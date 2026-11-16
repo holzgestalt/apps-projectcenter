@@ -9,6 +9,7 @@
 #import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCFileManager.h>
 #import "Framework/PCNavigators.h"
+#import "Framework/PCXcodeProjectEditor.h"
 #import "Framework/PCInterfaceEditor.h"
 #import "Framework/PCFileTypeIcon.h"
 #include <gtk/gtk.h>
@@ -16,6 +17,19 @@
 #include <cairo-xlib.h>
 #include <dlfcn.h>
 extern GtkWindow *GTK4NativeHostForWindow(NSWindow *window);
+extern GtkWidget *GTK4NativeWidgetForView(NSView *view);
+extern NSArray *GTK4NativeChildrenForView(NSView *view);
+@interface NSObject (NativeSceneProbe)
++ (BOOL)supportsView:(NSView *)view;
+@end
+static void DumpUnsupportedNativeViews(NSView *view)
+{
+  Class adapter=NSClassFromString(@"GTK4NativeView");
+  if(![adapter supportsView:view]) NSLog(@"Unsupported native project view: %@",NSStringFromClass(view.class));
+  if([view isKindOfClass:[NSTableView class]]) return;
+  if([view isKindOfClass:[NSScrollView class]]) { DumpUnsupportedNativeViews([(NSScrollView *)view documentView]); return; }
+  for(NSView *child in GTK4NativeChildrenForView(view)) DumpUnsupportedNativeViews(child);
+}
 
 static GtkWidget *FindLabel(GtkWidget *widget, const char *text)
 {
@@ -46,6 +60,15 @@ static GtkWidget *FindCustomIcon(GtkWidget *widget)
   for (GtkWidget *child=gtk_widget_get_first_child(widget); child; child=gtk_widget_get_next_sibling(child))
     { GtkWidget *found=FindCustomIcon(child); if (found) return found; }
   return NULL;
+}
+
+/* Table rows [name, value...] as name -> last value. */
+static NSDictionary *RowsByFirstColumn(NSArray *rows)
+{
+  NSMutableDictionary *result = [NSMutableDictionary dictionary];
+  for (NSArray *row in rows)
+    if ([row count] > 1) [result setObject:[row lastObject] forKey:[row objectAtIndex:0]];
+  return result;
 }
 
 static void PumpEvents(double seconds)
@@ -294,10 +317,58 @@ int main(int argc, char **argv)
       Check(NSMaxX([sidebar frame]) <= NSMinX([[editorPane superview] frame]), @"sidebar lies left of editor");
       CGFloat sidebarWidth = [sidebar frame].size.width;
       NSWindow *window = [[project projectWindow] valueForKey:@"projectWindow"];
+      if(!GTK_IS_PANED(GTK4NativeWidgetForView(mainSplit))) DumpUnsupportedNativeViews(mainSplit);
+      Check(GTK_IS_PANED(GTK4NativeWidgetForView(mainSplit)), @"source navigator split is a live GtkPaned");
+      Check(GTK_IS_SCROLLED_WINDOW(GTK4NativeWidgetForView([outline enclosingScrollView])), @"source navigator scroll view is a live GtkScrolledWindow");
       NSRect enlarged = [window frame]; enlarged.size.width += 120; enlarged.size.height += 80;
       [window setFrame:enlarged display:YES];
       Check(fabs([sidebar frame].size.width - sidebarWidth) < 1, @"window resize preserves sidebar width");
       Check(fabs([sidebar frame].size.height - [editorPane frame].size.height) < 1, @"sidebar and editor fill available height");
+      /* Selecting the project shows targets, build settings and phases. */
+      Check([sourceTree setPath:@"/@EditGlyphData"], @"select the project row");
+      [sourceTree click:outline];
+      PCXcodeProjectEditor *overviewEditor = [[project projectWindow] xcodeProjectEditor];
+      Check(overviewEditor != nil && [[overviewEditor view] window] == [[project projectWindow] valueForKey:@"projectWindow"], @"project row shows the project editor");
+      NSArray *overviewTargets = [[[overviewEditor overview] objectForKey:@"Targets"] valueForKey:@"Name"];
+      Check([overviewTargets containsObject:@"EditGlyphData"] && [overviewTargets containsObject:@"EditGlyphDataTests"], @"project editor lists the targets");
+      Check([[[overviewEditor selection] objectForKey:@"Name"] isEqual:@"EditGlyphData"], @"the built target is selected first");
+      NSDictionary *general = RowsByFirstColumn([overviewEditor generalRows]);
+      Check([[general objectForKey:@"Type"] isEqual:@"Application"] && [[general objectForKey:@"Product Name"] isEqual:@"EditGlyphData"], @"general information for the target");
+      Check([[general objectForKey:@"GNUstep Build Script"] hasSuffix:@"build-editglyphdata.sh"], @"general information shows the GNUstep build");
+      Check([[overviewEditor configurationNames] isEqual:(@[@"Debug", @"Release"])], @"build settings per configuration");
+      NSArray *settingNames = [RowsByFirstColumn([overviewEditor settingRows]) allKeys];
+      Check([settingNames containsObject:@"PRODUCT_BUNDLE_IDENTIFIER"] && [settingNames containsObject:@"CLANG_ENABLE_OBJC_ARC"], @"target settings merged with project settings");
+      NSArray *phaseNames = [RowsByFirstColumn([overviewEditor phaseRows]) allKeys];
+      Check([phaseNames containsObject:@"Compile Sources"] && [phaseNames containsObject:@"Copy Bundle Resources"], @"build phases of the target");
+      NSOutlineView *targetsOutline = [overviewEditor targetOutlineView];
+      for (NSInteger row = 0; row < [targetsOutline numberOfRows]; row++)
+        if ([[[targetsOutline itemAtRow:row] title] isEqual:@"EditGlyphDataTests"])
+          [targetsOutline selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+      Check([[[overviewEditor selection] objectForKey:@"Name"] isEqual:@"EditGlyphDataTests"]
+            && [[[overviewEditor selection] objectForKey:@"Dependencies"] containsObject:@"EditGlyphData"], @"selecting another target shows it");
+      [overviewEditor selectEntryAtIndex:0];
+      general = RowsByFirstColumn([overviewEditor generalRows]);
+      Check([[general objectForKey:@"Project"] isEqual:@"EditGlyphData"] && [general objectForKey:@"Configurations"], @"project information");
+      const char *overviewPreview = getenv("PC_PROJECT_EDITOR_PREVIEW");
+      if (overviewPreview)
+        {
+          [overviewEditor selectEntryAtIndex:1];
+          [overviewEditor selectSectionAtIndex:1];
+          NSWindow *previewWindow = [[project projectWindow] valueForKey:@"projectWindow"];
+          PumpEvents(0.5);
+          GtkWindow *host = GTK4NativeHostForWindow(previewWindow);
+          GdkSurface *surface = gtk_native_get_surface(GTK_NATIVE(host));
+          Display *display = gdk_x11_display_get_xdisplay(gdk_surface_get_display(surface));
+          Window xid = gdk_x11_surface_get_xid(surface);
+          XWindowAttributes attributes; XGetWindowAttributes(display, xid, &attributes);
+          cairo_surface_t *capture = cairo_xlib_surface_create(display, xid, attributes.visual, attributes.width, attributes.height);
+          Check(cairo_surface_write_to_png(capture, overviewPreview) == CAIRO_STATUS_SUCCESS, @"project editor screenshot");
+          cairo_surface_destroy(capture);
+          [overviewEditor selectSectionAtIndex:0];
+        }
+      Check([sourceTree setPath:sourcePath], @"reveal the source file again");
+      [sourceTree click:outline];
+
       /* Xcode-style window: toolbar, navigator, editor over a bottom area. */
       PCProjectWindow *projectWindow = [project projectWindow];
       NSToolbar *toolbar = [window toolbar];
@@ -523,11 +594,13 @@ int main(int argc, char **argv)
       Check(![project isEditableFile:@"project.pbxproj"], @"Xcode metadata is read-only");
       Check([project isEditableFile:@"GNUmakefile"], @"existing GNUstep build file remains editable");
       Check([[project projectEditor] openEditorForFilePath:[root stringByAppendingPathComponent:@"EditGlyphData/GSWindowController.m"] windowed:NO] != nil, @"open source in integrated editor");
+      PumpEvents(0.2); // GTK allocates the newly selected editor before inspecting its geometry.
       Check([[sourceTree nameOfSelectedFile] isEqual:@"EditGlyphData/GSWindowController.m"], @"opening an editor reveals the matching outline file");
       id codeEditor = [[project projectEditor] activeEditor];
       NSScrollView *codeScroll = [[codeEditor editorView] enclosingScrollView];
       Check(![codeScroll hasHorizontalRuler] && [codeScroll hasVerticalRuler], @"code editor has line numbers but no tab ruler");
       NSPathControl *jumpBar = [codeEditor performSelector:@selector(jumpBar)];
+      NSLog(@"Native editor geometry: jump=%@ scroll=%@ container=%@ flipped=%d",NSStringFromRect(jumpBar.frame),NSStringFromRect(codeScroll.frame),NSStringFromRect(jumpBar.superview.bounds),jumpBar.superview.isFlipped);
       Check([jumpBar window] == window && NSMaxY([jumpBar frame]) <= NSMaxY([[jumpBar superview] bounds])
             && NSMinY([jumpBar frame]) >= NSMaxY([codeScroll frame]) - 1, @"jump bar sits above the code");
       Check([[[jumpBar pathItems] valueForKey:@"title"] isEqual:(@[@"EditGlyphData", @"EditGlyphData", @"GSWindowController.m"])], @"jump bar shows project, group and file");
