@@ -25,7 +25,7 @@
 
 #define EQUAL(str) ([element isEqualToString: str])
 
-#import <CodeHandler.h>
+#import "CodeHandler.h"
 #import <Foundation/NSString.h>
 
 @class NSString;
@@ -34,7 +34,7 @@
 
 @interface ObjCCommentHandler: NSObject <CodeHandler>
 {
-  CommentType _commentType;
+  PCCommentType _commentType;
   BOOL _stringBegin;
   unichar _preChar;
   unichar _stringSymbol;

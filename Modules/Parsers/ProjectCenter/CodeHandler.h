@@ -30,7 +30,7 @@ typedef enum _CommentType {
   NoComment,
   MultipleLineComment,
   SingleLineComment
-} CommentType;
+} PCCommentType;
 
 @class NSString;
 

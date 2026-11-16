@@ -41,7 +41,7 @@
 
 - (void)changeFont:(id)sender
 {
-  [[_cell target] changeFont:sender];
+  [[[self cell] target] changeFont:sender];
 }
 
 - (BOOL)resignFirstResponder

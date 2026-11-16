@@ -1,6 +1,6 @@
 #import "PCXcodeProject.h"
 
-static NSString * const Marker = @"XCODE_PROJECT_PATH";
+static NSString * const PCXcodeProjectMarker = @"XCODE_PROJECT_PATH";
 
 static NSMutableDictionary *Group(NSString *name)
 {
@@ -220,7 +220,7 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
     NSMutableDictionary *paths = [NSMutableDictionary dictionary];
     NSDictionary *mainGroup = ReadGroup([project objectForKey:@"mainGroup"], root, root, objects, paths, [NSMutableSet set]);
     NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                   path, Marker, @"Application", @"PROJECT_TYPE", [target objectForKey:@"name"], @"PROJECT_NAME", nil];
+                                   path, PCXcodeProjectMarker, @"Application", @"PROJECT_TYPE", [target objectForKey:@"name"], @"PROJECT_NAME", nil];
     /* The navigator shows Xcode's own group hierarchy. */
     NSArray *groups = [mainGroup objectForKey:@"Children"];
     [result setObject:(groups ? groups : [NSArray array]) forKey:@"XCODE_GROUPS"];

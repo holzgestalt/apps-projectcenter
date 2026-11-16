@@ -295,6 +295,8 @@
 		FE23BB09701022E4A6C86F59 /* PCProjectLoadedFiles.h in Headers */ = {isa = PBXBuildFile; fileRef = EF9651C4504ED507BBD78577 /* PCProjectLoadedFiles.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FF7004D34EB8B40A08FE46B3 /* PCProjectBrowser.m in Sources */ = {isa = PBXBuildFile; fileRef = 245EF09527E869DFE6CE03E7 /* PCProjectBrowser.m */; };
 		FF773D827116A4C17702EDEE /* PCProjectEditor.h in Headers */ = {isa = PBXBuildFile; fileRef = 4F84FFB71E27BE304EA189AF /* PCProjectEditor.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		550A0D04D65EF0C46D96B6FF /* PCCompat.h in Headers */ = {isa = PBXBuildFile; fileRef = 5262931385D6205A1BBB8DEF /* PCCompat.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D02787DFDFAF28B4F642E07E /* PCCompat.m in Sources */ = {isa = PBXBuildFile; fileRef = 2F5D9DA7C9E33FD2494F46B3 /* PCCompat.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -938,6 +940,8 @@
 		FE126D15C40C0D6ED083CD36 /* PCBundleProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCBundleProject.h; sourceTree = "<group>"; };
 		FEE64CCCC99031DB4F56DE65 /* stepout_button.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = stepout_button.png; sourceTree = "<group>"; };
 		FF3B193D46B8B527CC9FDB48 /* ResourceSet.project */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ResourceSet.project; sourceTree = BUILT_PRODUCTS_DIR; };
+		5262931385D6205A1BBB8DEF /* PCCompat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCCompat.h; sourceTree = "<group>"; };
+		2F5D9DA7C9E33FD2494F46B3 /* PCCompat.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCCompat.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1189,6 +1193,7 @@
 				302F6AACE1F66B3996F72059 /* PCAuxiliaryWindow.m */,
 				7B5687B10DF0B053830EB3C5 /* PCBundleManager.m */,
 				DD24D36C935AC6A2E0D850B7 /* PCButton.m */,
+				2F5D9DA7C9E33FD2494F46B3 /* PCCompat.m */,
 				CD7067480F090F2DFBCE4823 /* PCEditorManager.m */,
 				39165C1419EE520BD59920C2 /* PCFileCreator.m */,
 				0D79ABCF4E5BFAB8F3374A4E /* PCFileManager.m */,
@@ -1647,6 +1652,7 @@
 				F56961A938B6171E95740CF0 /* PCAuxiliaryWindow.h */,
 				F9CDC21B778A8EA168018A5D /* PCBundleManager.h */,
 				169A1C18D7AE3E1242B79369 /* PCButton.h */,
+				5262931385D6205A1BBB8DEF /* PCCompat.h */,
 				01D164A40577973D43DE28F7 /* PCDefines.h */,
 				0B19D75AC2A77232CB00B879 /* PCEditorManager.h */,
 				794BD701DD536E7A641BCD85 /* PCFileCreator.h */,
@@ -1824,6 +1830,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				550A0D04D65EF0C46D96B6FF /* PCCompat.h in Headers */,
 				1F03255FDAEE89905E8248E6 /* PCDefines.h in Headers */,
 				FA7D0BCFA048D213C90BE3FF /* ProjectCenter.h in Headers */,
 				2CC594BA6AEB3877A1DECF6A /* PCBundleManager.h in Headers */,
@@ -2618,6 +2625,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D02787DFDFAF28B4F642E07E /* PCCompat.m in Sources */,
 				649E5EAF48A2AE9632D88D41 /* PCBundleManager.m in Sources */,
 				A7625E1FE9AC5841CF7F68D5 /* PCEditorManager.m in Sources */,
 				2FF1505A648317FA8274B2C6 /* PCInterfaceEditor.m in Sources */,
@@ -2864,6 +2872,8 @@
 		1988CF1C7C68207B396CD8AE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Headers/ProjectCenter/PCCompat.h;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = NO;
@@ -3099,6 +3109,8 @@
 		4545BA15FFC43504EB9CC84D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Headers/ProjectCenter/PCCompat.h;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = NO;

@@ -31,7 +31,9 @@
 #import <Foundation/NSArchiver.h>
 #import <Foundation/NSFileManager.h>
 
+#ifdef GNUSTEP
 #import <AppKit/PSOperators.h>
+#endif
 #import <AppKit/NSColor.h>
 #import <AppKit/NSEvent.h>
 #import <AppKit/NSWindow.h>
@@ -1643,7 +1645,16 @@ static unichar OpeningDelimiterForClosingDelimiter(unichar c)
 
 - (NSRect)selectionRect
 {
+#ifdef GNUSTEP
   return _insertionPointRect;
+#else
+  NSLayoutManager *layoutManager = [self layoutManager];
+  NSRange glyphRange = [layoutManager glyphRangeForCharacterRange:[self selectedRange] actualCharacterRange:NULL];
+  NSRect rect = [layoutManager boundingRectForGlyphRange:glyphRange inTextContainer:[self textContainer]];
+  NSPoint origin = [self textContainerOrigin];
+
+  return NSOffsetRect(rect, origin.x, origin.y);
+#endif
 }
 
 - (BOOL)usesFindPanel

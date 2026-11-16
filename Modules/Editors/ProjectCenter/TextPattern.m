@@ -23,6 +23,8 @@
 
 #import "TextPattern.h"
 
+#include <string.h>
+
 #import <Foundation/NSBundle.h>
 #import <Foundation/NSScanner.h>
 #import <Foundation/NSException.h>

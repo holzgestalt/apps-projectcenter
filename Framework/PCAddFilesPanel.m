@@ -96,9 +96,13 @@ static PCAddFilesPanel *addFilesPanel = nil;
 
   [super setAllowedFileTypes: fileTypes];
 
+#ifdef GNUSTEP
   path = [_browser path];
   [self validateVisibleColumns];
   [_browser setPath:path];
+#else
+  (void)path;
+#endif
 
   [self display];
 }

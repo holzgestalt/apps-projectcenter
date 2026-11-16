@@ -37,8 +37,8 @@
   self = [super initWithCoder:coder];
   if (self)
   {
-    [_cell setGradientType:NSGradientConcaveWeak];
-    [_cell setImageDimsWhenDisabled:YES];
+    [[self cell] setGradientType:NSGradientConcaveWeak];
+    [[self cell] setImageDimsWhenDisabled:YES];
     [self setImagePosition:NSImageOnly];
     [self setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
     [self setRefusesFirstResponder:YES];
