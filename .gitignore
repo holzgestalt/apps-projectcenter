@@ -12,3 +12,6 @@
 derived_src
 obj
 *~
+
+# Xcode
+xcuserdata/
