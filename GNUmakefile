@@ -51,6 +51,11 @@ Images/GSStepOutTemplate.tiff \
 Images/GSNavigatorProjectTemplate.tiff \
 Images/GSNavigatorBreakpointsTemplate.tiff \
 Images/GSNavigatorDebugTemplate.tiff \
+Images/GSNavigatorIssuesTemplate.tiff \
+Images/GSIssueError.tiff \
+Images/GSIssueWarning.tiff \
+Images/GSIssueNote.tiff \
+Images/GSIssueSucceeded.tiff \
 Images/Clean.tiff \
 Images/Debug.tiff \
 Images/Files.tiff \

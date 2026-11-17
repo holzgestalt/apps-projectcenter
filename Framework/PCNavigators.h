@@ -75,3 +75,13 @@
 - (NSArray *)frames;
 - (NSInteger)selectedFrameIndex;
 @end
+
+/* Errors and warnings of the last build, by file, like Xcode's issue
+ * navigator. */
+@interface PCIssueNavigator : PCNavigator
+{
+  id        builder;             // not retained
+  NSButton  *logButton;
+}
+- (void)showBuildLog:(id)sender;
+@end

@@ -63,6 +63,7 @@
   NSTabView   *navigatorTabs;
   id          breakpointNavigator;
   id          debugNavigator;
+  id          issueNavigator;
   id          xcodeProjectEditor;  // shown when the project row is selected
   NSSplitView *contentSplit;   // editor above the collapsible bottom area
   NSBox       *bottomView;     // build or run output
@@ -106,6 +107,9 @@
 - (NSInteger)selectedNavigatorIndex;
 - (id)breakpointNavigator;
 - (id)debugNavigator;
+- (id)issueNavigator;
+/* Show the navigator with the issue tab, as Xcode does for a build. */
+- (void)showIssueNavigator;
 - (void)toggleBottomArea:(id)sender;
 - (BOOL)isNavigatorVisible;
 - (BOOL)isBottomAreaVisible;

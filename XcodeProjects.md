@@ -29,7 +29,11 @@ and constraints, and legacy XIB formats are not supported.
 
 The project window has a toolbar with Run, Stop and Build, and toggles for the
 navigator, the bottom area and the inspector panel (Clean, Debug and Find can
-be added by customizing it). Build and run output open in a bottom area below
+be added by customizing it). Build and Clean switch the navigator to its Issues
+tab, as in Xcode: a summary of the last build, then its errors, warnings and
+notes grouped by file. Click an issue to open the file at its line. The Issues
+tab opens by itself when a build fails, and its Build Log button shows the full
+compiler output. Build and run output open in a bottom area below
 the editor, which stays visible. The loaded-files list appears below the
 navigator. Choosing separate panels in Preferences → Miscellaneous
 (`UseTearOffWindows`) moves build, run and loaded files into their own windows

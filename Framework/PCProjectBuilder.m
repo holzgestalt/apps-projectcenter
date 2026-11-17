@@ -54,6 +54,8 @@
 #define NOTIFICATION_CENTER [NSNotificationCenter defaultCenter]
 #endif
 
+NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNotification";
+
 @implementation PCProjectBuilder
 
 - (id)initWithProject:(PCProject *)aProject
@@ -123,6 +125,7 @@
   RELEASE(componentView);
   RELEASE(errorArray);
   RELEASE(errorString);
+  RELEASE(buildResult);
 
   //  NSLog(@"Project Builder--> RC: %i", [self retainCount]);
 
@@ -131,7 +134,6 @@
 
 - (void)awakeFromNib
 {
-  NSScrollView *errorScroll;
   NSScrollView *logScroll;
 
   if (_isCVLoaded)
@@ -168,41 +170,8 @@
   errorArray = [[NSMutableArray alloc] initWithCapacity:0];
   errorString = [[NSMutableString alloc] initWithString:@""];
 
-  errorImageColumn = [[NSTableColumn alloc] initWithIdentifier:@"ErrorImage"];
-  [errorImageColumn setEditable:NO];
-  [errorImageColumn setWidth:20.0];
-  errorColumn = [[NSTableColumn alloc] initWithIdentifier:@"Error"];
-  [errorColumn setEditable:NO];
-
-  errorOutput = [[NSTableView alloc]
-                 initWithFrame:NSMakeRect(0,0,209,111)];
-  [errorOutput setAllowsMultipleSelection:NO];
-  [errorOutput setAllowsColumnReordering:NO];
-  [errorOutput setAllowsColumnResizing:NO];
-  [errorOutput setAllowsEmptySelection:YES];
-  [errorOutput setAllowsColumnSelection:NO];
-  [errorOutput setRowHeight:19.0];
-  [errorOutput setCornerView:nil];
-  [errorOutput setHeaderView:nil];
-  [errorOutput addTableColumn:errorImageColumn];
-  [errorOutput addTableColumn:errorColumn];
-  [errorOutput setDataSource:self];
-  [errorOutput setBackgroundColor:[NSColor colorWithDeviceRed:0.88
-                                                        green:0.76
-                                                         blue:0.60
-                                                        alpha:1.0]];
-  [errorOutput setDrawsGrid:NO];
-  [errorOutput setTarget:self];
-  [errorOutput setAction:@selector(errorItemClick:)];
-
-  errorScroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,464,120)];
-  [errorScroll setHasHorizontalScroller:NO];
-  [errorScroll setHasVerticalScroller:YES];
-  [errorScroll setBorderType:NSBezelBorder];
-  [errorScroll setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
-
-  [errorScroll setDocumentView:errorOutput];
-  RELEASE(errorOutput);
+  /* Errors and warnings are listed in the project window's issue
+   * navigator; this view shows the build log. */
 
   /*
    *  Log output
@@ -219,12 +188,9 @@
   [logOutput setEditable:NO];
   [logOutput setSelectable:YES];
   [logOutput setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [logOutput setBackgroundColor:[NSColor lightGrayColor]];
-  [logOutput setSelectedTextAttributes:
-   [NSDictionary dictionaryWithObjectsAndKeys:
-    [NSColor whiteColor], NSBackgroundColorAttributeName,
-    [NSColor blackColor], NSForegroundColorAttributeName,
-    nil]];
+  [logOutput setBackgroundColor:[NSColor textBackgroundColor]];
+  [logOutput setTextColor:[NSColor textColor]];
+  [logOutput setFont:[NSFont userFixedPitchFontOfSize:11.0]];
   [[logOutput textContainer] setWidthTracksTextView:YES];
   [[logOutput textContainer] setHeightTracksTextView:YES];
   [logOutput setHorizontallyResizable:NO];
@@ -241,8 +207,6 @@
   /*
    * Split view
    */
-  [split addSubview:errorScroll];
-  RELEASE(errorScroll);
   [split addSubview:logScroll];
   RELEASE(logScroll);
 
@@ -256,6 +220,92 @@
 - (NSView *)componentView
 {
   return componentView;
+}
+
+- (PCProject *)project
+{
+  return project;
+}
+
+// --- Issues
+
+- (NSArray *)issues
+{
+  NSMutableArray *issues = [NSMutableArray array];
+  NSCharacterSet *space = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+
+  for (NSDictionary *item in errorArray)
+  {
+    NSString *type = [[item objectForKey:@"Type"] stringByTrimmingCharactersInSet:space];
+    NSString *message = [item objectForKey:@"Error"];
+    NSPoint  position = NSPointFromString([item objectForKey:@"Position"]);
+
+    /* The other items are the file and include headings of the old list. */
+    if ([type length] == 0)
+    {
+      continue;
+    }
+    if ([type isEqualToString:@"fatal error"])
+    {
+      type = @"error";
+    }
+    if ([message isKindOfClass:[NSAttributedString class]])
+    {
+      message = [(NSAttributedString *)message string];
+    }
+    [issues addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                       [item objectForKey:@"File"], @"File",
+                       [NSNumber numberWithInt:(int)position.x], @"Line",
+                       [NSNumber numberWithInt:(int)position.y], @"Column",
+                       type, @"Type",
+                       [message stringByTrimmingCharactersInSet:space], @"Message",
+                       nil]];
+  }
+  return issues;
+}
+
+- (int)errorsCount
+{
+  return errorsCount;
+}
+
+- (int)warningsCount
+{
+  return warningsCount;
+}
+
+- (NSString *)buildResult
+{
+  return buildResult;
+}
+
+- (BOOL)buildSucceeded
+{
+  return buildSucceeded;
+}
+
+- (void)showIssue:(NSDictionary *)issue
+{
+  PCProjectEditor *projectEditor = [project projectEditor];
+  NSString        *file = [issue objectForKey:@"File"];
+  NSUInteger      line = [[issue objectForKey:@"Line"] unsignedIntegerValue];
+  id<CodeEditor>  editor;
+
+  if ([file length] == 0)
+  {
+    return;
+  }
+  editor = [projectEditor openEditorForFile:file
+                                   editable:YES
+                                   windowed:NO];
+  if (editor)
+  {
+    [projectEditor orderFrontEditorForFile:file];
+    if (line > 0)
+    {
+      [editor scrollToLineNumber:line];
+    }
+  }
 }
 
 - (void)loadPreferences:(NSNotification *)aNotification
@@ -576,6 +626,9 @@
   // Initiated in [self build:]
   [currentBuildPath release];
   [currentBuildFile release];
+
+  [NOTIFICATION_CENTER postNotificationName:PCProjectBuilderDidChangeNotification
+                                     object:self];
 }
 
 // --- Actions
@@ -693,7 +746,9 @@
   // Run make task
   [logOutput setString:@""];
   [errorArray removeAllObjects];
-  [errorOutput reloadData];
+  DESTROY(buildResult);
+  [NOTIFICATION_CENTER postNotificationName:PCProjectBuilderDidChangeNotification
+                                     object:self];
 
   [NOTIFICATION_CENTER addObserver:self
                           selector:@selector(buildDidTerminate:)
@@ -823,6 +878,12 @@
   [statusField setStringValue:statusString];
   [[project projectWindow] updateStatusLineWithText:statusString];
   [self logBuildString:logString newLine:YES];
+
+  buildSucceeded = (status == 0);
+  RELEASE(buildResult);
+  buildResult = [[NSString alloc] initWithFormat:@"%@ %@",
+                 [buildStatusTarget isEqualToString:@"Clean"] ? @"Clean" : @"Build",
+                 buildSucceeded ? @"succeeded" : @"failed"];
 
   // Run post process if configured
   /*  if (status && postProcess)
@@ -1100,15 +1161,14 @@
     return;
   }
 
+  [self appendToLog:newLine ? [logString stringByAppendingString:@"\n"]
+                             : logString];
+}
+
+- (void)appendToLog:(NSString *)string
+{
   [logOutput replaceCharactersInRange:
-   NSMakeRange([[logOutput string] length],0) withString:logString];
-
-  if (newLine)
-  {
-    [logOutput replaceCharactersInRange:
-     NSMakeRange([[logOutput string] length], 0) withString:@"\n"];
-  }
-
+   NSMakeRange([[logOutput string] length], 0) withString:string];
   [logOutput scrollRangeToVisible:NSMakeRange([[logOutput string] length], 0)];
   [logOutput setNeedsDisplay:YES];
 }
@@ -1171,8 +1231,8 @@
   if (items)
   {
     [errorArray addObjectsFromArray:items];
-    [errorOutput reloadData];
-    [errorOutput scrollRowToVisible:[errorArray count]-1];
+    [NOTIFICATION_CENTER postNotificationName:PCProjectBuilderDidChangeNotification
+                                       object:self];
   }
 }
 
@@ -1251,6 +1311,20 @@
     // file and includedFile
     file = [currentBuildPath
             stringByAppendingPathComponent:currentBuildFile];
+    {
+      /* The compiler names the file at the start of the message; use it
+       * when it exists, as with builds that don't print "Compiling file". */
+      NSString *reported = [components objectAtIndex:0];
+
+      if (![reported isAbsolutePath])
+      {
+        reported = [currentBuildPath stringByAppendingPathComponent:reported];
+      }
+      if ([[NSFileManager defaultManager] fileExistsAtPath:reported])
+      {
+        file = [reported stringByStandardizingPath];
+      }
+    }
     if (lastEL == ELIncluded
         || [[components objectAtIndex:0] isEqualToString:lastIncludedFile])
     {// first message after "In file included from"
@@ -1398,59 +1472,6 @@
   [items addObject:errorItem];
 
   return items;
-}
-
-// --- Error output table delegate methods
-- (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView
-{
-  if (errorArray != nil && aTableView == errorOutput)
-  {
-    return [errorArray count];
-  }
-
-  return 0;
-}
-
-- (id)            tableView:(NSTableView *)aTableView
-  objectValueForTableColumn:(NSTableColumn *)aTableColumn
-                        row:(NSInteger)rowIndex
-{
-  NSDictionary *errorItem;
-
-  if (errorArray != nil && aTableView == errorOutput)
-  {
-    errorItem = [errorArray objectAtIndex:rowIndex];
-
-    return [errorItem objectForKey:[aTableColumn identifier]];
-  }
-
-  return nil;
-}
-
-- (void)errorItemClick:(id)sender
-{
-  NSInteger       rowIndex = [errorOutput selectedRow];
-  NSDictionary    *error = [errorArray objectAtIndex:rowIndex];
-  NSPoint         position;
-  PCProjectEditor *projectEditor = [project projectEditor];
-  id<CodeEditor>  editor;
-
-  editor = [projectEditor openEditorForFile:[error objectForKey:@"File"]
-                                   editable:YES
-                                   windowed:NO];
-  if (editor)
-  {
-    // TODO / FIXME using a NSPoint here is weak since it is Float vs. integer line numbers
-    position = NSPointFromString([error objectForKey:@"Position"]);
-    [projectEditor orderFrontEditorForFile:[error objectForKey:@"File"]];
-    [editor scrollToLineNumber:(NSUInteger)position.x];
-
-    /*      NSLog(@"%i: %@(%@): %@",
-     position.x,
-     [error objectForKey:@"File"],
-     [error objectForKey:@"IncludedFile"],
-     [error objectForKey:@"Error"]);*/
-  }
 }
 
 @end

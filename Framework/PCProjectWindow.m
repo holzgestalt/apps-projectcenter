@@ -103,8 +103,10 @@
 {
   NSRect frame = NSMakeRect(0, 0, 240, 400);
   NSArray *images = [NSArray arrayWithObjects:@"GSNavigatorProjectTemplate",
-                     @"GSNavigatorBreakpointsTemplate", @"GSNavigatorDebugTemplate", nil];
-  NSArray *labels = [NSArray arrayWithObjects:@"Project", @"Breakpoints", @"Debug", nil];
+                     @"GSNavigatorBreakpointsTemplate", @"GSNavigatorDebugTemplate",
+                     @"GSNavigatorIssuesTemplate", nil];
+  NSArray *labels = [NSArray arrayWithObjects:@"Project", @"Breakpoints", @"Debug",
+                     @"Issues", nil];
   NSArray *views;
   NSInteger i;
 
@@ -112,7 +114,7 @@
   [navigatorArea setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   navigatorSelector = [[[NSSegmentedControl alloc] initWithFrame:
-                        NSMakeRect(8, NSHeight(frame) - 30, 120, 24)] autorelease];
+                        NSMakeRect(8, NSHeight(frame) - 30, 160, 24)] autorelease];
   [navigatorSelector setSegmentCount:[images count]];
   for (i = 0; i < [images count]; i++)
   {
@@ -133,8 +135,10 @@
   [navigatorTabs setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   breakpointNavigator = [[PCBreakpointNavigator alloc] initWithProject:project];
   debugNavigator = [[PCDebugNavigator alloc] initWithProject:project];
+  issueNavigator = [[PCIssueNavigator alloc] initWithProject:project];
   views = [NSArray arrayWithObjects:[[project projectBrowser] view],
-           [breakpointNavigator view], [debugNavigator view], nil];
+           [breakpointNavigator view], [debugNavigator view],
+           [issueNavigator view], nil];
   for (i = 0; i < [views count]; i++)
   {
     NSTabViewItem *item = [[[NSTabViewItem alloc] initWithIdentifier:[labels objectAtIndex:i]] autorelease];
@@ -147,6 +151,9 @@
   [[NSNotificationCenter defaultCenter] addObserver:self
                                            selector:@selector(debuggerStateDidChange:)
                                                name:PCDebuggerStateDidChangeNotification object:nil];
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(builderDidChange:)
+                                               name:PCProjectBuilderDidChangeNotification object:nil];
 }
 
 - (void)navigatorSelectorChanged:(id)sender
@@ -169,6 +176,33 @@
 
 - (id)breakpointNavigator { return breakpointNavigator; }
 - (id)debugNavigator { return debugNavigator; }
+- (id)issueNavigator { return issueNavigator; }
+
+- (void)showIssueNavigator
+{
+  if (![self isNavigatorVisible])
+  {
+    [self toggleNavigator:self];
+  }
+  [self selectNavigatorAtIndex:[navigatorTabs indexOfTabViewItemWithIdentifier:@"Issues"]];
+}
+
+- (void)builderDidChange:(NSNotification *)aNotif
+{
+  PCProjectBuilder *builder = [aNotif object];
+
+  if ([builder project] == project)
+  {
+    /* Run, Stop and Build depend on the build state. */
+    [[projectWindow toolbar] validateVisibleItems];
+  }
+  /* Like Xcode: show the issues when a build ends with errors. */
+  if ([builder project] == project && ![builder isBuilding] && ![builder isCleaning]
+      && [builder buildResult] != nil && [builder errorsCount] > 0)
+  {
+    [self showIssueNavigator];
+  }
+}
 
 - (void)debuggerStateDidChange:(NSNotification *)aNotif
 {
@@ -288,15 +322,17 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   return YES;
 }
 
+/* Like Xcode, the build reports in the issue navigator; its Build Log
+ * button shows the output. */
 - (void)toolbarBuild:(id)sender
 {
-  [self showProjectBuild:self];
+  [self showIssueNavigator];
   [[project projectBuilder] performStartBuild];
 }
 
 - (void)toolbarClean:(id)sender
 {
-  [self showProjectBuild:self];
+  [self showIssueNavigator];
   [[project projectBuilder] performStartClean];
 }
 
@@ -523,6 +559,7 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   RELEASE(navigatorArea);
   RELEASE(breakpointNavigator);
   RELEASE(debugNavigator);
+  RELEASE(issueNavigator);
   RELEASE(xcodeProjectEditor);
   RELEASE(toolbarView);
   RELEASE(statusLine);

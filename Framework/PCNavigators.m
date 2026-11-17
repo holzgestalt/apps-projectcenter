@@ -16,13 +16,17 @@
 #import <ProjectCenter/PCProject.h>
 #import <ProjectCenter/PCProjectEditor.h>
 #import <ProjectCenter/PCProjectLauncher.h>
+#import <ProjectCenter/PCProjectBuilder.h>
+#import <ProjectCenter/PCProjectWindow.h>
 #import <Protocols/CodeEditor.h>
 
 /* GNUstep's programmatic tables retain cell-based mode by default. Register
  * view prototypes explicitly, just as its XIB loader does. */
+#ifdef GNUSTEP
 @interface NSTableView (PCNavigatorSupport)
 - (void)_registerPrototypeViews:(NSArray *)views;
 @end
+#endif
 
 @implementation PCNavigatorItem
 + (PCNavigatorItem *)itemWithTitle:(NSString *)aTitle icon:(NSImage *)anIcon info:(NSDictionary *)anInfo
@@ -101,7 +105,9 @@ static NSImage *SmallIcon(NSString *name)
     [column release];
     [outline setHeaderView:nil];
     [outline setGridStyleMask:NSTableViewGridNone];
+#ifdef GNUSTEP
     [outline _registerPrototypeViews:[NSArray arrayWithObject:NavigatorCell()]];
+#endif
     [outline setRowHeight:24];
     [outline setIndentationPerLevel:14];
     [outline setAllowsEmptySelection:YES];
@@ -175,7 +181,13 @@ static NSImage *SmallIcon(NSString *name)
 
 - (id)outlineView:(NSOutlineView *)v objectValueForTableColumn:(NSTableColumn *)column byItem:(id)item
 {
+#ifdef GNUSTEP
   return ((PCNavigatorItem *)item)->title;
+#else
+  /* Cocoa sets the cell view's objectValue from this; its bindings need
+   * the item. */
+  return item;
+#endif
 }
 
 - (NSView *)outlineView:(NSOutlineView *)v viewForTableColumn:(NSTableColumn *)column item:(id)item
@@ -510,3 +522,159 @@ static NSString *SourceLine(NSString *file, NSUInteger line)
 }
 
 @end
+
+// ============================================================================
+// ==== Issues
+// ============================================================================
+
+@implementation PCIssueNavigator
+
+- (id)initWithProject:(PCProject *)aProject
+{
+  if ((self = [super initWithProject:aProject]))
+  {
+    NSRect bounds = [view bounds];
+    NSView *bar = [[[NSView alloc] initWithFrame:NSMakeRect(0, 0, NSWidth(bounds), 28)] autorelease];
+
+    [scrollView setFrame:NSMakeRect(0, 28, NSWidth(bounds), NSHeight(bounds) - 28)];
+    [bar setAutoresizingMask:NSViewWidthSizable | NSViewMaxYMargin];
+
+    /* The full build output, in the bottom area. */
+    logButton = [[[NSButton alloc] initWithFrame:NSMakeRect(4, 2, 90, 24)] autorelease];
+    [logButton setTitle:@"Build Log"];
+    [logButton setBezelStyle:NSRoundedBezelStyle];
+    [[logButton cell] setControlSize:NSControlSizeSmall];
+    [logButton setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+    [logButton setToolTip:@"Show the output of the last build"];
+    [logButton setTarget:self];
+    [logButton setAction:@selector(showBuildLog:)];
+    [logButton setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
+    [bar addSubview:logButton];
+    [view addSubview:bar];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(builderDidChange:)
+                                                 name:PCProjectBuilderDidChangeNotification
+                                               object:nil];
+    [self reloadItems];
+  }
+  return self;
+}
+
+- (void)builderDidChange:(NSNotification *)notification
+{
+  PCProjectBuilder *sender = [notification object];
+
+  /* Subprojects build with the root project's builder. */
+  if ([sender project] != project)
+  {
+    return;
+  }
+  builder = sender;
+  [self reloadItems];
+}
+
+- (NSString *)_summary
+{
+  NSMutableArray *counts = [NSMutableArray array];
+  int errors = [builder errorsCount];
+  int warnings = [builder warningsCount];
+
+  if (errors > 0)
+  {
+    [counts addObject:errors == 1 ? @"1 error"
+                                  : [NSString stringWithFormat:@"%d errors", errors]];
+  }
+  if (warnings > 0)
+  {
+    [counts addObject:warnings == 1 ? @"1 warning"
+                                    : [NSString stringWithFormat:@"%d warnings", warnings]];
+  }
+  if ([counts count] == 0)
+  {
+    return [builder buildResult];
+  }
+  return [NSString stringWithFormat:@"%@ — %@", [builder buildResult],
+          [counts componentsJoinedByString:@", "]];
+}
+
+- (void)reloadItems
+{
+  NSMutableDictionary *byFile = [NSMutableDictionary dictionary];
+  PCNavigatorItem     *summary;
+
+  [roots removeAllObjects];
+  if (builder != nil && ([builder isBuilding] || [builder isCleaning]))
+  {
+    summary = [PCNavigatorItem itemWithTitle:[builder isCleaning] ? @"Cleaning…" : @"Building…"
+                                        icon:SmallIcon(@"GSNavigatorIssuesTemplate")
+                                        info:nil];
+  }
+  else if ([builder buildResult] != nil)
+  {
+    summary = [PCNavigatorItem itemWithTitle:[self _summary]
+                                        icon:SmallIcon([builder buildSucceeded]
+                                                       ? @"GSIssueSucceeded" : @"GSIssueError")
+                                        info:nil];
+  }
+  else
+  {
+    summary = [PCNavigatorItem itemWithTitle:@"No build results"
+                                        icon:SmallIcon(@"GSNavigatorIssuesTemplate")
+                                        info:nil];
+  }
+  [roots addObject:summary];
+
+  /* One group per file, in the order the compiler reported them. */
+  for (NSDictionary *issue in [builder issues])
+  {
+    NSString        *file = [issue objectForKey:@"File"];
+    NSString        *type = [issue objectForKey:@"Type"];
+    NSNumber        *line = [issue objectForKey:@"Line"];
+    PCNavigatorItem *group = [byFile objectForKey:file];
+    PCNavigatorItem *item;
+    NSString        *icon = @"GSIssueNote";
+
+    if (group == nil)
+    {
+      group = [PCNavigatorItem itemWithTitle:[file lastPathComponent]
+                                        icon:[[NSWorkspace sharedWorkspace] iconForFile:file]
+                                        info:[NSDictionary dictionaryWithObject:file forKey:@"File"]];
+      group->toolTip = [file copy];
+      [byFile setObject:group forKey:file];
+      [roots addObject:group];
+    }
+    if ([type isEqualToString:@"error"])
+    {
+      icon = @"GSIssueError";
+    }
+    else if ([type isEqualToString:@"warning"])
+    {
+      icon = @"GSIssueWarning";
+    }
+    item = [PCNavigatorItem itemWithTitle:[issue objectForKey:@"Message"]
+                                     icon:SmallIcon(icon)
+                                     info:issue];
+    item->toolTip = [[NSString alloc] initWithFormat:@"%@:%@: %@: %@",
+                     [file lastPathComponent], line, type,
+                     [issue objectForKey:@"Message"]];
+    [group->children addObject:item];
+  }
+  [self _reloadOutlineExpandingAll];
+}
+
+- (void)selectionDidChange:(PCNavigatorItem *)item
+{
+  if ([item->info objectForKey:@"File"] != nil)
+  {
+    [builder showIssue:item->info];
+  }
+}
+
+- (void)showBuildLog:(id)sender
+{
+  [[project projectWindow] showProjectBuild:self];
+}
+
+@end
+

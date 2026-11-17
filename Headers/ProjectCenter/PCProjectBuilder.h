@@ -32,6 +32,10 @@
 @class PCButton;
 @class PCProjectBuilderOptions;
 
+/* Posted by a project builder (the object) when a build or clean starts, finds
+ * an issue or ends. */
+extern NSString *PCProjectBuilderDidChangeNotification;
+
 typedef enum _ErrorLevel {
   ELFile,
   ELFunction,
@@ -85,10 +89,9 @@ typedef enum _ErrorLevel {
   NSTextField     *targetField;
 
   // Error logging
-  NSTableView     *errorOutput;
-  NSTableColumn   *errorImageColumn;
-  NSTableColumn   *errorColumn;
   NSMutableArray  *errorArray;
+  NSString        *buildResult;
+  BOOL            buildSucceeded;
   NSMutableString *errorString;
 
   ErrorLevel      currentEL;
@@ -108,6 +111,7 @@ typedef enum _ErrorLevel {
 - (void)dealloc;
 
 - (NSView *)componentView;
+- (PCProject *)project;
 - (void)loadPreferences:(NSNotification *)aNotification;
 - (void)updateTargetField;
 
@@ -118,6 +122,20 @@ typedef enum _ErrorLevel {
 - (void)performStartClean;
 - (void)performStopBuild;
 - (NSArray *)buildArguments;
+
+// --- Issues of the last build, for the issue navigator
+/* Errors, warnings and notes in the order the compiler reported them. Each
+ * has "File", "Line", "Column" (NSNumbers), "Type" ("error", "warning" or
+ * "note") and "Message". */
+- (NSArray *)issues;
+- (int)errorsCount;
+- (int)warningsCount;
+/* "Build succeeded", "Build failed" and the like for the last build or
+ * clean; nil before the first one. */
+- (NSString *)buildResult;
+- (BOOL)buildSucceeded;
+/* Open the issue's file in the editor at its line. */
+- (void)showIssue:(NSDictionary *)issue;
 
 // --- Actions
 - (void)startBuild:(id)sender;
@@ -151,6 +169,7 @@ typedef enum _ErrorLevel {
 - (NSString *)parseCompilerLine:(NSString *)lineString;
 
 - (void)logBuildString:(NSString *)string newLine:(BOOL)newLine;
+- (void)appendToLog:(NSString *)string;
 - (NSString *)parseBuildLine:(NSString *)string;
 
 @end

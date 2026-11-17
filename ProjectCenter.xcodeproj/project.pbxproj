@@ -204,6 +204,11 @@
 		AA2B7E4E44B280DB64794ED7 /* BuildPrefs.xib in Resources */ = {isa = PBXBuildFile; fileRef = B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.xib */; };
 		AB560BD1BDD9A54BD673CA51 /* PCSaveModified.m in Sources */ = {isa = PBXBuildFile; fileRef = C7A1891533F466EC0F32FCFF /* PCSaveModified.m */; };
 		ABBFADA0A68A1924FBC5559A /* GSNavigatorDebugTemplate.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 5E444DE669B53C40CCB3CC8E /* GSNavigatorDebugTemplate.tiff */; };
+		2C3C03EAA06E80C5931B6FE7 /* GSNavigatorIssuesTemplate.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 05AC4F07D7B16A0FC634A522 /* GSNavigatorIssuesTemplate.tiff */; };
+		8BB75A4C9F2D652CF94BBC32 /* GSIssueError.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 681070B332FF269F94136BD8 /* GSIssueError.tiff */; };
+		175521D54CE320EEACBB900E /* GSIssueWarning.tiff in Resources */ = {isa = PBXBuildFile; fileRef = BBDE6CD94E1F1520F395A2FB /* GSIssueWarning.tiff */; };
+		069C556A426DB697B7691369 /* GSIssueNote.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 33C61B759D144C11FFDABE8D /* GSIssueNote.tiff */; };
+		769B5EE4D89A19B9E1BA24B5 /* GSIssueSucceeded.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 4EC4291CF3E3CB652BF16E94 /* GSIssueSucceeded.tiff */; };
 		AC25A0C8AAB09BE323ED7ED5 /* headerSuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 4D7D3F303286603CAD4C66FB /* headerSuitcaseH.tiff */; };
 		AE1840C2EF638FA14FE11569 /* BuildAttributes.xib in Resources */ = {isa = PBXBuildFile; fileRef = F84AE18E99CEF44FD09476C9 /* BuildAttributes.xib */; };
 		AF94A6EA434D65A9CA919797 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
@@ -709,6 +714,11 @@
 		5DC8082EB118B44BF9CE9B83 /* PCInterfaceEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCInterfaceEditor.h; sourceTree = "<group>"; };
 		5E0C76E52DC1BE5F7C32C590 /* PCAddFilesPanel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCAddFilesPanel.h; sourceTree = "<group>"; };
 		5E444DE669B53C40CCB3CC8E /* GSNavigatorDebugTemplate.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSNavigatorDebugTemplate.tiff; sourceTree = "<group>"; };
+		05AC4F07D7B16A0FC634A522 /* GSNavigatorIssuesTemplate.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSNavigatorIssuesTemplate.tiff; sourceTree = "<group>"; };
+		681070B332FF269F94136BD8 /* GSIssueError.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSIssueError.tiff; sourceTree = "<group>"; };
+		BBDE6CD94E1F1520F395A2FB /* GSIssueWarning.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSIssueWarning.tiff; sourceTree = "<group>"; };
+		33C61B759D144C11FFDABE8D /* GSIssueNote.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSIssueNote.tiff; sourceTree = "<group>"; };
+		4EC4291CF3E3CB652BF16E94 /* GSIssueSucceeded.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSIssueSucceeded.tiff; sourceTree = "<group>"; };
 		5EBB360478F9BAFBB637DF8A /* ProjectCenter_cvs.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = ProjectCenter_cvs.tiff; sourceTree = "<group>"; };
 		61C7E638CB4559E62F912AA8 /* PCFindController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCFindController.m; sourceTree = "<group>"; };
 		62F9D641512B28BB248E86C9 /* PCProjectDocument.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectDocument.m; sourceTree = "<group>"; };
@@ -1388,6 +1398,11 @@
 				0230ADBB0AA98263B054622B /* GSInspectorPaneTemplate.tiff */,
 				EF94DFABECDCB7EBD63BCD90 /* GSNavigatorBreakpointsTemplate.tiff */,
 				5E444DE669B53C40CCB3CC8E /* GSNavigatorDebugTemplate.tiff */,
+				05AC4F07D7B16A0FC634A522 /* GSNavigatorIssuesTemplate.tiff */,
+				681070B332FF269F94136BD8 /* GSIssueError.tiff */,
+				BBDE6CD94E1F1520F395A2FB /* GSIssueWarning.tiff */,
+				33C61B759D144C11FFDABE8D /* GSIssueNote.tiff */,
+				4EC4291CF3E3CB652BF16E94 /* GSIssueSucceeded.tiff */,
 				28F69B456E534DFB89D9116A /* GSNavigatorProjectTemplate.tiff */,
 				731D1EB0E6415122B16FF94F /* GSStepIntoTemplate.tiff */,
 				BAA2FD8CE956AE9FC4DDF0BA /* GSStepOutTemplate.tiff */,
@@ -2300,6 +2315,11 @@
 				291771C288875A693EA8308E /* GSNavigatorProjectTemplate.tiff in Resources */,
 				EFCC01F84215FB6AFAA573BE /* GSNavigatorBreakpointsTemplate.tiff in Resources */,
 				ABBFADA0A68A1924FBC5559A /* GSNavigatorDebugTemplate.tiff in Resources */,
+				2C3C03EAA06E80C5931B6FE7 /* GSNavigatorIssuesTemplate.tiff in Resources */,
+				8BB75A4C9F2D652CF94BBC32 /* GSIssueError.tiff in Resources */,
+				175521D54CE320EEACBB900E /* GSIssueWarning.tiff in Resources */,
+				069C556A426DB697B7691369 /* GSIssueNote.tiff in Resources */,
+				769B5EE4D89A19B9E1BA24B5 /* GSIssueSucceeded.tiff in Resources */,
 				5EF5001324335205E3EE84D7 /* Clean.tiff in Resources */,
 				A15A763C9057A6AE4C67ECFC /* Debug.tiff in Resources */,
 				03C73EEBF71096354FCC151E /* Files.tiff in Resources */,
