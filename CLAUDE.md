@@ -25,6 +25,10 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 - **macOS:** open `ProjectCenter.xcodeproj`. There are two schemes:
   - `ProjectCenter` builds the framework, the 14 module bundles and the app.
   - `XcodeProjectTests` builds a Foundation-only test tool.
+  - The app icon is `Images/ProjectCenter.icns`, made once with `sips` and `iconutil` from
+    `Images/ProjectCenterx4.tiff`, a 192 px upscale of the GNUstep icon `Images/ProjectCenter.tiff`.
+    It holds sizes up to 128 px; macOS scales up for larger ones. `Resources/Info-macOS.plist` holds the Info.plist keys that Xcode
+    doesn't generate.
 - **GNUstep:** run `make && make install` with the GNUstep environment loaded.
   - The workspace scripts in `XcodeProjects.md` (`scripts/build-projectcenter.sh`,
     `scripts/test-projectcenter-xcode.sh [--integration]`, `scripts/test-projectcenter-interface.sh`)

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Info.plist keys for the macOS build that Xcode does not generate itself.
+  Xcode merges this with the keys generated from the build settings.
+  The GNUstep build uses Info-gnustep.plist.
+-->
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconFile</key>
+	<string>ProjectCenter</string>
+</dict>
+</plist>

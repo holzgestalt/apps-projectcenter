@@ -253,6 +253,7 @@
 		D21FC604D841771106598730 /* MiscPrefs.xib in Resources */ = {isa = PBXBuildFile; fileRef = 3E7170238DF5C7B1A9C37D39 /* MiscPrefs.xib */; };
 		D2C317706A1AF0C00676107F /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = 044700B100313D9CD6450538 /* Info.table */; };
 		D3AFB633B5CDFDACA1071DE3 /* MainMenu-OSX.gsmarkup in Resources */ = {isa = PBXBuildFile; fileRef = 6DA9D09F8A99D11816DAC3B2 /* MainMenu-OSX.gsmarkup */; };
+		D4BAF2015C3E7F8091A2B3C4 /* ProjectCenter.icns in Resources */ = {isa = PBXBuildFile; fileRef = C3A9E1F04B2D6E7F8091A2B3 /* ProjectCenter.icns */; };
 		D830B510CBD9E121B34D8565 /* ProjectCenter.debugger in Embed Modules */ = {isa = PBXBuildFile; fileRef = 55F070B588EF65C3C4ABBEEF /* ProjectCenter.debugger */; };
 		D8F2A12F09C4D3146A15ED3D /* Plist.syntax in Resources */ = {isa = PBXBuildFile; fileRef = 2BA1EB0193A9B99A2D92EA10 /* Plist.syntax */; };
 		D97FB785A089520D33963404 /* Builder.xib in Resources */ = {isa = PBXBuildFile; fileRef = 3BE5C2A64070316317644258 /* Builder.xib */; };
@@ -810,6 +811,7 @@
 		B210B793ECC90E1AEA66C9B2 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
 		B3A984886A544CCA6E604EB4 /* Info.gnustep */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.gnustep; sourceTree = "<group>"; };
 		B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = BuildPrefs.xib; sourceTree = "<group>"; };
+		B7E3F0A1C2D4E5F60718293A /* Info-macOS.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-macOS.plist"; sourceTree = "<group>"; };
 		B84AB777DFA0E13E6C30E432 /* helpSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = helpSuitcaseH.tiff; sourceTree = "<group>"; };
 		B85B86CA4FDB93EE2D7A3D1C /* ChangeLog */ = {isa = PBXFileReference; lastKnownFileType = text; path = ChangeLog; sourceTree = "<group>"; };
 		B8AFE505A158E4FA9EEF0332 /* PC.project */ = {isa = PBXFileReference; lastKnownFileType = text; path = PC.project; sourceTree = "<group>"; };
@@ -831,6 +833,7 @@
 		C16711EFDD410B1519AAA9CA /* ProjectCenter.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = ProjectCenter.tiff; sourceTree = "<group>"; };
 		C197017428CEC7A75B1CE585 /* README.contributions */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.contributions; sourceTree = "<group>"; };
 		C3552B3DC1D5FEC64D6A683C /* GNUmakefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile; sourceTree = "<group>"; };
+		C3A9E1F04B2D6E7F8091A2B3 /* ProjectCenter.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = ProjectCenter.icns; sourceTree = "<group>"; };
 		C3EE512248089BD4FF9BBE14 /* PCLibProject.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCLibProject.m; sourceTree = "<group>"; };
 		C419B7A32FB5A66E9EB641F3 /* LineJumper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LineJumper.m; sourceTree = "<group>"; };
 		C4550FB5921A3874D1540894 /* PCMakefileFactory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCMakefileFactory.h; sourceTree = "<group>"; };
@@ -1115,6 +1118,7 @@
 			isa = PBXGroup;
 			children = (
 				E0072987C437C7F194AE4F6F /* Info-gnustep.plist */,
+				B7E3F0A1C2D4E5F60718293A /* Info-macOS.plist */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -1404,6 +1408,7 @@
 				130413CAEC8C15EAEE143A17 /* Options.tiff */,
 				AB6A07BE9CB8222DBC2B4F8D /* otherSuitcase.tiff */,
 				BFC1C2168DBFB5A43EA12C96 /* otherSuitcaseH.tiff */,
+				C3A9E1F04B2D6E7F8091A2B3 /* ProjectCenter.icns */,
 				C16711EFDD410B1519AAA9CA /* ProjectCenter.tiff */,
 				29E65A04C45C88DC31A94066 /* ProjectCenter_add.tiff */,
 				5EBB360478F9BAFBB637DF8A /* ProjectCenter_cvs.tiff */,
@@ -2283,6 +2288,7 @@
 				88944DE212296D64AC65DC81 /* Preferences.xib in Resources */,
 				DF0315A212059721BF97C12C /* Info-gnustep.plist in Resources */,
 				35343E577B9825403E1C1C53 /* ProjectCenter.tiff in Resources */,
+				D4BAF2015C3E7F8091A2B3C4 /* ProjectCenter.icns in Resources */,
 				814D80CE8207D51A42BE9885 /* FileProject.tiff in Resources */,
 				966B82F6EEAB8959BF1D02AE /* Build.tiff in Resources */,
 				E8C01065159DE38C7C7886CE /* GSBuildTemplate.tiff in Resources */,
@@ -3194,12 +3200,14 @@
 		6DB397A83CB415E358CBC2C5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = ProjectCenter;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"DEVELOPMENT=1",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Resources/Info-macOS.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (C) 1999 - 2023 Free Software Foundation";
 				INFOPLIST_KEY_NSMainNibFile = ProjectCenter;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -3389,12 +3397,14 @@
 		CBD5F45B7954FBB472315C57 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = ProjectCenter;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"DEVELOPMENT=1",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Resources/Info-macOS.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (C) 1999 - 2023 Free Software Foundation";
 				INFOPLIST_KEY_NSMainNibFile = ProjectCenter;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
