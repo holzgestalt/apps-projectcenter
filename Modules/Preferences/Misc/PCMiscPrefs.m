@@ -104,7 +104,9 @@
   state = bVal ? NSOnState : NSOffState;
   [displayLog setState:state];
 
-  bVal = [prefs boolForKey:UseTearOffWindows defaultValue:YES];
+  /* Build and run output open in the project window unless the user chooses
+   * separate panels (PCProjectManager registers the same default). */
+  bVal = [prefs boolForKey:UseTearOffWindows defaultValue:NO];
   state = bVal ? NSOnState : NSOffState;
   [useTearOffWindows setState:state];
 
