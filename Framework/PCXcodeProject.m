@@ -330,4 +330,154 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
   [overview setObject:targets forKey:@"Targets"];
   return overview;
 }
+// --- Building with xcodebuild
+
+static NSData *RunTool(NSString *tool, NSArray *arguments)
+{
+  NSTask *task = [[NSTask alloc] init];
+  NSPipe *output = [NSPipe pipe];
+  NSData *data = nil;
+
+  [task setLaunchPath:tool];
+  [task setArguments:arguments];
+  [task setStandardOutput:output];
+  [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+  @try
+  {
+    [task launch];
+    data = [[output fileHandleForReading] readDataToEndOfFile];
+    [task waitUntilExit];
+    if ([task terminationStatus] != 0)
+    {
+      data = nil;
+    }
+  }
+  @catch (NSException *exception)
+  {
+    data = nil;
+  }
+  [task release];
+  return data;
+}
+
+static id JSONFromTool(NSString *tool, NSArray *arguments)
+{
+  NSData *data = RunTool(tool, arguments);
+
+  if (data == nil)
+  {
+    return nil;
+  }
+  return [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+}
+
++ (NSString *)xcodebuildPath
+{
+  NSString *path = @"/usr/bin/xcodebuild";
+
+  return [[NSFileManager defaultManager] isExecutableFileAtPath:path] ? path : nil;
+}
+
+/* -project and -scheme (or -target) for the application target. */
++ (NSArray *)_xcodebuildSelectionForProject:(NSDictionary *)projectDict
+{
+  static NSMutableDictionary *schemes = nil;
+  NSString *path = [projectDict objectForKey:PCXcodeProjectMarker];
+  NSString *target = [projectDict objectForKey:@"PROJECT_NAME"];
+  NSArray  *known;
+
+  if (path == nil || target == nil || [self xcodebuildPath] == nil)
+  {
+    return nil;
+  }
+  if (schemes == nil)
+  {
+    schemes = [NSMutableDictionary new];
+  }
+  known = [schemes objectForKey:path];
+  if (known == nil)
+  {
+    NSDictionary *list = JSONFromTool([self xcodebuildPath],
+                                      @[@"-list", @"-json", @"-project", path]);
+
+    known = [[list objectForKey:@"project"] objectForKey:@"schemes"];
+    if (![known isKindOfClass:[NSArray class]])
+    {
+      known = [NSArray array];
+    }
+    [schemes setObject:known forKey:path];
+  }
+  if ([known containsObject:target])
+  {
+    return @[@"-project", path, @"-scheme", target];
+  }
+  return @[@"-project", path, @"-target", target];
+}
+
++ (NSArray *)xcodebuildArgumentsForProject:(NSDictionary *)projectDict
+                                    action:(NSString *)action
+{
+  NSArray *selection = [self _xcodebuildSelectionForProject:projectDict];
+
+  if (selection == nil)
+  {
+    return nil;
+  }
+  /* -quiet leaves the warnings, errors and the result. Building for this
+   * Mac's architecture, as Xcode's "My Mac" destination does. */
+  return [selection arrayByAddingObjectsFromArray:
+          @[@"-configuration", @"Debug",
+#if defined(__arm64__) || defined(__aarch64__)
+            @"-destination", @"platform=macOS,arch=arm64",
+#else
+            @"-destination", @"platform=macOS,arch=x86_64",
+#endif
+            @"-quiet", action]];
+}
+
++ (NSString *)builtExecutableForProject:(NSDictionary *)projectDict
+{
+  static NSMutableDictionary *executables = nil;
+  NSString *path = [projectDict objectForKey:PCXcodeProjectMarker];
+  NSString *target = [projectDict objectForKey:@"PROJECT_NAME"];
+  NSArray  *selection;
+  NSString *executable;
+
+  if (path == nil)
+  {
+    return nil;
+  }
+  if (executables == nil)
+  {
+    executables = [NSMutableDictionary new];
+  }
+  executable = [executables objectForKey:path];
+  if (executable != nil)
+  {
+    return executable;
+  }
+  selection = [self _xcodebuildSelectionForProject:projectDict];
+  if (selection == nil)
+  {
+    return nil;
+  }
+  for (NSDictionary *entry in JSONFromTool([self xcodebuildPath],
+                                           [selection arrayByAddingObjectsFromArray:
+                                            @[@"-configuration", @"Debug",
+                                              @"-showBuildSettings", @"-json"]]))
+  {
+    NSDictionary *settings = [entry objectForKey:@"buildSettings"];
+    NSString     *directory = [settings objectForKey:@"TARGET_BUILD_DIR"];
+    NSString     *relative = [settings objectForKey:@"EXECUTABLE_PATH"];
+
+    if ([[entry objectForKey:@"target"] isEqual:target] && directory && relative)
+    {
+      executable = [directory stringByAppendingPathComponent:relative];
+      [executables setObject:executable forKey:path];
+      break;
+    }
+  }
+  return executable;
+}
+
 @end

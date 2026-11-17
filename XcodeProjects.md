@@ -104,6 +104,15 @@ Xcode's own breakpoint files are not read.
 The debugger needs gdb (Preferences → Build → Debugger, default `/usr/bin/gdb`)
 and a build with debug information.
 
+## Building and running on macOS
+
+ProjectCenter built with Xcode builds an Xcode project with `xcodebuild`
+(Debug configuration, the scheme named after the application target), so the
+products go to Xcode's DerivedData as when building in Xcode. A `BuildScript`
+in `GNUstep/ProjectCenter.plist` still takes precedence. Run starts the built
+application; it runs under the debugger only where gdb is available, which
+macOS doesn't ship.
+
 ## GNUstep build and debug integration
 
 Reading an Xcode project does not supply Apple's SDKs or translate its build

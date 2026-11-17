@@ -76,6 +76,7 @@ typedef enum _ErrorLevel {
   BOOL            _isCleaning;
   BOOL            _isLogging;
   BOOL            _isErrorLogging;
+  BOOL            _usesXcodebuild;
 
   // Component view
   BOOL            _isCVLoaded;

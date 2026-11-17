@@ -360,6 +360,19 @@ static PCFileManager *_mgr = nil;
       }
     }
   }
+
+  /* Cocoa's developer directories don't include the file system root, where
+   * the candidates (usr/bin/make) are. */
+  pathEnumerator = [candidates objectEnumerator];
+  while (nil != (directory = [pathEnumerator nextObject]))
+  {
+    NSString *path = [@"/" stringByAppendingPathComponent: directory];
+
+    if ([manager isExecutableFileAtPath: path])
+    {
+      return path;
+    }
+  }
   return nil;
 }
 

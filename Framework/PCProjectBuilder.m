@@ -36,6 +36,7 @@
 #import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCProjectBuilder.h>
 #import <ProjectCenter/PCProjectBuilderOptions.h>
+#import "PCXcodeProject.h"
 
 #import <ProjectCenter/PCProjectEditor.h>
 #import <Protocols/CodeEditor.h>
@@ -225,6 +226,24 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 - (PCProject *)project
 {
   return project;
+}
+
+/* On macOS an Xcode project without a GNUstep build script is built by
+ * xcodebuild, as Xcode would; elsewhere by its GNUmakefile or script. */
+- (NSArray *)_xcodebuildArgumentsForAction:(NSString *)action
+{
+#ifdef GNUSTEP
+  return nil;
+#else
+  NSDictionary *projectDict = [project projectDict];
+
+  if ([projectDict objectForKey:@"XCODE_BuildScript"] != nil)
+  {
+    return nil;
+  }
+  return [PCXcodeProject xcodebuildArgumentsForProject:projectDict
+                                                action:action];
+#endif
 }
 
 // --- Issues
@@ -643,6 +662,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   NSDictionary *metadata = [project projectDict];
   if ([metadata objectForKey:@"XCODE_PROJECT_PATH"] &&
       ![metadata objectForKey:@"XCODE_BuildScript"] &&
+      [self _xcodebuildArgumentsForAction:@"build"] == nil &&
       ![fm fileExistsAtPath:[[project projectPath] stringByAppendingPathComponent:@"GNUmakefile"]])
   {
     NSRunAlertPanel(@"GNUstep Build Required",
@@ -757,7 +777,14 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 
   makeTask = [[NSTask alloc] init];
   NSString *script = [[project projectDict] objectForKey:@"XCODE_BuildScript"];
-  if (script)
+  NSArray  *xcodebuildArgs = [self _xcodebuildArgumentsForAction:
+                              _isCleaning ? @"clean" : @"build"];
+  _usesXcodebuild = (xcodebuildArgs != nil);
+  if (_usesXcodebuild)
+  {
+    [makeTask setArguments:xcodebuildArgs];
+  }
+  else if (script)
   {
     NSMutableArray *arguments = [NSMutableArray arrayWithObject:script];
     [arguments addObjectsFromArray:buildArgs];
@@ -765,7 +792,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   }
   else [makeTask setArguments:buildArgs];
   [makeTask setCurrentDirectoryPath:[project projectPath]];
-  [makeTask setLaunchPath:buildTool];
+  [makeTask setLaunchPath:_usesXcodebuild ? [PCXcodeProject xcodebuildPath] : buildTool];
   [makeTask setStandardOutput:stdOutPipe];
   [makeTask setStandardError:stdErrorPipe];
 
@@ -1020,12 +1047,18 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
       // Send it to error view
       // Do not process make errors in other mode but building. Maybe
       // some day...
-      if (_isBuilding && isError)
+      /* xcodebuild prints the compiler's messages on standard output. */
+      if (_isBuilding && (isError || _usesXcodebuild))
       {
         [self logErrorString:lineString];
       }
-      // Cleaning or building standard out string
-      if (!isError || verboseBuilding)
+      /* The log shows the compiler's messages as they are; the issue
+       * navigator lists them by file. */
+      if (isError || _usesXcodebuild)
+      {
+        [self appendToLog:lineString];
+      }
+      else
       {
         [self logBuildString:lineString newLine:NO];
       }

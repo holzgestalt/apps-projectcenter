@@ -65,6 +65,8 @@
 - (NSString *)applicationPath;
 - (void)performRun;
 - (void)performDebug;
+/* Whether the configured debugger (Preferences → Build) can be run. */
+- (BOOL)canDebug;
 - (void)performStop;
 - (id<CodeDebugger>)debugger;
 

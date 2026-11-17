@@ -13,7 +13,9 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 2. **ProjectCenter on macOS.** Build and run ProjectCenter itself from `ProjectCenter.xcodeproj`
    against Cocoa, from the same sources as the GNUstep build.
    - Status: builds and runs. Preferences load from the module bundles, and `.xcodeproj` projects open
-     in the Xcode-style window with the navigator.
+     in the Xcode-style window with the navigator. On macOS, Build uses `xcodebuild` and Run starts
+     the product from DerivedData (`PCXcodeProject`); there is no debugger, as the debugger module
+     needs gdb.
    - Interfaces: each `.gorm` has a generated `.xib` next to it, which the Xcode targets compile.
      Embedded unnamed images and GNUstep theme images (`common_ret`) are not converted yet.
    - Not yet checked on macOS: the editor beyond opening files, the XIB editor and most panels.

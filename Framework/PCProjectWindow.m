@@ -338,8 +338,19 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 
 - (void)toolbarRun:(id)sender
 {
-  /* Like Xcode, Run starts the program under the debugger. */
-  [[project projectLauncher] performDebug];
+  PCProjectLauncher *launcher = [project projectLauncher];
+
+  /* Like Xcode, Run starts the program under the debugger. Without one
+   * (no gdb on macOS) it runs the program, with its output below. */
+  if ([launcher canDebug])
+  {
+    [launcher performDebug];
+  }
+  else
+  {
+    [self showProjectLaunch:self];
+    [launcher performRun];
+  }
 }
 
 - (void)toolbarStop:(id)sender

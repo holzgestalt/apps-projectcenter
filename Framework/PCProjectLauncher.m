@@ -30,6 +30,7 @@
 #import <ProjectCenter/PCProject.h>
 #import <ProjectCenter/PCProjectManager.h>
 #import <ProjectCenter/PCProjectLauncher.h>
+#import "PCXcodeProject.h"
 #import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCBundleManager.h>
 #import <ProjectCenter/PCButton.h>
@@ -226,6 +227,19 @@ enum {
 {
   NSString *configured = [[project projectDict] objectForKey:@"XCODE_Executable"];
   if (configured) return configured;
+#ifndef GNUSTEP
+  /* Built by xcodebuild (see PCProjectBuilder): where Xcode puts it. */
+  if ([[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]
+      && ![[project projectDict] objectForKey:@"XCODE_BuildScript"])
+  {
+    NSString *built = [PCXcodeProject builtExecutableForProject:[project projectDict]];
+
+    if (built)
+    {
+      return built;
+    }
+  }
+#endif
   NSMutableArray *candidates;
   NSString      *projectPath;
   NSString      *projectName;
@@ -317,6 +331,18 @@ enum {
   }
 }
 
+- (NSString *)_debuggerPath
+{
+  NSString *gdbPath = [[[project projectManager] prefController] stringForKey:Debugger];
+
+  return gdbPath ? gdbPath : @"/usr/bin/gdb";
+}
+
+- (BOOL)canDebug
+{
+  return [[NSFileManager defaultManager] isExecutableFileAtPath:[self _debuggerPath]];
+}
+
 - (id<CodeDebugger>)debugger
 {
   return debugger;
@@ -368,11 +394,7 @@ enum {
 
 
   // Debugger
-  gdbPath = [[[project projectManager] prefController] stringForKey:Debugger];
-  if (gdbPath == nil)
-  {
-    gdbPath = @"/usr/bin/gdb";
-  }
+  gdbPath = [self _debuggerPath];
 
   if ([fm isExecutableFileAtPath:gdbPath] == NO)
   {
