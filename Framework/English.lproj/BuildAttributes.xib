@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="25503" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="NO">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="25503"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="PCProjectInspector">
+            <connections>
+                <outlet property="ldOptField" destination="g126" id="x1"/>
+                <outlet property="cOptField" destination="g119" id="x2"/>
+                <outlet property="objcOptField" destination="g112" id="x3"/>
+                <outlet property="cppOptField" destination="g105" id="x4"/>
+                <outlet property="searchOrderAdd" destination="g59" id="x5"/>
+                <outlet property="searchOrderRemove" destination="g55" id="x6"/>
+                <outlet property="searchOrderSet" destination="g51" id="x7"/>
+                <outlet property="searchOrderPopup" destination="g34" id="x8"/>
+                <outlet property="projectNameLabel" destination="g18" id="x9"/>
+                <outlet property="buildAttributesView" destination="g14" id="x10"/>
+                <outlet property="searchOrderTF" destination="g48" id="x11"/>
+                <outlet property="searchOrderList" destination="g66" id="x12"/>
+                <outlet property="searchOrderColumn" destination="g70" id="x13"/>
+                <outlet property="installDomainPopup" destination="g133" id="x14"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="Panel" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" hidesOnDeactivate="YES" oneShot="NO" visibleAtLaunch="NO" animationBehavior="default" id="g10" userLabel="BuildAttributes" customClass="NSPanel">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" resizable="YES"/>
+            <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="1" y="9" width="389" height="406"/>
+            <rect key="screenRect" x="0" y="0" width="1600" height="860"/>
+            <value key="minSize" type="size" width="-1" height="0"/>
+            <value key="maxSize" type="size" width="9998" height="9968"/>
+            <view key="contentView" id="g12">
+                <rect key="frame" x="0.0" y="0.0" width="389" height="406"/>
+                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                <subviews>
+                    <box title="buildAttributes" titlePosition="noTitle" id="g14" userLabel="Box">
+                        <rect key="frame" x="0" y="0" width="315" height="384"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <view key="contentView" id="g16">
+                            <rect key="frame" x="2" y="2" width="311" height="380"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                            <subviews>
+                                <textField id="g18" userLabel="TextField">
+                                    <rect key="frame" x="5" y="352" width="290" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="center" title="Title" id="g20">
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <box title="Box" titlePosition="noTitle" id="g30" userLabel="Box1">
+                                    <rect key="frame" x="-2" y="152" width="315" height="195"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <view key="contentView" id="g32">
+                                        <rect key="frame" x="7" y="7" width="301" height="181"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <subviews>
+                                            <popUpButton id="g34" userLabel="GormNSPopUpButton">
+                                                <rect key="frame" x="0" y="160" width="290" height="21"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="g36">
+                                                    <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                    <menu key="menu" title="" id="g38">
+                                                        <items>
+                                                            <menuItem title="Header Directories Search Order" image="common_Nibble" id="g40" userLabel="MenuItem"/>
+                                                            <menuItem title="Library Directories Search Order" id="g44" userLabel="MenuItem1"/>
+                                                            <menuItem title="Build Targets" id="g46" userLabel="MenuItem2"/>
+                                                        </items>
+                                                    </menu>
+                                                </popUpButtonCell>
+                                                <connections>
+                                                    <action selector="searchOrderPopupDidChange:" target="-2" id="x15"/>
+                                                </connections>
+                                            </popUpButton>
+                                            <textField id="g48" userLabel="TextField1">
+                                                <rect key="frame" x="0" y="30" width="290" height="21"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g50">
+                                                    <font key="font" metaFont="system"/>
+                                                    <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                </textFieldCell>
+                                            </textField>
+                                            <button id="g51" userLabel="Button">
+                                                <rect key="frame" x="0" y="0" width="94" height="24"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <buttonCell key="cell" type="push" title="Set..." imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g53">
+                                                    <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                    <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                                </buttonCell>
+                                                <connections>
+                                                    <action selector="setSearchOrder:" target="-2" id="x16"/>
+                                                </connections>
+                                            </button>
+                                            <button id="g55" userLabel="Button1">
+                                                <rect key="frame" x="99" y="0" width="94" height="24"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <buttonCell key="cell" type="push" title="Remove" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g57">
+                                                    <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                    <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                                </buttonCell>
+                                                <connections>
+                                                    <action selector="removeSearchOrder:" target="-2" id="x17"/>
+                                                </connections>
+                                            </button>
+                                            <button id="g59" userLabel="Button2">
+                                                <rect key="frame" x="198" y="0" width="94" height="24"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <buttonCell key="cell" type="push" title="Add" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g61">
+                                                    <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                    <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                                </buttonCell>
+                                                <connections>
+                                                    <action selector="addSearchOrder:" target="-2" id="x18"/>
+                                                </connections>
+                                            </button>
+                                            <scrollView borderType="bezel" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" hasVerticalScroller="YES" usesPredominantAxisScrolling="NO" id="g63" userLabel="ScrollView">
+                                                <rect key="frame" x="0" y="56" width="291" height="99"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <clipView key="contentView" drawsBackground="YES" copiesOnScroll="YES" id="g65" userLabel="ClipView(0)">
+                                                    <rect key="frame" x="21" y="24" width="268" height="73"/>
+                                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                    <subviews>
+                                                        <tableView verticalHuggingPriority="750" columnAutoresizingStyle="none" multipleSelection="NO" emptySelection="YES" columnSelection="NO" columnResizing="NO" columnReordering="NO" autosaveColumns="NO" rowHeight="16" id="g66" userLabel="GormNSTableView" headerView="g86">
+                                                            <rect key="frame" x="0" y="0" width="269" height="161"/>
+                                                            <autoresizingMask key="autoresizingMask"/>
+                                                            <size key="intercellSpacing" width="2" height="3"/>
+                                                            <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                            <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
+                                                            <tableColumns>
+                                                                <tableColumn identifier="SO List" width="269" minWidth="20" maxWidth="100000" id="g70" userLabel="TableColumn3">
+                                                                    <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="center" title=" ">
+                                                                        <font key="font" metaFont="titleBar"/>
+                                                                        <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
+                                                                        <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
+                                                                    </tableHeaderCell>
+                                                                    <textFieldCell key="dataCell" lineBreakMode="wordWrapping" alignment="left" title="four" id="g80">
+                                                                        <font key="font" metaFont="system"/>
+                                                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                    </textFieldCell>
+                                                                    <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
+                                                                </tableColumn>
+                                                            </tableColumns>
+                                                            <connections>
+                                                                <outlet property="delegate" destination="-2" id="x30"/>
+                                                                <outlet property="dataSource" destination="-2" id="x31"/>
+                                                            </connections>
+                                                        </tableView>
+                                                    </subviews>
+                                                    <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                </clipView>
+                                                <scroller key="verticalScroller" horizontal="NO" id="g96" userLabel="Scroller(0)">
+                                                    <rect key="frame" x="2" y="24" width="18" height="73"/>
+                                                    <autoresizingMask key="autoresizingMask" heightSizable="YES"/>
+                                                    <connections>
+                                                        <action selector="_doScroll:" target="g63" id="x32"/>
+                                                    </connections>
+                                                </scroller>
+                                                <tableHeaderView key="headerView" id="g86" userLabel="TableHeaderView(0)">
+                                                    <rect key="frame" x="0" y="0" width="269" height="22"/>
+                                                    <autoresizingMask key="autoresizingMask"/>
+                                                </tableHeaderView>
+                                            </scrollView>
+                                        </subviews>
+                                    </view>
+                                </box>
+                                <textField id="g101" userLabel="TextField2">
+                                    <rect key="frame" x="1" y="112" width="124" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Preprocessor Flags:" id="g103">
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <textField id="g105" userLabel="TextField3">
+                                    <rect key="frame" x="129" y="114" width="166" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g107">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                    <connections>
+                                        <action selector="changeCommonProjectEntry:" target="-2" id="x19"/>
+                                        <outlet property="delegate" destination="-2" id="x20"/>
+                                        <outlet property="nextKeyView" destination="g112" id="x21"/>
+                                    </connections>
+                                </textField>
+                                <textField id="g108" userLabel="TextField4">
+                                    <rect key="frame" x="1" y="87" width="124" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="ObjC Compiler Flags:" id="g110">
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <textField id="g112" userLabel="TextField5">
+                                    <rect key="frame" x="129" y="88" width="166" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g114">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                    <connections>
+                                        <action selector="changeCommonProjectEntry:" target="-2" id="x22"/>
+                                        <outlet property="delegate" destination="-2" id="x23"/>
+                                        <outlet property="nextKeyView" destination="g119" id="x24"/>
+                                    </connections>
+                                </textField>
+                                <textField id="g115" userLabel="TextField6">
+                                    <rect key="frame" x="1" y="62" width="124" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="C Compiler Flags:" id="g117">
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <textField id="g119" userLabel="TextField7">
+                                    <rect key="frame" x="129" y="64" width="166" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g121">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                    <connections>
+                                        <action selector="changeCommonProjectEntry:" target="-2" id="x25"/>
+                                        <outlet property="delegate" destination="-2" id="x26"/>
+                                        <outlet property="nextKeyView" destination="g126" id="x27"/>
+                                    </connections>
+                                </textField>
+                                <textField id="g122" userLabel="TextField8">
+                                    <rect key="frame" x="1" y="38" width="124" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Linker Flags:" id="g124">
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <textField id="g126" userLabel="TextField9">
+                                    <rect key="frame" x="129" y="40" width="166" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g128">
+                                        <font key="font" metaFont="system"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                    <connections>
+                                        <action selector="changeCommonProjectEntry:" target="-2" id="x28"/>
+                                        <outlet property="delegate" destination="-2" id="x29"/>
+                                    </connections>
+                                </textField>
+                                <textField id="g129" userLabel="TextField10">
+                                    <rect key="frame" x="1" y="13" width="124" height="21"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Install Domain:" id="g131">
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                    </textFieldCell>
+                                </textField>
+                                <popUpButton id="g133" userLabel="PopUpButton(0)">
+                                    <rect key="frame" x="129" y="13" width="166" height="22"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="g135" selectedItem="g138">
+                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                        <font key="font" metaFont="system"/>
+                                        <menu key="menu" title="" id="g136">
+                                            <items>
+                                                <menuItem title="" image="common_Nibble" id="g138"/>
+                                                <menuItem title="Local" id="g139"/>
+                                                <menuItem title="System" id="g141"/>
+                                                <menuItem title="Network" id="g143"/>
+                                                <menuItem title="User" id="g145"/>
+                                            </items>
+                                        </menu>
+                                    </popUpButtonCell>
+                                    <connections>
+                                        <action selector="changeCommonProjectEntry:" target="-2" id="x33"/>
+                                    </connections>
+                                </popUpButton>
+                            </subviews>
+                        </view>
+                    </box>
+                </subviews>
+            </view>
+        </window>
+    </objects>
+    <resources>
+        <image name="common_Nibble" width="32" height="32"/>
+    </resources>
+</document>

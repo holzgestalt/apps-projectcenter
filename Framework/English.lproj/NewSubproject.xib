@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="25503" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="NO">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="25503"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="PCProjectManager">
+            <connections>
+                <outlet property="nsPanel" destination="g3" id="x1"/>
+                <outlet property="nsImage" destination="g7" id="x2"/>
+                <outlet property="nsTitle" destination="g24" id="x3"/>
+                <outlet property="nsNameField" destination="g35" id="x4"/>
+                <outlet property="nsTypePB" destination="g64" id="x5"/>
+                <outlet property="nsCancelButton" destination="g86" id="x6"/>
+                <outlet property="nsCreateButton" destination="g76" id="x7"/>
+                <outlet property="projectNameField" destination="g113" id="x8"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" oneShot="NO" visibleAtLaunch="NO" animationBehavior="default" id="g3" userLabel="NewSubproject" customClass="NSPanel">
+            <windowStyleMask key="styleMask" titled="YES"/>
+            <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="1" y="9" width="324" height="199"/>
+            <rect key="screenRect" x="0" y="0" width="1280" height="1024"/>
+            <value key="minSize" type="size" width="1" height="32"/>
+            <value key="maxSize" type="size" width="10000" height="10000"/>
+            <view key="contentView" id="g5">
+                <rect key="frame" x="0.0" y="0.0" width="324" height="199"/>
+                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                <subviews>
+                    <imageView id="g7" userLabel="ImageView">
+                        <rect key="frame" x="8" y="140" width="48" height="48"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="none" id="g9"/>
+                    </imageView>
+                    <box title="Box" titlePosition="noTitle" id="g11" userLabel="Box">
+                        <rect key="frame" x="0" y="130" width="324" height="2"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <view key="contentView" id="g13">
+                            <rect key="frame" x="7" y="7" width="310" height="0"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                        </view>
+                    </box>
+                    <textField id="g24" userLabel="TextField">
+                        <rect key="frame" x="66" y="153" width="248" height="35"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="left" title="New Subproject" id="g26">
+                            <font key="font" metaFont="systemBold" size="16"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField id="g35" userLabel="TextField1">
+                        <rect key="frame" x="66" y="65" width="248" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g37">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                        <connections>
+                            <outlet property="delegate" destination="-2" id="x11"/>
+                        </connections>
+                    </textField>
+                    <textField id="g44" userLabel="TextField2">
+                        <rect key="frame" x="5" y="65" width="56" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Name:" id="g46">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField id="g55" userLabel="TextField3">
+                        <rect key="frame" x="13" y="91" width="48" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Type:" id="g57">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <popUpButton id="g64" userLabel="GormNSPopUpButton">
+                        <rect key="frame" x="66" y="91" width="248" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="g66">
+                            <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                            <menu key="menu" title="" id="g68">
+                                <items>
+                                    <menuItem title="Item 3" id="g71"/>
+                                </items>
+                            </menu>
+                        </popUpButtonCell>
+                    </popUpButton>
+                    <button id="g76" userLabel="Button" enabled="NO">
+                        <rect key="frame" x="241" y="9" width="73" height="24"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <buttonCell key="cell" type="push" title="Create" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g78">
+                            <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                            <string key="keyEquivalent"></string>
+                        </buttonCell>
+                        <connections>
+                            <action selector="createSubproject:" target="-2" id="x10"/>
+                        </connections>
+                    </button>
+                    <button id="g86" userLabel="Button1">
+                        <rect key="frame" x="163" y="9" width="73" height="24"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <buttonCell key="cell" type="push" title="Cancel" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g88">
+                            <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                            <string key="keyEquivalent" base64-UTF8="YES">Gw</string>
+                        </buttonCell>
+                        <connections>
+                            <action selector="closeNewSubprojectPanel:" target="-2" id="x9"/>
+                        </connections>
+                    </button>
+                    <box title="Box" titlePosition="noTitle" id="g92" userLabel="Box1">
+                        <rect key="frame" x="0" y="44" width="324" height="2"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <view key="contentView" id="g94" userLabel="View">
+                            <rect key="frame" x="7" y="7" width="310" height="0"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                        </view>
+                    </box>
+                    <textField id="g104" userLabel="TextField4">
+                        <rect key="frame" x="66" y="137" width="53" height="16"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="left" title="In project:" id="g106">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField id="g113" userLabel="TextField5">
+                        <rect key="frame" x="124" y="137" width="190" height="16"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="left" title="Project name" id="g115">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                </subviews>
+            </view>
+        </window>
+    </objects>
+</document>

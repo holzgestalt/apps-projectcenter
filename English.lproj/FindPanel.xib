@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="25503" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="NO">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="25503"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="TextFinder">
+            <connections>
+                <outlet property="findNextButton" destination="g19" id="x20"/>
+                <outlet property="findTextField" destination="g7" id="x21"/>
+                <outlet property="replaceTextField" destination="g8" id="x22"/>
+                <outlet property="ignoreCaseButton" destination="g128" id="x23"/>
+                <outlet property="replaceAllScopeMatrix" destination="g91" id="x24"/>
+                <outlet property="statusField" destination="g79" id="x25"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="Find" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" hidesOnDeactivate="YES" oneShot="NO" visibleAtLaunch="YES" animationBehavior="default" id="g3" userLabel="FindPanel" customClass="NSPanel">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES"/>
+            <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="1" y="9" width="394" height="166"/>
+            <rect key="screenRect" x="0" y="0" width="1280" height="1024"/>
+            <value key="minSize" type="size" width="1" height="1"/>
+            <value key="maxSize" type="size" width="10000" height="10000"/>
+            <view key="contentView" id="g5">
+                <rect key="frame" x="0.0" y="0.0" width="394" height="166"/>
+                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                <subviews>
+                    <textField id="g7" userLabel="TextField">
+                        <rect key="frame" x="106" y="135" width="278" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g54">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                        <connections>
+                            <outlet property="nextKeyView" destination="g8" id="x3"/>
+                            <action selector="findNextAndOrderFindPanelOut:" target="-2" id="x4"/>
+                        </connections>
+                    </textField>
+                    <textField id="g8" userLabel="TextField1">
+                        <rect key="frame" x="106" y="109" width="278" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" alignment="left" title="" drawsBackground="YES" id="g10">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                        <connections>
+                            <outlet property="nextKeyView" destination="g91" id="x5"/>
+                            <action selector="findNextAndOrderFindPanelOut:" target="-2" id="x6"/>
+                        </connections>
+                    </textField>
+                    <textField id="g61" userLabel="TextField2">
+                        <rect key="frame" x="10" y="135" width="88" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Find:" id="g63">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField id="g70" userLabel="TextField3">
+                        <rect key="frame" x="10" y="109" width="88" height="21"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Replace with:" id="g72">
+                            <font key="font" metaFont="system" size="12"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <button id="g23" userLabel="Button">
+                        <rect key="frame" x="10" y="9" width="78" height="24"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <buttonCell key="cell" type="push" title="Replace All" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g25">
+                            <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system" size="12"/>
+                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                        </buttonCell>
+                        <connections>
+                            <outlet property="nextKeyView" destination="g22" id="x10"/>
+                            <action selector="replaceAll:" target="-2" id="x11"/>
+                        </connections>
+                    </button>
+                    <button id="g20" userLabel="Button1">
+                        <rect key="frame" x="255" y="9" width="63" height="24"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <buttonCell key="cell" type="push" title="Previous" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g40">
+                            <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system" size="12"/>
+                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                        </buttonCell>
+                        <connections>
+                            <outlet property="nextKeyView" destination="g19" id="x16"/>
+                            <action selector="findPrevious:" target="-2" id="x17"/>
+                        </connections>
+                    </button>
+                    <button id="g21" userLabel="Button2">
+                        <rect key="frame" x="154" y="9" width="96" height="24"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <buttonCell key="cell" type="push" title="Replace &amp; Find" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g35">
+                            <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system" size="12"/>
+                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                        </buttonCell>
+                        <connections>
+                            <outlet property="nextKeyView" destination="g20" id="x14"/>
+                            <action selector="replaceAndFind:" target="-2" id="x15"/>
+                        </connections>
+                    </button>
+                    <button id="g22" userLabel="Button3">
+                        <rect key="frame" x="93" y="9" width="56" height="24"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <buttonCell key="cell" type="push" title="Replace" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g30">
+                            <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system" size="12"/>
+                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                        </buttonCell>
+                        <connections>
+                            <outlet property="nextKeyView" destination="g21" id="x12"/>
+                            <action selector="replace:" target="-2" id="x13"/>
+                        </connections>
+                    </button>
+                    <button id="g19" userLabel="Button4">
+                        <rect key="frame" x="323" y="9" width="61" height="24"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <buttonCell key="cell" type="push" title="Next" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g45">
+                            <behavior key="behavior" lightByBackground="YES"/>
+                            <font key="font" metaFont="system" size="12"/>
+                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                        </buttonCell>
+                        <connections>
+                            <outlet property="nextKeyView" destination="g7" id="x18"/>
+                            <action selector="findNext:" target="-2" id="x19"/>
+                        </connections>
+                    </button>
+                    <textField id="g79" userLabel="TextField4">
+                        <rect key="frame" x="10" y="41" width="88" height="55"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="center" title="" id="g81">
+                            <font key="font" metaFont="systemBold" size="12"/>
+                            <color key="textColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                            <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        </textFieldCell>
+                    </textField>
+                    <box title="Replace All Scope" titlePosition="atTop" id="g87" userLabel="Box">
+                        <rect key="frame" x="106" y="41" width="144" height="63"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <view key="contentView" id="g89" userLabel="View">
+                            <rect key="frame" x="7" y="7" width="130" height="38"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                            <subviews>
+                                <matrix allowsEmptySelection="NO" autosizesCells="YES" id="g91" userLabel="Matrix">
+                                    <rect key="frame" x="20" y="2" width="79" height="36"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <size key="cellSize" width="79" height="18"/>
+                                    <size key="intercellSpacing" width="0" height="0"/>
+                                    <buttonCell key="prototype" type="radio" title="Radio" imagePosition="left" alignment="left" inset="2" id="g101">
+                                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                    </buttonCell>
+                                    <cells>
+                                        <column>
+                                            <buttonCell type="radio" title="Entire File" imagePosition="left" alignment="left" state="on" tag="42" inset="2" id="g110">
+                                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                <font key="font" metaFont="system" size="12"/>
+                                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                            </buttonCell>
+                                            <buttonCell type="radio" title="Selection" imagePosition="left" alignment="left" tag="43" inset="2" id="g112">
+                                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                <font key="font" metaFont="system" size="12"/>
+                                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                            </buttonCell>
+                                        </column>
+                                    </cells>
+                                    <connections>
+                                        <outlet property="nextKeyView" destination="g128" id="x7"/>
+                                    </connections>
+                                </matrix>
+                            </subviews>
+                        </view>
+                        <font key="titleFont" metaFont="systemBold" size="12"/>
+                    </box>
+                    <box title="Find Options" titlePosition="atTop" id="g124" userLabel="Box1">
+                        <rect key="frame" x="255" y="41" width="129" height="63"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <view key="contentView" id="g126" userLabel="View1">
+                            <rect key="frame" x="7" y="7" width="115" height="38"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                            <subviews>
+                                <button id="g128" userLabel="Button5">
+                                    <rect key="frame" x="18" y="12" width="86" height="16"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <buttonCell key="cell" type="check" title="Ignore Case" imagePosition="left" alignment="left" inset="2" id="g130">
+                                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                        <font key="font" metaFont="system" size="12"/>
+                                        <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                    </buttonCell>
+                                    <connections>
+                                        <outlet property="nextKeyView" destination="g23" id="x8"/>
+                                        <action selector="ignoreCase:" target="-1" id="x9"/>
+                                    </connections>
+                                </button>
+                            </subviews>
+                        </view>
+                        <font key="titleFont" metaFont="systemBold" size="12"/>
+                    </box>
+                </subviews>
+            </view>
+            <connections>
+                <outlet property="initialFirstResponder" destination="g7" id="x1"/>
+                <outlet property="delegate" destination="-2" id="x2"/>
+            </connections>
+        </window>
+    </objects>
+</document>

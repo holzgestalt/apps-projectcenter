@@ -1,9 +1,57 @@
 #import <Foundation/Foundation.h>
 #import "PCXcodeProject.h"
+#import "PCGormArchive.h"
+#import "PCGormXIBWriter.h"
 
 static void Check(BOOL condition, NSString *message)
 {
   if (!condition) { NSLog(@"FAIL: %@", message); exit(1); }
+}
+
+/* Every .gorm of ProjectCenter: read and written back unchanged, edited and
+ * read again, and shown as a well-formed XIB. */
+static void TestGormArchives(void)
+{
+  NSString              *repository = [[[NSString stringWithUTF8String:__FILE__]
+                                        stringByDeletingLastPathComponent]
+                                       stringByDeletingLastPathComponent];
+  NSDirectoryEnumerator *files = [[NSFileManager defaultManager] enumeratorAtPath:repository];
+  NSString              *file;
+  NSUInteger            count = 0;
+
+  while ((file = [files nextObject]))
+  {
+    NSString      *path, *error = nil;
+    NSData        *data;
+    PCGormArchive *archive;
+    NSXMLDocument *xib;
+
+    if (![file hasSuffix:@".gorm/objects.gorm"] || [file hasPrefix:@"build"])
+    {
+      continue;
+    }
+    path = [repository stringByAppendingPathComponent:file];
+    data = [NSData dataWithContentsOfFile:path];
+    archive = [PCGormArchive archiveWithData:data error:&error];
+    Check(archive != nil, [NSString stringWithFormat:@"%@ reads: %@", file, error]);
+    Check([[archive data] isEqualToData:data], [NSString stringWithFormat:@"%@ is written back unchanged", file]);
+    xib = [PCGormXIBWriter documentForArchive:archive toolsVersion:nil warnings:NULL];
+    Check([[NSXMLDocument alloc] initWithData:[xib XMLData] options:0 error:NULL] != nil,
+          [NSString stringWithFormat:@"%@ gives well-formed XIB", file]);
+    for (PCGormObject *object in [archive allObjects])
+    {
+      if ([object isKindOfClassNamed:@"NSWindow"] || [object isKindOfClassNamed:@"NSPanel"])
+      {
+        NSString *query = [NSString stringWithFormat:@"//window[@id='%@']",
+                           [PCGormXIBWriter identifierForObject:object]];
+        Check([[xib nodesForXPath:query error:NULL] count] == 1,
+              [NSString stringWithFormat:@"%@: window %@ in the XIB", file, object]);
+      }
+    }
+    count++;
+  }
+  Check(count >= 30, @"the .gorm files of ProjectCenter are found");
+
 }
 
 static void Write(NSString *root, NSString *path, NSString *contents)
@@ -105,6 +153,7 @@ int main(int argc, char **argv)
       Check([[dict objectForKey:@"CLASS_FILES"] containsObject:@"EditGlyphData/GSWindowController.m"], @"EditGlyphData main controller");
       NSLog(@"EditGlyphData: %lu source files, %lu headers, %lu interfaces", (unsigned long)[[dict objectForKey:@"CLASS_FILES"] count], (unsigned long)[[dict objectForKey:@"HEADER_FILES"] count], (unsigned long)[[dict objectForKey:@"INTERFACES"] count]);
     }
+    TestGormArchives();
     NSLog(@"Xcode project adapter tests passed");
   }
   return 0;

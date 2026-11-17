@@ -7,11 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8EE5031E4B998201E781FAB4 /* PCGormXIBWriter.h in Headers */ = {isa = PBXBuildFile; fileRef = 74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */; };
+		1779DF2815ADA3D81CAF6DC3 /* PCGormXIBWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */; };
+		8C17A1EB96BA01FFC87D012D /* PCGormArchive.h in Headers */ = {isa = PBXBuildFile; fileRef = E460E463D3313E158723ECC5 /* PCGormArchive.h */; };
+		535AA5A0F417FB5BD4EC1335 /* PCGormArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = 9056592F7A76D3A5A08DD7BA /* PCGormArchive.m */; };
 		000F96A8C037058E22BE299F /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		03C73EEBF71096354FCC151E /* Files.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 3589A981A08B17A2CA87DC93 /* Files.tiff */; };
 		045729CFFDBB054DCB115506 /* PCProjectBuilderPanel.m in Sources */ = {isa = PBXBuildFile; fileRef = BBE1F1A5862DB7262043EB30 /* PCProjectBuilderPanel.m */; };
 		04A921DD4A98221FDBAB7528 /* next_button.png in Resources */ = {isa = PBXBuildFile; fileRef = 910B892B0BC51F6219C16342 /* next_button.png */; };
-		0574C38F417958E00CC06E8D /* ProjectCenter.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = F1A000F73F1D9A18A2465E5C /* ProjectCenter.gorm */; };
+		0574C38F417958E00CC06E8D /* ProjectCenter.xib in Resources */ = {isa = PBXBuildFile; fileRef = F1A000F73F1D9A18A2465E5C /* ProjectCenter.xib */; };
 		05C424B678A232A264066153 /* PC.project in Resources */ = {isa = PBXBuildFile; fileRef = C8A4CECE3B3EDCAD3ADDF6DD /* PC.project */; };
 		060C81676E30859C93EF0355 /* PCXcodeProject.h in Headers */ = {isa = PBXBuildFile; fileRef = 4FE12E514F550AC7632F3723 /* PCXcodeProject.h */; };
 		06A6A7D11E090817D7EA26EA /* GSBottomPaneTemplate.tiff in Resources */ = {isa = PBXBuildFile; fileRef = E00E19CBC56134D6A8DD0A0C /* GSBottomPaneTemplate.tiff */; };
@@ -31,9 +35,9 @@
 		13FFC0D547CF8F5CF3E17424 /* PCMakefileFactory.m in Sources */ = {isa = PBXBuildFile; fileRef = 698BE82A91B1F36C6481F814 /* PCMakefileFactory.m */; };
 		1445D9724DDA45866E18BBB3 /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		1564762208B2FF03C23D1F07 /* PCProjectBuilderOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 2B9E447928555DB53DCF9729 /* PCProjectBuilderOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		15B3CB2F969D80BC2150311C /* LineJumper.gorm in Resources */ = {isa = PBXBuildFile; fileRef = 1AB9E1A6694082165AA1A5E7 /* LineJumper.gorm */; };
+		15B3CB2F969D80BC2150311C /* LineJumper.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1AB9E1A6694082165AA1A5E7 /* LineJumper.xib */; };
 		16A2994DB4B8F2A0C647D149 /* ProjectCenter_documentation.tiff in Resources */ = {isa = PBXBuildFile; fileRef = FA5D941948C2F9D4BAFAAF6A /* ProjectCenter_documentation.tiff */; };
-		17FE2DE94C8AE452B174A035 /* ProjectDescription.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.gorm */; };
+		17FE2DE94C8AE452B174A035 /* ProjectDescription.xib in Resources */ = {isa = PBXBuildFile; fileRef = 332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.xib */; };
 		189D53D908A041F9C6C78E4D /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
 		190700BC8D6BF81224B8471D /* PCProjectBrowser.h in Headers */ = {isa = PBXBuildFile; fileRef = C79A4E342452F90F61A4E100 /* PCProjectBrowser.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		192905F673DFA4484F41B870 /* PCDebugger.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D29DC04E3910503DBCBABA7 /* PCDebugger.m */; };
@@ -56,21 +60,21 @@
 		2BAD3D9B18ECF28E61E92BC0 /* PCAddFilesPanel.m in Sources */ = {isa = PBXBuildFile; fileRef = 1BED37E1F31DDDFB65A1337A /* PCAddFilesPanel.m */; };
 		2C19D0E053ADAE97BD38DADA /* PCEditorFSCPrefs.m in Sources */ = {isa = PBXBuildFile; fileRef = 57E4CBFE837A99D183EC6939 /* PCEditorFSCPrefs.m */; };
 		2CC594BA6AEB3877A1DECF6A /* PCBundleManager.h in Headers */ = {isa = PBXBuildFile; fileRef = F9CDC21B778A8EA168018A5D /* PCBundleManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		2D4D240C9551D2BD0CAD45EC /* Info.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 44BB41459048B9C6F48FC8F6 /* Info.gorm */; };
-		2D7EE2073FB1AC160D6EB53E /* BuilderPanel.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 4E74A335671AC7C202789537 /* BuilderPanel.gorm */; };
+		2D4D240C9551D2BD0CAD45EC /* Info.xib in Resources */ = {isa = PBXBuildFile; fileRef = 44BB41459048B9C6F48FC8F6 /* Info.xib */; };
+		2D7EE2073FB1AC160D6EB53E /* BuilderPanel.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4E74A335671AC7C202789537 /* BuilderPanel.xib */; };
 		2F28C3924A417AE06D6C93EF /* Main.gsmarkup in Resources */ = {isa = PBXBuildFile; fileRef = 1789F8372976C5D29FFFCD31 /* Main.gsmarkup */; };
 		2FF1505A648317FA8274B2C6 /* PCInterfaceEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = FD843F4074223E8030FEA80A /* PCInterfaceEditor.m */; };
 		300FC0EBA649ED0ED58E6494 /* Info.gnustep in Resources */ = {isa = PBXBuildFile; fileRef = B3A984886A544CCA6E604EB4 /* Info.gnustep */; };
 		303300595368ADAB24E0CD5E /* PCPrefController.m in Sources */ = {isa = PBXBuildFile; fileRef = C64CA23F3863422298734D48 /* PCPrefController.m */; };
 		3143A30953ECD68B268271EF /* PCNavigators.h in Headers */ = {isa = PBXBuildFile; fileRef = EC9EF7FBBF96700F5C9DF120 /* PCNavigators.h */; };
-		32B86604A08E6257CDECC0D3 /* ProjectWindow.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 6B32D882C2814787D6A17F0C /* ProjectWindow.gorm */; };
+		32B86604A08E6257CDECC0D3 /* ProjectWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 6B32D882C2814787D6A17F0C /* ProjectWindow.xib */; };
 		33BE97AFDAAA45D177A96233 /* CodeDebugger.h in Copy Protocol Headers */ = {isa = PBXBuildFile; fileRef = 6C97983D6C876183B22F08FA /* CodeDebugger.h */; };
 		33CB59CAE87783B131EF6E84 /* PCEditorManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 0B19D75AC2A77232CB00B879 /* PCEditorManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		34EEAA5E3EE2E80BBFA23A4D /* PCFileCreator.m in Sources */ = {isa = PBXBuildFile; fileRef = 39165C1419EE520BD59920C2 /* PCFileCreator.m */; };
 		35343E577B9825403E1C1C53 /* ProjectCenter.tiff in Resources */ = {isa = PBXBuildFile; fileRef = C16711EFDD410B1519AAA9CA /* ProjectCenter.tiff */; };
 		3619A36B302499C3BC7A5E55 /* ProjectCenter.parser in Embed Modules */ = {isa = PBXBuildFile; fileRef = 06205772381274EB6AC31687 /* ProjectCenter.parser */; };
 		38BB78992DD837A39FB5D656 /* PCMakefileFactory.h in Headers */ = {isa = PBXBuildFile; fileRef = C4550FB5921A3874D1540894 /* PCMakefileFactory.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		39E74F74F930DF0959D25E32 /* BuilderOptions.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.gorm */; };
+		39E74F74F930DF0959D25E32 /* BuilderOptions.xib in Resources */ = {isa = PBXBuildFile; fileRef = F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.xib */; };
 		39F6CF66D6F259623A126E63 /* ResourceSet.project in Embed Modules */ = {isa = PBXBuildFile; fileRef = FF3B193D46B8B527CC9FDB48 /* ResourceSet.project */; };
 		3B434393ABE90D577877DC1A /* PC.project in Resources */ = {isa = PBXBuildFile; fileRef = 5B55C5AA2F38301D929F7CAE /* PC.project */; };
 		3BF0455AC3D3BA6ACA8405CF /* go_button.png in Resources */ = {isa = PBXBuildFile; fileRef = BD1241E80BD456BAAA784D13 /* go_button.png */; };
@@ -81,7 +85,7 @@
 		4303B772E84E512915064745 /* PCAppProject.m in Sources */ = {isa = PBXBuildFile; fileRef = 324C3C2A9A2C133AF78CDDD2 /* PCAppProject.m */; };
 		494DE6D1A33829E52ED7492A /* ProjectCenter_rpm.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 06BD66614526FE67B7A0D00D /* ProjectCenter_rpm.tiff */; };
 		4AD82EB9072ABF4C806C4513 /* FileHH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = F300721D7457378F8D5D5369 /* FileHH.tiff */; };
-		4B5803A58254BCDD18DB5F16 /* Inspector.gorm in Resources */ = {isa = PBXBuildFile; fileRef = FA47A0C15869B31B4E493DF1 /* Inspector.gorm */; };
+		4B5803A58254BCDD18DB5F16 /* Inspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = FA47A0C15869B31B4E493DF1 /* Inspector.xib */; };
 		4C4794FE1FB59177BF896C6B /* soundSuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 3EE7F1A6DB0D0E48DD358B29 /* soundSuitcaseH.tiff */; };
 		4CD2C42FC148BBCCD6A95C5F /* PCProjectLauncher.m in Sources */ = {isa = PBXBuildFile; fileRef = 5087EFE8D9C0033A4076FBE3 /* PCProjectLauncher.m */; };
 		4DD6C2469836C04E82CE5884 /* PCProjectBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D81709F20B6E60D39EC56C5 /* PCProjectBuilder.m */; };
@@ -92,7 +96,7 @@
 		56D673BF9ED679357366154C /* PCNavigators.m in Sources */ = {isa = PBXBuildFile; fileRef = 7B407C85EC230B20A6ED715A /* PCNavigators.m */; };
 		57739F42DC708C169DAF4EFE /* AppController.h in Resources */ = {isa = PBXBuildFile; fileRef = 6E9EDECE4AE8C0245B195B37 /* AppController.h */; };
 		58F674A08AEA78C4204FF949 /* PCBuildPrefs.m in Sources */ = {isa = PBXBuildFile; fileRef = 67AB9734265B637EE1BC8F44 /* PCBuildPrefs.m */; };
-		59651ED715F6211B68AB9DCC /* NewFile.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 571B107A319F23C70D39303C /* NewFile.gorm */; };
+		59651ED715F6211B68AB9DCC /* NewFile.xib in Resources */ = {isa = PBXBuildFile; fileRef = 571B107A319F23C70D39303C /* NewFile.xib */; };
 		5B1DCDC80E13663BFD154153 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
 		5B5B07012322088764754B91 /* ProjectCenter.editor in Embed Modules */ = {isa = PBXBuildFile; fileRef = 6AB9C0C074F4729E136EDD4F /* ProjectCenter.editor */; };
 		5B9AE331FC2948FE28A8495B /* PCFileNameField.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D59C3402BB5BAC046BA3BA /* PCFileNameField.m */; };
@@ -106,7 +110,7 @@
 		618A543CF92C086DF6368B27 /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = BA016514E209C7B0743E96E5 /* Info.table */; };
 		618F2DC178B62268E6998C60 /* Options.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 130413CAEC8C15EAEE143A17 /* Options.tiff */; };
 		6232B69973AE542170FEDCAF /* PC.project in Resources */ = {isa = PBXBuildFile; fileRef = A3199283F6580B49AE8747AD /* PC.project */; };
-		6258A31EF44F12A5C598703F /* Inspector.gorm in Resources */ = {isa = PBXBuildFile; fileRef = E15DC21307B8911407E4DD01 /* Inspector.gorm */; };
+		6258A31EF44F12A5C598703F /* Inspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = E15DC21307B8911407E4DD01 /* Inspector.xib */; };
 		62A5CA91130C5BF5C443A158 /* iconSuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = E43306189DAAB8F54A0B2C9A /* iconSuitcaseH.tiff */; };
 		639F809F92BFF757FC2343AF /* PCProjectInspector.h in Headers */ = {isa = PBXBuildFile; fileRef = F6205A35633BBA04EBA9415A /* PCProjectInspector.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		63C1687262A849BE8A81F28D /* PCProjectWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = A97A8CCAF6380E31B57EF8C4 /* PCProjectWindow.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -119,13 +123,13 @@
 		672C57E2C6A09C70210E4DA1 /* MultiFiles.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 5944902FF76997FC5882F677 /* MultiFiles.tiff */; };
 		6926C809FD41C72DC7357C79 /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = 7ECFAA8639CB971F89E719C4 /* Info.table */; };
 		6C00597198B88014622525AF /* PCDebuggerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C5B01215C08FE4946186F39 /* PCDebuggerView.m */; };
-		6C4657FF249946AEE0B3F267 /* NewSubproject.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 7D204EE0552B74D41BF12A51 /* NewSubproject.gorm */; };
+		6C4657FF249946AEE0B3F267 /* NewSubproject.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7D204EE0552B74D41BF12A51 /* NewSubproject.xib */; };
 		6D568207BCE2BCA264994FF3 /* SyntaxDefinition.m in Sources */ = {isa = PBXBuildFile; fileRef = 17395732C28C6884162365F8 /* SyntaxDefinition.m */; };
 		6D980AEEEA728C3E6FD82DCB /* PCLineNumberRulerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 1B55176673A5EDAD84FC8F2B /* PCLineNumberRulerView.m */; };
 		6E0A633B3C009DCC57B28E3A /* otherSuitcase.tiff in Resources */ = {isa = PBXBuildFile; fileRef = AB6A07BE9CB8222DBC2B4F8D /* otherSuitcase.tiff */; };
 		6F245A8FB3ABF02C5074DBA0 /* PCXcodeProjectEditor.h in Headers */ = {isa = PBXBuildFile; fileRef = 6ACBC8B0BB394DCEE011E4F2 /* PCXcodeProjectEditor.h */; };
 		6F3D0FCEF0BA20E72C16AF8B /* PCLogController.h in Headers */ = {isa = PBXBuildFile; fileRef = C8D3276BB1EC2D23A2E7BFBC /* PCLogController.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		6FB260FE9FAC9E65D9766271 /* PCDebugger.gorm in Resources */ = {isa = PBXBuildFile; fileRef = FD59A1ECEC8D04C759A1F7C9 /* PCDebugger.gorm */; };
+		6FB260FE9FAC9E65D9766271 /* PCDebugger.xib in Resources */ = {isa = PBXBuildFile; fileRef = FD59A1ECEC8D04C759A1F7C9 /* PCDebugger.xib */; };
 		6FD020B177B38F0E0AD5C3FC /* stepin_button.png in Resources */ = {isa = PBXBuildFile; fileRef = 3841954C32BB236D2413F528 /* stepin_button.png */; };
 		708F73E2BED2F18FD7D9EF27 /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		71A62F509234D21795FAF121 /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = E4343F7C37EE7C8A4F4FC723 /* Info.table */; };
@@ -139,9 +143,9 @@
 		7857BE6C4078F026AE086452 /* ObjCMethodHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 20831DFBE1E4115C21005D6F /* ObjCMethodHandler.m */; };
 		792C971249B02AA21CC3EFF7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6619B1ABDFD2EEDFE61B7A52 /* Foundation.framework */; };
 		797DAD5610C0F5779B0E5E97 /* ProjectCenter_add.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 29E65A04C45C88DC31A94066 /* ProjectCenter_add.tiff */; };
-		7A01FDFAD89257C11ECFBC1E /* SaveModified.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = EE24861CB3AD9A5B5248BFB6 /* SaveModified.gorm */; };
+		7A01FDFAD89257C11ECFBC1E /* SaveModified.xib in Resources */ = {isa = PBXBuildFile; fileRef = EE24861CB3AD9A5B5248BFB6 /* SaveModified.xib */; };
 		7A9610C199AB96D850415F93 /* pause_button.png in Resources */ = {isa = PBXBuildFile; fileRef = 7C4919EA28163E1A8EE82757 /* pause_button.png */; };
-		7AE0BDF5283822BA89D4174B /* SavingPrefs.gorm in Resources */ = {isa = PBXBuildFile; fileRef = 764E8EA90025401C13478AC4 /* SavingPrefs.gorm */; };
+		7AE0BDF5283822BA89D4174B /* SavingPrefs.xib in Resources */ = {isa = PBXBuildFile; fileRef = 764E8EA90025401C13478AC4 /* SavingPrefs.xib */; };
 		7B2F9B6399B80937CD5CF3D4 /* postamble.template in Resources */ = {isa = PBXBuildFile; fileRef = 580483DC6D14D938E4880358 /* postamble.template */; };
 		7D68DDB70622149D7F9592C7 /* continue_button.png in Resources */ = {isa = PBXBuildFile; fileRef = 107780B96876399DBEE5D20B /* continue_button.png */; };
 		7E993B40718466482F34FC57 /* librarySuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = DC3EC9AD0974707D0445508D /* librarySuitcaseH.tiff */; };
@@ -153,13 +157,13 @@
 		84706E5F4A4358E1B370926C /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
 		8484484802853532A44EF57D /* TextPattern.m in Sources */ = {isa = PBXBuildFile; fileRef = 9EFDEE02DF6D0F09E56C518E /* TextPattern.m */; };
 		84DF7BCDBE1CA68237F3503D /* class.template in Resources */ = {isa = PBXBuildFile; fileRef = 19C960148F9A31F8D503FCFF /* class.template */; };
-		85F6E2EEC1C4A43E18047335 /* FileAttributes.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 2173B398EF1FF28750F7BE64 /* FileAttributes.gorm */; };
+		85F6E2EEC1C4A43E18047335 /* FileAttributes.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2173B398EF1FF28750F7BE64 /* FileAttributes.xib */; };
 		86E729A2DF5F74482CB3663C /* Framework.project in Embed Modules */ = {isa = PBXBuildFile; fileRef = 9D92A5022FFE3C79556D7626 /* Framework.project */; };
 		86E7B7BAAE726D00DEA80DC4 /* cfile.template in Resources */ = {isa = PBXBuildFile; fileRef = 2B6278765420CCF117A569F5 /* cfile.template */; };
 		874452FE7BFB9DA2C4032E09 /* Main.gorm in Resources */ = {isa = PBXBuildFile; fileRef = B0486D3BE0883B1EC6533F29 /* Main.gorm */; };
 		88634EF5D3900E52AD0EE181 /* PCProjectWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = E6F9FF6BCE5F897A43CB30A2 /* PCProjectWindow.m */; };
 		887B42B3662E015B1F4B6A6E /* PCMenuController.m in Sources */ = {isa = PBXBuildFile; fileRef = 024689A1D547AFAF66BCE0D1 /* PCMenuController.m */; };
-		88944DE212296D64AC65DC81 /* Preferences.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 3848E07C725B8ADB5D5D9539 /* Preferences.gorm */; };
+		88944DE212296D64AC65DC81 /* Preferences.xib in Resources */ = {isa = PBXBuildFile; fileRef = 3848E07C725B8ADB5D5D9539 /* Preferences.xib */; };
 		88E5DE2D722ACD2E214E62BE /* PCProjectLauncherPanel.m in Sources */ = {isa = PBXBuildFile; fileRef = 3BCC6C292543138B489788A3 /* PCProjectLauncherPanel.m */; };
 		89862E6B63360F54D2903CD4 /* FileMM.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 71AD3FC2EC5AB50A1E9C0F2C /* FileMM.tiff */; };
 		89C5395F30813D07AF513599 /* EditorFSC.preferences in Embed Modules */ = {isa = PBXBuildFile; fileRef = EF9DC67BC3EB12311AA71397 /* EditorFSC.preferences */; };
@@ -181,7 +185,7 @@
 		9CB3D4B8C44030B893AA4C67 /* PCButton.m in Sources */ = {isa = PBXBuildFile; fileRef = DD24D36C935AC6A2E0D850B7 /* PCButton.m */; };
 		9CCD68D3EA8ADB4AE2160D37 /* PC.project in Resources */ = {isa = PBXBuildFile; fileRef = DE2F059A50B73E1D6752BE58 /* PC.project */; };
 		9D0C5A1CA5FA9952F10E7153 /* PCFileCreator.h in Headers */ = {isa = PBXBuildFile; fileRef = 794BD701DD536E7A641BCD85 /* PCFileCreator.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		9D4501ED347C541D2CC90251 /* Inspector.gorm in Resources */ = {isa = PBXBuildFile; fileRef = 688CF5EBAE70A7D10B9E04BA /* Inspector.gorm */; };
+		9D4501ED347C541D2CC90251 /* Inspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = 688CF5EBAE70A7D10B9E04BA /* Inspector.xib */; };
 		9DA3F98D3A9377BDACFB214A /* Bundle.project in Embed Modules */ = {isa = PBXBuildFile; fileRef = F79371B7E31E5DB33693D95A /* Bundle.project */; };
 		9F167C79414C5553369F8DEC /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		9F5E92C43EC62ED9E88CB5E5 /* FileM.tiff in Resources */ = {isa = PBXBuildFile; fileRef = F44460AFE041D23833C6F3FF /* FileM.tiff */; };
@@ -196,15 +200,15 @@
 		A7625E1FE9AC5841CF7F68D5 /* PCEditorManager.m in Sources */ = {isa = PBXBuildFile; fileRef = CD7067480F090F2DFBCE4823 /* PCEditorManager.m */; };
 		A7993B10E31985C6715E841B /* GSStepOverTemplate.tiff in Resources */ = {isa = PBXBuildFile; fileRef = AFB13CDF8AEFB5D0D11F6407 /* GSStepOverTemplate.tiff */; };
 		A8115A68BE55F1A37134D802 /* PCAppProject+Inspector.m in Sources */ = {isa = PBXBuildFile; fileRef = E83415BFCCD7CA6B6984BF40 /* PCAppProject+Inspector.m */; };
-		AA2B7E4E44B280DB64794ED7 /* BuildPrefs.gorm in Resources */ = {isa = PBXBuildFile; fileRef = B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.gorm */; };
+		AA2B7E4E44B280DB64794ED7 /* BuildPrefs.xib in Resources */ = {isa = PBXBuildFile; fileRef = B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.xib */; };
 		AB560BD1BDD9A54BD673CA51 /* PCSaveModified.m in Sources */ = {isa = PBXBuildFile; fileRef = C7A1891533F466EC0F32FCFF /* PCSaveModified.m */; };
 		ABBFADA0A68A1924FBC5559A /* GSNavigatorDebugTemplate.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 5E444DE669B53C40CCB3CC8E /* GSNavigatorDebugTemplate.tiff */; };
 		AC25A0C8AAB09BE323ED7ED5 /* headerSuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 4D7D3F303286603CAD4C66FB /* headerSuitcaseH.tiff */; };
-		AE1840C2EF638FA14FE11569 /* BuildAttributes.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = F84AE18E99CEF44FD09476C9 /* BuildAttributes.gorm */; };
+		AE1840C2EF638FA14FE11569 /* BuildAttributes.xib in Resources */ = {isa = PBXBuildFile; fileRef = F84AE18E99CEF44FD09476C9 /* BuildAttributes.xib */; };
 		AF94A6EA434D65A9CA919797 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
 		B03FC24E2F30116B6EC09A41 /* ProjectCenter.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B05F311DC8E6EFB087BB4BA0 /* CodeEditorView.h in Copy Protocol Headers */ = {isa = PBXBuildFile; fileRef = ABF9F0CD38371816F00CC022 /* CodeEditorView.h */; };
-		B11A9BAAEA0407CDF246A662 /* Inspector.gorm in Resources */ = {isa = PBXBuildFile; fileRef = 7191334E4A80FF5BB28578E6 /* Inspector.gorm */; };
+		B11A9BAAEA0407CDF246A662 /* Inspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7191334E4A80FF5BB28578E6 /* Inspector.xib */; };
 		B1EF3E8EA67D03A1FB3A4337 /* PCProjectLauncherPanel.h in Headers */ = {isa = PBXBuildFile; fileRef = BA849010D2CD3C508A7BEE0E /* PCProjectLauncherPanel.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B2D61C128FF34C6158501B59 /* MainMenu-GNUstep.gsmarkup in Resources */ = {isa = PBXBuildFile; fileRef = BF07EED6F8D96965A2CF9B9D /* MainMenu-GNUstep.gsmarkup */; };
 		B43E0AF87B3CF05A676DF597 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
@@ -244,26 +248,26 @@
 		D0C69A1E57F46C59D2DA9481 /* ProjectCenter_cvs.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 5EBB360478F9BAFBB637DF8A /* ProjectCenter_cvs.tiff */; };
 		D0FF0A4366E2CBD4698A161B /* FileH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 8CD1A8C9B3865DFBF53869B6 /* FileH.tiff */; };
 		D118B7F9B5068F4C0C8738E2 /* genericSuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = FAACA7A064C5A572642B0292 /* genericSuitcaseH.tiff */; };
-		D21FC604D841771106598730 /* MiscPrefs.gorm in Resources */ = {isa = PBXBuildFile; fileRef = 3E7170238DF5C7B1A9C37D39 /* MiscPrefs.gorm */; };
+		D21FC604D841771106598730 /* MiscPrefs.xib in Resources */ = {isa = PBXBuildFile; fileRef = 3E7170238DF5C7B1A9C37D39 /* MiscPrefs.xib */; };
 		D2C317706A1AF0C00676107F /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = 044700B100313D9CD6450538 /* Info.table */; };
 		D3AFB633B5CDFDACA1071DE3 /* MainMenu-OSX.gsmarkup in Resources */ = {isa = PBXBuildFile; fileRef = 6DA9D09F8A99D11816DAC3B2 /* MainMenu-OSX.gsmarkup */; };
 		D830B510CBD9E121B34D8565 /* ProjectCenter.debugger in Embed Modules */ = {isa = PBXBuildFile; fileRef = 55F070B588EF65C3C4ABBEEF /* ProjectCenter.debugger */; };
 		D8F2A12F09C4D3146A15ED3D /* Plist.syntax in Resources */ = {isa = PBXBuildFile; fileRef = 2BA1EB0193A9B99A2D92EA10 /* Plist.syntax */; };
-		D97FB785A089520D33963404 /* Builder.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 3BE5C2A64070316317644258 /* Builder.gorm */; };
+		D97FB785A089520D33963404 /* Builder.xib in Resources */ = {isa = PBXBuildFile; fileRef = 3BE5C2A64070316317644258 /* Builder.xib */; };
 		DB198AB824B540AC231EE9C6 /* PCProjectBuilderOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6B847208D27A30C74636F5E7 /* PCProjectBuilderOptions.m */; };
 		DBE5B4466D203C4FB020C101 /* PCProjectLauncher.h in Headers */ = {isa = PBXBuildFile; fileRef = 5AE7AC79E71F966838D3847F /* PCProjectLauncher.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DDF3E450F0442B4F55858E41 /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = 5543B023727DCB45359FC135 /* Info.table */; };
 		DF0315A212059721BF97C12C /* Info-gnustep.plist in Resources */ = {isa = PBXBuildFile; fileRef = E0072987C437C7F194AE4F6F /* Info-gnustep.plist */; };
-		DF27F4C53FA95DEA511C181E /* Inspector.gorm in Resources */ = {isa = PBXBuildFile; fileRef = B1DD3A1C1580BEEF9F17180E /* Inspector.gorm */; };
-		DF91503DF54B6CB1F3EDC052 /* Inspector.gorm in Resources */ = {isa = PBXBuildFile; fileRef = 6A2F22938EAD75AC509070FF /* Inspector.gorm */; };
+		DF27F4C53FA95DEA511C181E /* Inspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = B1DD3A1C1580BEEF9F17180E /* Inspector.xib */; };
+		DF91503DF54B6CB1F3EDC052 /* Inspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = 6A2F22938EAD75AC509070FF /* Inspector.xib */; };
 		E087B1E1A37749C8CD2E861F /* PCMiscPrefs.m in Sources */ = {isa = PBXBuildFile; fileRef = CD6CD2E07579BD2F009C5AF1 /* PCMiscPrefs.m */; };
 		E2FB87E9C8B52C9C136ADE74 /* Aggregate.project in Embed Modules */ = {isa = PBXBuildFile; fileRef = 701E3371CD2512C546F967C0 /* Aggregate.project */; };
 		E32E1612378BBF9718ECAB1E /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
 		E3F75B1EBD1FAFD7D6421EB7 /* gsmarkup.template in Resources */ = {isa = PBXBuildFile; fileRef = 35997240AE33830FB6EA6E77 /* gsmarkup.template */; };
 		E4FE62350D9EC4B6796E2285 /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		E5209B1E2380E99C3EE9A2D0 /* ProjectCenter_dist.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 7AEEB1187679B1C6E7A544A1 /* ProjectCenter_dist.tiff */; };
-		E660AC4982D7C30A33DA03B9 /* ProjectAttributes.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 45E4EE2D5887C54433CB9904 /* ProjectAttributes.gorm */; };
-		E832FED0CB2905BF54AC06A4 /* Inspector.gorm in Resources */ = {isa = PBXBuildFile; fileRef = CCF5131365B7D5CA5344DBC6 /* Inspector.gorm */; };
+		E660AC4982D7C30A33DA03B9 /* ProjectAttributes.xib in Resources */ = {isa = PBXBuildFile; fileRef = 45E4EE2D5887C54433CB9904 /* ProjectAttributes.xib */; };
+		E832FED0CB2905BF54AC06A4 /* Inspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = CCF5131365B7D5CA5344DBC6 /* Inspector.xib */; };
 		E8423C2A9EB1CBE5DE673AFA /* main.m in Resources */ = {isa = PBXBuildFile; fileRef = D5294BFF51128EE1D33AC427 /* main.m */; };
 		E896D0F533B1E814F470809A /* ProjectCenter_uml.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 770AE05CBD2C89226943DFC6 /* ProjectCenter_uml.tiff */; };
 		E8C01065159DE38C7C7886CE /* GSBuildTemplate.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 18DB2297699609B63795EAE7 /* GSBuildTemplate.tiff */; };
@@ -271,7 +275,7 @@
 		EA06E06198810EBE50960FA3 /* restart_button.png in Resources */ = {isa = PBXBuildFile; fileRef = E847F4F9C56EC79A7E5912D0 /* restart_button.png */; };
 		EBE59280A1ACFC36860ED5B1 /* PCProjectDocument.m in Sources */ = {isa = PBXBuildFile; fileRef = 62F9D641512B28BB248E86C9 /* PCProjectDocument.m */; };
 		EDE7CB6794CE77F23237779B /* ProjectCenter_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F7952BD19B85683F854F609 /* ProjectCenter_main.m */; };
-		EE56240DDC0890B0289B01A8 /* ProjectInspector.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 99A4A9392947F4C7F31C47A1 /* ProjectInspector.gorm */; };
+		EE56240DDC0890B0289B01A8 /* ProjectInspector.xib in Resources */ = {isa = PBXBuildFile; fileRef = 99A4A9392947F4C7F31C47A1 /* ProjectInspector.xib */; };
 		EFCC01F84215FB6AFAA573BE /* GSNavigatorBreakpointsTemplate.tiff in Resources */ = {isa = PBXBuildFile; fileRef = EF94DFABECDCB7EBD63BCD90 /* GSNavigatorBreakpointsTemplate.tiff */; };
 		F183C6BA256B181C609CA7F2 /* PCFileNameIcon.h in Headers */ = {isa = PBXBuildFile; fileRef = C00E40ED9F6BEF83B0EDA084 /* PCFileNameIcon.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F227801BF16BE360D94BE038 /* PCProjectLoadedFiles.m in Sources */ = {isa = PBXBuildFile; fileRef = AF7FFD5D7587B2363C7C82F0 /* PCProjectLoadedFiles.m */; };
@@ -280,7 +284,7 @@
 		F435A7C01DEA59BBCEC8A6E8 /* projectSuitcase.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 379C063B8133C74B6689E2E0 /* projectSuitcase.tiff */; };
 		F4801B4802FEA9F12B8A208E /* headerSuitcase.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 2DF827F93D605E1728AF75CA /* headerSuitcase.tiff */; };
 		F551534B1B60D4FCB09F33A3 /* XcodeProjectTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A60C707236D581261DC9FB9 /* XcodeProjectTests.m */; };
-		F566B71836713CE816FA069B /* LogPanel.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = 4035D9062EE744DA66982868 /* LogPanel.gorm */; };
+		F566B71836713CE816FA069B /* LogPanel.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4035D9062EE744DA66982868 /* LogPanel.xib */; };
 		F71F534F76C143F8A3AEBA55 /* ObjCClassHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 41C43C115E75205B94949A8F /* ObjCClassHandler.m */; };
 		F7C8C83DCA344B0065656885 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C06C1EFACBCE4A89D337D674 /* AppKit.framework */; };
 		F86B90601CD28651123AE347 /* PCProjectManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 01C27E868259EE4E018F185E /* PCProjectManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -288,8 +292,8 @@
 		F9B253021A78221C754D7C75 /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		FA7D0BCFA048D213C90BE3FF /* ProjectCenter.h in Headers */ = {isa = PBXBuildFile; fileRef = AA4CED67ABEE5125E88E4612 /* ProjectCenter.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FA8446272EBC695CB54392FE /* nibSuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 11C67444DCDD7AC5B9960738 /* nibSuitcaseH.tiff */; };
-		FBC476F07038E737612BEB35 /* EditorFSCPrefs.gorm in Resources */ = {isa = PBXBuildFile; fileRef = E35C27677BE2FBF869920E67 /* EditorFSCPrefs.gorm */; };
-		FCE3960961AE1929DE7D7FCC /* ProjectLanguages.gorm in Copy Localized Interfaces */ = {isa = PBXBuildFile; fileRef = DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.gorm */; };
+		FBC476F07038E737612BEB35 /* EditorFSCPrefs.xib in Resources */ = {isa = PBXBuildFile; fileRef = E35C27677BE2FBF869920E67 /* EditorFSCPrefs.xib */; };
+		FCE3960961AE1929DE7D7FCC /* ProjectLanguages.xib in Resources */ = {isa = PBXBuildFile; fileRef = DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.xib */; };
 		FD0B376C183236902B1A994F /* C.syntax in Resources */ = {isa = PBXBuildFile; fileRef = E9833F03E975FBBE86952645 /* C.syntax */; };
 		FDA4BA239ACE5358D2A471B7 /* PCEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = 2E45CCDAEC86E6594BBC996F /* PCEditor.m */; };
 		FE23BB09701022E4A6C86F59 /* PCProjectLoadedFiles.h in Headers */ = {isa = PBXBuildFile; fileRef = EF9651C4504ED507BBD78577 /* PCProjectLoadedFiles.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -513,30 +517,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		83D6A5FAF20F2A827AEF3890 /* Copy Localized Interfaces */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = English.lproj;
-			dstSubfolderSpec = 7;
-			files = (
-				32B86604A08E6257CDECC0D3 /* ProjectWindow.gorm in Copy Localized Interfaces */,
-				2D7EE2073FB1AC160D6EB53E /* BuilderPanel.gorm in Copy Localized Interfaces */,
-				D97FB785A089520D33963404 /* Builder.gorm in Copy Localized Interfaces */,
-				39E74F74F930DF0959D25E32 /* BuilderOptions.gorm in Copy Localized Interfaces */,
-				6C4657FF249946AEE0B3F267 /* NewSubproject.gorm in Copy Localized Interfaces */,
-				59651ED715F6211B68AB9DCC /* NewFile.gorm in Copy Localized Interfaces */,
-				EE56240DDC0890B0289B01A8 /* ProjectInspector.gorm in Copy Localized Interfaces */,
-				AE1840C2EF638FA14FE11569 /* BuildAttributes.gorm in Copy Localized Interfaces */,
-				E660AC4982D7C30A33DA03B9 /* ProjectAttributes.gorm in Copy Localized Interfaces */,
-				17FE2DE94C8AE452B174A035 /* ProjectDescription.gorm in Copy Localized Interfaces */,
-				FCE3960961AE1929DE7D7FCC /* ProjectLanguages.gorm in Copy Localized Interfaces */,
-				85F6E2EEC1C4A43E18047335 /* FileAttributes.gorm in Copy Localized Interfaces */,
-				F566B71836713CE816FA069B /* LogPanel.gorm in Copy Localized Interfaces */,
-				7A01FDFAD89257C11ECFBC1E /* SaveModified.gorm in Copy Localized Interfaces */,
-			);
-			name = "Copy Localized Interfaces";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C49722B465A66AABAD94B7B8 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -562,19 +542,6 @@
 				A5BD54DE1546A022C0C27881 /* ProjectType.h in Copy Protocol Headers */,
 			);
 			name = "Copy Protocol Headers";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D3EFA6663084EBEA635A727A /* Copy Localized Interfaces */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = English.lproj;
-			dstSubfolderSpec = 7;
-			files = (
-				0574C38F417958E00CC06E8D /* ProjectCenter.gorm in Copy Localized Interfaces */,
-				2D4D240C9551D2BD0CAD45EC /* Info.gorm in Copy Localized Interfaces */,
-				88944DE212296D64AC65DC81 /* Preferences.gorm in Copy Localized Interfaces */,
-			);
-			name = "Copy Localized Interfaces";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F820E13364ECF776F8E25690 /* Embed Modules */ = {
@@ -604,6 +571,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2A4DB7D3A577786C1B757843 /* gorm2xib.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = gorm2xib.m; sourceTree = "<group>"; };
+		74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCGormXIBWriter.h; sourceTree = "<group>"; };
+		0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCGormXIBWriter.m; sourceTree = "<group>"; };
+		E460E463D3313E158723ECC5 /* PCGormArchive.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCGormArchive.h; sourceTree = "<group>"; };
+		9056592F7A76D3A5A08DD7BA /* PCGormArchive.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCGormArchive.m; sourceTree = "<group>"; };
+		FE1AF7183BC07EA40E254F3B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		C483BF9A9118B0FCEAEBB14B /* regenerate.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = regenerate.sh; sourceTree = "<group>"; };
 		01C27E868259EE4E018F185E /* PCProjectManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCProjectManager.h; sourceTree = "<group>"; };
 		01D164A40577973D43DE28F7 /* PCDefines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCDefines.h; sourceTree = "<group>"; };
 		01EF7E4CDCED6C4759AFBBA6 /* PCFileTypeIcon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCFileTypeIcon.h; sourceTree = "<group>"; };
@@ -640,7 +614,7 @@
 		1838A01C0D20BC42A4720FD2 /* PCProjectManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectManager.m; sourceTree = "<group>"; };
 		18DB2297699609B63795EAE7 /* GSBuildTemplate.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSBuildTemplate.tiff; sourceTree = "<group>"; };
 		19C960148F9A31F8D503FCFF /* class.template */ = {isa = PBXFileReference; lastKnownFileType = text; path = class.template; sourceTree = "<group>"; };
-		1AB9E1A6694082165AA1A5E7 /* LineJumper.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = LineJumper.gorm; sourceTree = "<group>"; };
+		1AB9E1A6694082165AA1A5E7 /* LineJumper.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LineJumper.xib; sourceTree = "<group>"; };
 		1B55176673A5EDAD84FC8F2B /* PCLineNumberRulerView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCLineNumberRulerView.m; sourceTree = "<group>"; };
 		1BED37E1F31DDDFB65A1337A /* PCAddFilesPanel.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCAddFilesPanel.m; sourceTree = "<group>"; };
 		1C29713240CC8DDD9D5D78FA /* FileCH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = FileCH.tiff; sourceTree = "<group>"; };
@@ -650,7 +624,7 @@
 		1FCF164220A587DA443BAF95 /* PCAppController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCAppController.h; sourceTree = "<group>"; };
 		20831DFBE1E4115C21005D6F /* ObjCMethodHandler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjCMethodHandler.m; sourceTree = "<group>"; };
 		20E6657906BCF3FEB317C4EA /* projectSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = projectSuitcaseH.tiff; sourceTree = "<group>"; };
-		2173B398EF1FF28750F7BE64 /* FileAttributes.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = FileAttributes.gorm; sourceTree = "<group>"; };
+		2173B398EF1FF28750F7BE64 /* FileAttributes.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = FileAttributes.xib; sourceTree = "<group>"; };
 		226F99B122257059EB32209C /* PCFrameworkProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCFrameworkProject.h; sourceTree = "<group>"; };
 		22A6161417857453A713C79A /* PCProjectLoadedFilesPanel.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectLoadedFilesPanel.m; sourceTree = "<group>"; };
 		245EF09527E869DFE6CE03E7 /* PCProjectBrowser.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectBrowser.m; sourceTree = "<group>"; };
@@ -674,31 +648,31 @@
 		2FFA83447B9607786ED20ADB /* XcodeProjects.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = XcodeProjects.md; sourceTree = "<group>"; };
 		302F6AACE1F66B3996F72059 /* PCAuxiliaryWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCAuxiliaryWindow.m; sourceTree = "<group>"; };
 		324C3C2A9A2C133AF78CDDD2 /* PCAppProject.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCAppProject.m; sourceTree = "<group>"; };
-		332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ProjectDescription.gorm; sourceTree = "<group>"; };
+		332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectDescription.xib; sourceTree = "<group>"; };
 		3589A981A08B17A2CA87DC93 /* Files.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = Files.tiff; sourceTree = "<group>"; };
 		35997240AE33830FB6EA6E77 /* gsmarkup.template */ = {isa = PBXFileReference; lastKnownFileType = text; path = gsmarkup.template; sourceTree = "<group>"; };
 		3798AAA7F90DDD96572A630D /* PCLineNumberRulerView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCLineNumberRulerView.h; sourceTree = "<group>"; };
 		379C063B8133C74B6689E2E0 /* projectSuitcase.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = projectSuitcase.tiff; sourceTree = "<group>"; };
 		3841954C32BB236D2413F528 /* stepin_button.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = stepin_button.png; sourceTree = "<group>"; };
-		3848E07C725B8ADB5D5D9539 /* Preferences.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Preferences.gorm; sourceTree = "<group>"; };
+		3848E07C725B8ADB5D5D9539 /* Preferences.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Preferences.xib; sourceTree = "<group>"; };
 		39165C1419EE520BD59920C2 /* PCFileCreator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCFileCreator.m; sourceTree = "<group>"; };
 		3A3F7E611AF50469C4894906 /* ProjectCenter_profile.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = ProjectCenter_profile.tiff; sourceTree = "<group>"; };
 		3B9BE7DE6206A6AE41BA0BA3 /* librarySuitcase.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = librarySuitcase.tiff; sourceTree = "<group>"; };
 		3BCC6C292543138B489788A3 /* PCProjectLauncherPanel.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectLauncherPanel.m; sourceTree = "<group>"; };
-		3BE5C2A64070316317644258 /* Builder.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Builder.gorm; sourceTree = "<group>"; };
+		3BE5C2A64070316317644258 /* Builder.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Builder.xib; sourceTree = "<group>"; };
 		3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ProjectCenter.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3DD55CD424FFE8D9EE0E5AA7 /* PCXcodeProject.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCXcodeProject.m; sourceTree = "<group>"; };
-		3E7170238DF5C7B1A9C37D39 /* MiscPrefs.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = MiscPrefs.gorm; sourceTree = "<group>"; };
+		3E7170238DF5C7B1A9C37D39 /* MiscPrefs.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MiscPrefs.xib; sourceTree = "<group>"; };
 		3EE7F1A6DB0D0E48DD358B29 /* soundSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = soundSuitcaseH.tiff; sourceTree = "<group>"; };
-		4035D9062EE744DA66982868 /* LogPanel.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = LogPanel.gorm; sourceTree = "<group>"; };
+		4035D9062EE744DA66982868 /* LogPanel.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = LogPanel.xib; sourceTree = "<group>"; };
 		415D3DB22593A6F1E3550347 /* PCProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCProject.h; sourceTree = "<group>"; };
 		41C43C115E75205B94949A8F /* ObjCClassHandler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjCClassHandler.m; sourceTree = "<group>"; };
 		42E472CC129B921B54221352 /* PCDebuggerView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCDebuggerView.h; sourceTree = "<group>"; };
-		44BB41459048B9C6F48FC8F6 /* Info.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Info.gorm; sourceTree = "<group>"; };
+		44BB41459048B9C6F48FC8F6 /* Info.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Info.xib; sourceTree = "<group>"; };
 		4515E6B5555A454FB0AD037C /* FileC.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = FileC.tiff; sourceTree = "<group>"; };
-		45E4EE2D5887C54433CB9904 /* ProjectAttributes.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ProjectAttributes.gorm; sourceTree = "<group>"; };
+		45E4EE2D5887C54433CB9904 /* ProjectAttributes.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectAttributes.xib; sourceTree = "<group>"; };
 		4612E8DF41A2B92A95469840 /* CodeHandler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CodeHandler.h; sourceTree = "<group>"; };
-		46732228D9A779DCF4DBB4E4 /* FindPanel.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = FindPanel.gorm; sourceTree = "<group>"; };
+		46732228D9A779DCF4DBB4E4 /* FindPanel.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = FindPanel.xib; sourceTree = "<group>"; };
 		46C74D66F0C6FC9A5444578B /* ProjectType.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ProjectType.h; sourceTree = "<group>"; };
 		498390ECF6A851B2270E2D8F /* PCInfoController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCInfoController.m; sourceTree = "<group>"; };
 		4A1C7E2C6B06CBE24CACF915 /* PCEditorView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCEditorView.m; sourceTree = "<group>"; };
@@ -706,7 +680,7 @@
 		4C4B9BEF3EE201BA93158B58 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		4D7D3F303286603CAD4C66FB /* headerSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = headerSuitcaseH.tiff; sourceTree = "<group>"; };
 		4DA7C4C899F6F448D94BBB93 /* PCEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCEditor.h; sourceTree = "<group>"; };
-		4E74A335671AC7C202789537 /* BuilderPanel.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = BuilderPanel.gorm; sourceTree = "<group>"; };
+		4E74A335671AC7C202789537 /* BuilderPanel.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = BuilderPanel.xib; sourceTree = "<group>"; };
 		4F497695C469DABCB4CB704C /* GNUmakefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile; sourceTree = "<group>"; };
 		4F84FFB71E27BE304EA189AF /* PCProjectEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCProjectEditor.h; sourceTree = "<group>"; };
 		4FC4B6CE48B935892FE5DCF3 /* FileProject.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = FileProject.tiff; sourceTree = "<group>"; };
@@ -718,7 +692,7 @@
 		5533FF87310AE3B70E1F6178 /* ObjCMethodHandler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjCMethodHandler.h; sourceTree = "<group>"; };
 		5543B023727DCB45359FC135 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
 		55F070B588EF65C3C4ABBEEF /* ProjectCenter.debugger */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ProjectCenter.debugger; sourceTree = BUILT_PRODUCTS_DIR; };
-		571B107A319F23C70D39303C /* NewFile.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = NewFile.gorm; sourceTree = "<group>"; };
+		571B107A319F23C70D39303C /* NewFile.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = NewFile.xib; sourceTree = "<group>"; };
 		5754DB34A1F8AF3ADF499F4C /* subprojectSuitcase.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = subprojectSuitcase.tiff; sourceTree = "<group>"; };
 		57E4CBFE837A99D183EC6939 /* PCEditorFSCPrefs.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCEditorFSCPrefs.m; sourceTree = "<group>"; };
 		580483DC6D14D938E4880358 /* postamble.template */ = {isa = PBXFileReference; lastKnownFileType = text; path = postamble.template; sourceTree = "<group>"; };
@@ -743,13 +717,13 @@
 		663708DF4588C8F0802FD5ED /* GNUmakefile.postamble */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile.postamble; sourceTree = "<group>"; };
 		67396EB19A12EAF0F6709D50 /* Clean.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = Clean.tiff; sourceTree = "<group>"; };
 		67AB9734265B637EE1BC8F44 /* PCBuildPrefs.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCBuildPrefs.m; sourceTree = "<group>"; };
-		688CF5EBAE70A7D10B9E04BA /* Inspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Inspector.gorm; sourceTree = "<group>"; };
+		688CF5EBAE70A7D10B9E04BA /* Inspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Inspector.xib; sourceTree = "<group>"; };
 		698BE82A91B1F36C6481F814 /* PCMakefileFactory.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCMakefileFactory.m; sourceTree = "<group>"; };
-		6A2F22938EAD75AC509070FF /* Inspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Inspector.gorm; sourceTree = "<group>"; };
+		6A2F22938EAD75AC509070FF /* Inspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Inspector.xib; sourceTree = "<group>"; };
 		6A6D931433087103B8481AB4 /* header.template */ = {isa = PBXFileReference; lastKnownFileType = text; path = header.template; sourceTree = "<group>"; };
 		6AB9C0C074F4729E136EDD4F /* ProjectCenter.editor */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ProjectCenter.editor; sourceTree = BUILT_PRODUCTS_DIR; };
 		6ACBC8B0BB394DCEE011E4F2 /* PCXcodeProjectEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCXcodeProjectEditor.h; sourceTree = "<group>"; };
-		6B32D882C2814787D6A17F0C /* ProjectWindow.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ProjectWindow.gorm; sourceTree = "<group>"; };
+		6B32D882C2814787D6A17F0C /* ProjectWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectWindow.xib; sourceTree = "<group>"; };
 		6B4F9C6B974196F79991E9AD /* GNUmakefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile; sourceTree = "<group>"; };
 		6B847208D27A30C74636F5E7 /* PCProjectBuilderOptions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectBuilderOptions.m; sourceTree = "<group>"; };
 		6C97983D6C876183B22F08FA /* CodeDebugger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CodeDebugger.h; sourceTree = "<group>"; };
@@ -757,11 +731,11 @@
 		6DA9D09F8A99D11816DAC3B2 /* MainMenu-OSX.gsmarkup */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "MainMenu-OSX.gsmarkup"; sourceTree = "<group>"; };
 		6E9EDECE4AE8C0245B195B37 /* AppController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppController.h; sourceTree = "<group>"; };
 		701E3371CD2512C546F967C0 /* Aggregate.project */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Aggregate.project; sourceTree = BUILT_PRODUCTS_DIR; };
-		7191334E4A80FF5BB28578E6 /* Inspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Inspector.gorm; sourceTree = "<group>"; };
+		7191334E4A80FF5BB28578E6 /* Inspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Inspector.xib; sourceTree = "<group>"; };
 		71AD3FC2EC5AB50A1E9C0F2C /* FileMM.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = FileMM.tiff; sourceTree = "<group>"; };
 		731D1EB0E6415122B16FF94F /* GSStepIntoTemplate.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSStepIntoTemplate.tiff; sourceTree = "<group>"; };
 		7498E4CF5A482D51FDEAA391 /* nibSuitcase.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = nibSuitcase.tiff; sourceTree = "<group>"; };
-		764E8EA90025401C13478AC4 /* SavingPrefs.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = SavingPrefs.gorm; sourceTree = "<group>"; };
+		764E8EA90025401C13478AC4 /* SavingPrefs.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SavingPrefs.xib; sourceTree = "<group>"; };
 		770AE05CBD2C89226943DFC6 /* ProjectCenter_uml.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = ProjectCenter_uml.tiff; sourceTree = "<group>"; };
 		7730406DF2EAEA7392EE3062 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
 		77A0633CD89D0196F6732895 /* GNUmakefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile; sourceTree = "<group>"; };
@@ -774,7 +748,7 @@
 		7C4919EA28163E1A8EE82757 /* pause_button.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = pause_button.png; sourceTree = "<group>"; };
 		7CB3645311FFBCE46F451F48 /* up_button.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = up_button.png; sourceTree = "<group>"; };
 		7CD44A95436067EE7085BAD5 /* XcodeProjectTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = XcodeProjectTests; sourceTree = BUILT_PRODUCTS_DIR; };
-		7D204EE0552B74D41BF12A51 /* NewSubproject.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = NewSubproject.gorm; sourceTree = "<group>"; };
+		7D204EE0552B74D41BF12A51 /* NewSubproject.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = NewSubproject.xib; sourceTree = "<group>"; };
 		7D29DC04E3910503DBCBABA7 /* PCDebugger.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCDebugger.m; sourceTree = "<group>"; };
 		7E3D8CD5C73A4A77409B86D2 /* genericSuitcase.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = genericSuitcase.tiff; sourceTree = "<group>"; };
 		7ECFAA8639CB971F89E719C4 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
@@ -795,7 +769,7 @@
 		95E4D0048A1B82A50D4C21E1 /* ObjCCommentHandler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjCCommentHandler.h; sourceTree = "<group>"; };
 		97F5540F62F69580DD099270 /* Tool.project */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Tool.project; sourceTree = BUILT_PRODUCTS_DIR; };
 		9882C446DC113466DFA31389 /* PCAggregateProject.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCAggregateProject.m; sourceTree = "<group>"; };
-		99A4A9392947F4C7F31C47A1 /* ProjectInspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ProjectInspector.gorm; sourceTree = "<group>"; };
+		99A4A9392947F4C7F31C47A1 /* ProjectInspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectInspector.xib; sourceTree = "<group>"; };
 		9A60C707236D581261DC9FB9 /* XcodeProjectTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XcodeProjectTests.m; sourceTree = "<group>"; };
 		9BBD27F634A99BFAAE3B8120 /* PCSavingPrefs.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCSavingPrefs.m; sourceTree = "<group>"; };
 		9D92A5022FFE3C79556D7626 /* Framework.project */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Framework.project; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -829,11 +803,11 @@
 		B09D25435664CD92BE8A7BF5 /* Debug.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = Debug.tiff; sourceTree = "<group>"; };
 		B0B6B6BFC510ACAAE808F72B /* GNUmakefile.postamble */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile.postamble; sourceTree = "<group>"; };
 		B13A74C7A0DF1FB381104C78 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
-		B1DD3A1C1580BEEF9F17180E /* Inspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Inspector.gorm; sourceTree = "<group>"; };
+		B1DD3A1C1580BEEF9F17180E /* Inspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Inspector.xib; sourceTree = "<group>"; };
 		B20AA56E05880FC89DD898A8 /* PCEditorFSCPrefs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCEditorFSCPrefs.h; sourceTree = "<group>"; };
 		B210B793ECC90E1AEA66C9B2 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
 		B3A984886A544CCA6E604EB4 /* Info.gnustep */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.gnustep; sourceTree = "<group>"; };
-		B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = BuildPrefs.gorm; sourceTree = "<group>"; };
+		B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = BuildPrefs.xib; sourceTree = "<group>"; };
 		B84AB777DFA0E13E6C30E432 /* helpSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = helpSuitcaseH.tiff; sourceTree = "<group>"; };
 		B85B86CA4FDB93EE2D7A3D1C /* ChangeLog */ = {isa = PBXFileReference; lastKnownFileType = text; path = ChangeLog; sourceTree = "<group>"; };
 		B8AFE505A158E4FA9EEF0332 /* PC.project */ = {isa = PBXFileReference; lastKnownFileType = text; path = PC.project; sourceTree = "<group>"; };
@@ -867,7 +841,7 @@
 		C8D3276BB1EC2D23A2E7BFBC /* PCLogController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCLogController.h; sourceTree = "<group>"; };
 		CADE931D95E6A1993B1E4595 /* PCProjectEditor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectEditor.m; sourceTree = "<group>"; };
 		CAF5341AE605D45F5C44903A /* Build.preferences */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Build.preferences; sourceTree = BUILT_PRODUCTS_DIR; };
-		CCF5131365B7D5CA5344DBC6 /* Inspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Inspector.gorm; sourceTree = "<group>"; };
+		CCF5131365B7D5CA5344DBC6 /* Inspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Inspector.xib; sourceTree = "<group>"; };
 		CD6CD2E07579BD2F009C5AF1 /* PCMiscPrefs.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCMiscPrefs.m; sourceTree = "<group>"; };
 		CD7067480F090F2DFBCE4823 /* PCEditorManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCEditorManager.m; sourceTree = "<group>"; };
 		CDBB78897E9F625D4DE9D195 /* TODO */ = {isa = PBXFileReference; lastKnownFileType = text; path = TODO; sourceTree = "<group>"; };
@@ -884,14 +858,14 @@
 		DC27B2B1678CD49A56C870E0 /* subprojectSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = subprojectSuitcaseH.tiff; sourceTree = "<group>"; };
 		DC3EC9AD0974707D0445508D /* librarySuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = librarySuitcaseH.tiff; sourceTree = "<group>"; };
 		DD24D36C935AC6A2E0D850B7 /* PCButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCButton.m; sourceTree = "<group>"; };
-		DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ProjectLanguages.gorm; sourceTree = "<group>"; };
+		DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectLanguages.xib; sourceTree = "<group>"; };
 		DE2F059A50B73E1D6752BE58 /* PC.project */ = {isa = PBXFileReference; lastKnownFileType = text; path = PC.project; sourceTree = "<group>"; };
 		DFEEB839AAB5384D6FA16A3E /* SCHEME */ = {isa = PBXFileReference; lastKnownFileType = text; path = SCHEME; sourceTree = "<group>"; };
 		E0072987C437C7F194AE4F6F /* Info-gnustep.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Info-gnustep.plist"; sourceTree = "<group>"; };
 		E00E19CBC56134D6A8DD0A0C /* GSBottomPaneTemplate.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSBottomPaneTemplate.tiff; sourceTree = "<group>"; };
-		E15DC21307B8911407E4DD01 /* Inspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Inspector.gorm; sourceTree = "<group>"; };
+		E15DC21307B8911407E4DD01 /* Inspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Inspector.xib; sourceTree = "<group>"; };
 		E206DF0EFFAE0E6FBB2A0C07 /* PC.project */ = {isa = PBXFileReference; lastKnownFileType = text; path = PC.project; sourceTree = "<group>"; };
-		E35C27677BE2FBF869920E67 /* EditorFSCPrefs.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = EditorFSCPrefs.gorm; sourceTree = "<group>"; };
+		E35C27677BE2FBF869920E67 /* EditorFSCPrefs.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = EditorFSCPrefs.xib; sourceTree = "<group>"; };
 		E3A04B7252E850AEEF19E50D /* ObjCCommentHandler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjCCommentHandler.m; sourceTree = "<group>"; };
 		E43306189DAAB8F54A0B2C9A /* iconSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = iconSuitcaseH.tiff; sourceTree = "<group>"; };
 		E4343F7C37EE7C8A4F4FC723 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
@@ -910,14 +884,14 @@
 		EAC5A62F4B13A1B0AC25F22D /* SyntaxDefinition.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SyntaxDefinition.h; sourceTree = "<group>"; };
 		EB57CE2AD0E42F527D268365 /* Misc.preferences */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Misc.preferences; sourceTree = BUILT_PRODUCTS_DIR; };
 		EC9EF7FBBF96700F5C9DF120 /* PCNavigators.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCNavigators.h; sourceTree = "<group>"; };
-		EE24861CB3AD9A5B5248BFB6 /* SaveModified.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = SaveModified.gorm; sourceTree = "<group>"; };
+		EE24861CB3AD9A5B5248BFB6 /* SaveModified.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = SaveModified.xib; sourceTree = "<group>"; };
 		EE4703EDBE9B4D97CA1FFB7F /* GNUmakefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile; sourceTree = "<group>"; };
 		EF94DFABECDCB7EBD63BCD90 /* GSNavigatorBreakpointsTemplate.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = GSNavigatorBreakpointsTemplate.tiff; sourceTree = "<group>"; };
 		EF9651C4504ED507BBD78577 /* PCProjectLoadedFiles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCProjectLoadedFiles.h; sourceTree = "<group>"; };
 		EF9DC67BC3EB12311AA71397 /* EditorFSC.preferences */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EditorFSC.preferences; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFA381D73E7226AEB90E844A /* GNUmakefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile; sourceTree = "<group>"; };
 		F0E0BB630D61B576FF9913D3 /* PCDebuggerWrapperProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCDebuggerWrapperProtocol.h; sourceTree = "<group>"; };
-		F1A000F73F1D9A18A2465E5C /* ProjectCenter.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ProjectCenter.gorm; sourceTree = "<group>"; };
+		F1A000F73F1D9A18A2465E5C /* ProjectCenter.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectCenter.xib; sourceTree = "<group>"; };
 		F20571EA14C4644290C50B2A /* Application.project */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Application.project; sourceTree = BUILT_PRODUCTS_DIR; };
 		F300721D7457378F8D5D5369 /* FileHH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = FileHH.tiff; sourceTree = "<group>"; };
 		F44460AFE041D23833C6F3FF /* FileM.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = FileM.tiff; sourceTree = "<group>"; };
@@ -926,15 +900,15 @@
 		F6205A35633BBA04EBA9415A /* PCProjectInspector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCProjectInspector.h; sourceTree = "<group>"; };
 		F621BD366E7A9F1A33E6A7B1 /* COPYING */ = {isa = PBXFileReference; lastKnownFileType = text; path = COPYING; sourceTree = "<group>"; };
 		F79371B7E31E5DB33693D95A /* Bundle.project */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Bundle.project; sourceTree = BUILT_PRODUCTS_DIR; };
-		F84AE18E99CEF44FD09476C9 /* BuildAttributes.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = BuildAttributes.gorm; sourceTree = "<group>"; };
+		F84AE18E99CEF44FD09476C9 /* BuildAttributes.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = BuildAttributes.xib; sourceTree = "<group>"; };
 		F91DF67CF5A2C1289C9E2366 /* GDBWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GDBWrapper.h; sourceTree = "<group>"; };
-		F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = BuilderOptions.gorm; sourceTree = "<group>"; };
+		F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = BuilderOptions.xib; sourceTree = "<group>"; };
 		F9CDC21B778A8EA168018A5D /* PCBundleManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCBundleManager.h; sourceTree = "<group>"; };
-		FA47A0C15869B31B4E493DF1 /* Inspector.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Inspector.gorm; sourceTree = "<group>"; };
+		FA47A0C15869B31B4E493DF1 /* Inspector.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = Inspector.xib; sourceTree = "<group>"; };
 		FA4A1043194C7D49F886631F /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
 		FA5D941948C2F9D4BAFAAF6A /* ProjectCenter_documentation.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = ProjectCenter_documentation.tiff; sourceTree = "<group>"; };
 		FAACA7A064C5A572642B0292 /* genericSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = genericSuitcaseH.tiff; sourceTree = "<group>"; };
-		FD59A1ECEC8D04C759A1F7C9 /* PCDebugger.gorm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = PCDebugger.gorm; sourceTree = "<group>"; };
+		FD59A1ECEC8D04C759A1F7C9 /* PCDebugger.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = PCDebugger.xib; sourceTree = "<group>"; };
 		FD843F4074223E8030FEA80A /* PCInterfaceEditor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCInterfaceEditor.m; sourceTree = "<group>"; };
 		FE0B1210CD84FB4E4CF755DE /* GNUmakefile.preamble */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile.preamble; sourceTree = "<group>"; };
 		FE126D15C40C0D6ED083CD36 /* PCBundleProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCBundleProject.h; sourceTree = "<group>"; };
@@ -1100,6 +1074,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		BC5044533CA7F0122439455B /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				67D91EC340B3AE10859113E7 /* gorm2xib */,
+			);
+			path = Tools;
+			sourceTree = "<group>";
+		};
+		67D91EC340B3AE10859113E7 /* gorm2xib */ = {
+			isa = PBXGroup;
+			children = (
+				2A4DB7D3A577786C1B757843 /* gorm2xib.m */,
+				FE1AF7183BC07EA40E254F3B /* README.md */,
+				C483BF9A9118B0FCEAEBB14B /* regenerate.sh */,
+			);
+			path = gorm2xib;
+			sourceTree = "<group>";
+		};
 		00CD3C8B3542F5F908D1C04E /* Debuggers */ = {
 			isa = PBXGroup;
 			children = (
@@ -1138,6 +1130,7 @@
 				214C6818E92BCD579EE8CE2B /* Modules */,
 				06E5E5DCF8838F0F2511DF11 /* Resources */,
 				A9413CB327AEB80BCE680B41 /* Tests */,
+				BC5044533CA7F0122439455B /* Tools */,
 				B85B86CA4FDB93EE2D7A3D1C /* ChangeLog */,
 				ABB4B0A62DFCDC07B1986E2E /* CODEOWNERS */,
 				F621BD366E7A9F1A33E6A7B1 /* COPYING */,
@@ -1163,20 +1156,20 @@
 		0DE1B6CE53E853E30817D43A /* English.lproj */ = {
 			isa = PBXGroup;
 			children = (
-				F84AE18E99CEF44FD09476C9 /* BuildAttributes.gorm */,
-				3BE5C2A64070316317644258 /* Builder.gorm */,
-				F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.gorm */,
-				4E74A335671AC7C202789537 /* BuilderPanel.gorm */,
-				2173B398EF1FF28750F7BE64 /* FileAttributes.gorm */,
-				4035D9062EE744DA66982868 /* LogPanel.gorm */,
-				571B107A319F23C70D39303C /* NewFile.gorm */,
-				7D204EE0552B74D41BF12A51 /* NewSubproject.gorm */,
-				45E4EE2D5887C54433CB9904 /* ProjectAttributes.gorm */,
-				332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.gorm */,
-				99A4A9392947F4C7F31C47A1 /* ProjectInspector.gorm */,
-				DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.gorm */,
-				6B32D882C2814787D6A17F0C /* ProjectWindow.gorm */,
-				EE24861CB3AD9A5B5248BFB6 /* SaveModified.gorm */,
+				F84AE18E99CEF44FD09476C9 /* BuildAttributes.xib */,
+				3BE5C2A64070316317644258 /* Builder.xib */,
+				F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.xib */,
+				4E74A335671AC7C202789537 /* BuilderPanel.xib */,
+				2173B398EF1FF28750F7BE64 /* FileAttributes.xib */,
+				4035D9062EE744DA66982868 /* LogPanel.xib */,
+				571B107A319F23C70D39303C /* NewFile.xib */,
+				7D204EE0552B74D41BF12A51 /* NewSubproject.xib */,
+				45E4EE2D5887C54433CB9904 /* ProjectAttributes.xib */,
+				332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.xib */,
+				99A4A9392947F4C7F31C47A1 /* ProjectInspector.xib */,
+				DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.xib */,
+				6B32D882C2814787D6A17F0C /* ProjectWindow.xib */,
+				EE24861CB3AD9A5B5248BFB6 /* SaveModified.xib */,
 			);
 			path = English.lproj;
 			sourceTree = "<group>";
@@ -1221,6 +1214,10 @@
 				1838A01C0D20BC42A4720FD2 /* PCProjectManager.m */,
 				E6F9FF6BCE5F897A43CB30A2 /* PCProjectWindow.m */,
 				C7A1891533F466EC0F32FCFF /* PCSaveModified.m */,
+				E460E463D3313E158723ECC5 /* PCGormArchive.h */,
+				9056592F7A76D3A5A08DD7BA /* PCGormArchive.m */,
+				74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */,
+				0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */,
 				4FE12E514F550AC7632F3723 /* PCXcodeProject.h */,
 				3DD55CD424FFE8D9EE0E5AA7 /* PCXcodeProject.m */,
 				6ACBC8B0BB394DCEE011E4F2 /* PCXcodeProjectEditor.h */,
@@ -1244,7 +1241,7 @@
 			isa = PBXGroup;
 			children = (
 				FA4A1043194C7D49F886631F /* Info.table */,
-				CCF5131365B7D5CA5344DBC6 /* Inspector.gorm */,
+				CCF5131365B7D5CA5344DBC6 /* Inspector.xib */,
 				B8AFE505A158E4FA9EEF0332 /* PC.project */,
 			);
 			path = Resources;
@@ -1254,7 +1251,7 @@
 			isa = PBXGroup;
 			children = (
 				B13A74C7A0DF1FB381104C78 /* Info.table */,
-				3E7170238DF5C7B1A9C37D39 /* MiscPrefs.gorm */,
+				3E7170238DF5C7B1A9C37D39 /* MiscPrefs.xib */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -1317,7 +1314,7 @@
 				E4343F7C37EE7C8A4F4FC723 /* Info.table */,
 				910B892B0BC51F6219C16342 /* next_button.png */,
 				7C4919EA28163E1A8EE82757 /* pause_button.png */,
-				FD59A1ECEC8D04C759A1F7C9 /* PCDebugger.gorm */,
+				FD59A1ECEC8D04C759A1F7C9 /* PCDebugger.xib */,
 				E847F4F9C56EC79A7E5912D0 /* restart_button.png */,
 				3841954C32BB236D2413F528 /* stepin_button.png */,
 				FEE64CCCC99031DB4F56DE65 /* stepout_button.png */,
@@ -1331,7 +1328,7 @@
 			children = (
 				B3A984886A544CCA6E604EB4 /* Info.gnustep */,
 				7ECFAA8639CB971F89E719C4 /* Info.table */,
-				7191334E4A80FF5BB28578E6 /* Inspector.gorm */,
+				7191334E4A80FF5BB28578E6 /* Inspector.xib */,
 				D5294BFF51128EE1D33AC427 /* main.m */,
 				C8A4CECE3B3EDCAD3ADDF6DD /* PC.project */,
 			);
@@ -1341,7 +1338,7 @@
 		306F78C21C70FD8F0C0E007E /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				E35C27677BE2FBF869920E67 /* EditorFSCPrefs.gorm */,
+				E35C27677BE2FBF869920E67 /* EditorFSCPrefs.xib */,
 				BA016514E209C7B0743E96E5 /* Info.table */,
 			);
 			path = Resources;
@@ -1351,7 +1348,7 @@
 			isa = PBXGroup;
 			children = (
 				E5EC656164F7073CB063EFB3 /* Info.table */,
-				688CF5EBAE70A7D10B9E04BA /* Inspector.gorm */,
+				688CF5EBAE70A7D10B9E04BA /* Inspector.xib */,
 				5B55C5AA2F38301D929F7CAE /* PC.project */,
 				53D71787C4BE1CD10079A2E8 /* Version */,
 			);
@@ -1361,10 +1358,10 @@
 		344F7BD5568D655C5B2A80F9 /* English.lproj */ = {
 			isa = PBXGroup;
 			children = (
-				46732228D9A779DCF4DBB4E4 /* FindPanel.gorm */,
-				44BB41459048B9C6F48FC8F6 /* Info.gorm */,
-				3848E07C725B8ADB5D5D9539 /* Preferences.gorm */,
-				F1A000F73F1D9A18A2465E5C /* ProjectCenter.gorm */,
+				46732228D9A779DCF4DBB4E4 /* FindPanel.xib */,
+				44BB41459048B9C6F48FC8F6 /* Info.xib */,
+				3848E07C725B8ADB5D5D9539 /* Preferences.xib */,
+				F1A000F73F1D9A18A2465E5C /* ProjectCenter.xib */,
 			);
 			path = English.lproj;
 			sourceTree = "<group>";
@@ -1482,7 +1479,7 @@
 			isa = PBXGroup;
 			children = (
 				DA47E5ACEEAF8EC02930CB05 /* Info.table */,
-				764E8EA90025401C13478AC4 /* SavingPrefs.gorm */,
+				764E8EA90025401C13478AC4 /* SavingPrefs.xib */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -1568,7 +1565,7 @@
 			isa = PBXGroup;
 			children = (
 				044700B100313D9CD6450538 /* Info.table */,
-				B1DD3A1C1580BEEF9F17180E /* Inspector.gorm */,
+				B1DD3A1C1580BEEF9F17180E /* Inspector.xib */,
 				E206DF0EFFAE0E6FBB2A0C07 /* PC.project */,
 			);
 			path = Resources;
@@ -1578,7 +1575,7 @@
 			isa = PBXGroup;
 			children = (
 				8740CC0866EC60ECA5B3D30F /* Info.table */,
-				FA47A0C15869B31B4E493DF1 /* Inspector.gorm */,
+				FA47A0C15869B31B4E493DF1 /* Inspector.xib */,
 				A3199283F6580B49AE8747AD /* PC.project */,
 			);
 			path = Resources;
@@ -1692,7 +1689,7 @@
 				2AC4D8218018F5593F50DD84 /* FileMH.tiff */,
 				71AD3FC2EC5AB50A1E9C0F2C /* FileMM.tiff */,
 				5543B023727DCB45359FC135 /* Info.table */,
-				1AB9E1A6694082165AA1A5E7 /* LineJumper.gorm */,
+				1AB9E1A6694082165AA1A5E7 /* LineJumper.xib */,
 				101CB18C84099A22FA82CA76 /* ObjC.syntax */,
 				2BA1EB0193A9B99A2D92EA10 /* Plist.syntax */,
 			);
@@ -1711,7 +1708,7 @@
 			isa = PBXGroup;
 			children = (
 				6CC3243B3655D3577939FF53 /* Info.table */,
-				6A2F22938EAD75AC509070FF /* Inspector.gorm */,
+				6A2F22938EAD75AC509070FF /* Inspector.xib */,
 				DE2F059A50B73E1D6752BE58 /* PC.project */,
 			);
 			path = Resources;
@@ -1733,7 +1730,7 @@
 		D994859AA23ACBD838C4B144 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.gorm */,
+				B3EA3B16CFFDF6D64522E0C0 /* BuildPrefs.xib */,
 				B9E9A58752BB07C1C9754C9D /* Info.table */,
 			);
 			path = Resources;
@@ -1754,7 +1751,7 @@
 				24D5B396778757CB0A48D060 /* AppController.m */,
 				65E808FCFD9F22F97AC6C549 /* Info.gnustep */,
 				B210B793ECC90E1AEA66C9B2 /* Info.table */,
-				E15DC21307B8911407E4DD01 /* Inspector.gorm */,
+				E15DC21307B8911407E4DD01 /* Inspector.xib */,
 				B0486D3BE0883B1EC6533F29 /* Main.gorm */,
 				1789F8372976C5D29FFFCD31 /* Main.gsmarkup */,
 				4C4B9BEF3EE201BA93158B58 /* main.m */,
@@ -1860,6 +1857,8 @@
 				42484C10D959AEF309502EFA /* PCFileTypeIcon.h in Headers */,
 				0BCAC586E5C0A5ED20AD44CA /* PCInterfaceEditor.h in Headers */,
 				3143A30953ECD68B268271EF /* PCNavigators.h in Headers */,
+				8C17A1EB96BA01FFC87D012D /* PCGormArchive.h in Headers */,
+				8EE5031E4B998201E781FAB4 /* PCGormXIBWriter.h in Headers */,
 				060C81676E30859C93EF0355 /* PCXcodeProject.h in Headers */,
 				6F245A8FB3ABF02C5074DBA0 /* PCXcodeProjectEditor.h in Headers */,
 			);
@@ -1912,7 +1911,6 @@
 				FA33A23A723D4F884B6572FC /* Sources */,
 				284F1484316ACE4D46154709 /* Frameworks */,
 				071C6FA94D7536A0307599B5 /* Resources */,
-				83D6A5FAF20F2A827AEF3890 /* Copy Localized Interfaces */,
 				CE6AE1AE31770FF6FF7ECED8 /* Copy Protocol Headers */,
 			);
 			buildRules = (
@@ -2002,7 +2000,6 @@
 				D7D3200A642F3BF25B811A31 /* Sources */,
 				FD036636F48398F986197E1A /* Frameworks */,
 				1EAEBC32DD8585199A564E43 /* Resources */,
-				D3EFA6663084EBEA635A727A /* Copy Localized Interfaces */,
 				C49722B465A66AABAD94B7B8 /* Embed Frameworks */,
 				F820E13364ECF776F8E25690 /* Embed Modules */,
 			);
@@ -2242,6 +2239,20 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				32B86604A08E6257CDECC0D3 /* ProjectWindow.xib in Resources */,
+				2D7EE2073FB1AC160D6EB53E /* BuilderPanel.xib in Resources */,
+				D97FB785A089520D33963404 /* Builder.xib in Resources */,
+				39E74F74F930DF0959D25E32 /* BuilderOptions.xib in Resources */,
+				6C4657FF249946AEE0B3F267 /* NewSubproject.xib in Resources */,
+				59651ED715F6211B68AB9DCC /* NewFile.xib in Resources */,
+				EE56240DDC0890B0289B01A8 /* ProjectInspector.xib in Resources */,
+				AE1840C2EF638FA14FE11569 /* BuildAttributes.xib in Resources */,
+				E660AC4982D7C30A33DA03B9 /* ProjectAttributes.xib in Resources */,
+				17FE2DE94C8AE452B174A035 /* ProjectDescription.xib in Resources */,
+				FCE3960961AE1929DE7D7FCC /* ProjectLanguages.xib in Resources */,
+				85F6E2EEC1C4A43E18047335 /* FileAttributes.xib in Resources */,
+				F566B71836713CE816FA069B /* LogPanel.xib in Resources */,
+				7A01FDFAD89257C11ECFBC1E /* SaveModified.xib in Resources */,
 				86E7B7BAAE726D00DEA80DC4 /* cfile.template in Resources */,
 				82B7FC8CE6C2F65546AE6608 /* cheader.template in Resources */,
 				84DF7BCDBE1CA68237F3503D /* class.template in Resources */,
@@ -2258,7 +2269,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A736F0DEC3359AF87634C94C /* PC.project in Resources */,
-				DF27F4C53FA95DEA511C181E /* Inspector.gorm in Resources */,
+				DF27F4C53FA95DEA511C181E /* Inspector.xib in Resources */,
 				D2C317706A1AF0C00676107F /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2267,6 +2278,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0574C38F417958E00CC06E8D /* ProjectCenter.xib in Resources */,
+				2D4D240C9551D2BD0CAD45EC /* Info.xib in Resources */,
+				88944DE212296D64AC65DC81 /* Preferences.xib in Resources */,
 				DF0315A212059721BF97C12C /* Info-gnustep.plist in Resources */,
 				35343E577B9825403E1C1C53 /* ProjectCenter.tiff in Resources */,
 				814D80CE8207D51A42BE9885 /* FileProject.tiff in Resources */,
@@ -2325,7 +2339,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D21FC604D841771106598730 /* MiscPrefs.gorm in Resources */,
+				D21FC604D841771106598730 /* MiscPrefs.xib in Resources */,
 				41461ACB12DEE63C467FEF10 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2335,7 +2349,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6232B69973AE542170FEDCAF /* PC.project in Resources */,
-				4B5803A58254BCDD18DB5F16 /* Inspector.gorm in Resources */,
+				4B5803A58254BCDD18DB5F16 /* Inspector.xib in Resources */,
 				CE3D49D8C3BDFAB4826B5075 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2345,7 +2359,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9CCD68D3EA8ADB4AE2160D37 /* PC.project in Resources */,
-				DF91503DF54B6CB1F3EDC052 /* Inspector.gorm in Resources */,
+				DF91503DF54B6CB1F3EDC052 /* Inspector.xib in Resources */,
 				983909695A62F35F56B9E2E3 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2354,7 +2368,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7AE0BDF5283822BA89D4174B /* SavingPrefs.gorm in Resources */,
+				7AE0BDF5283822BA89D4174B /* SavingPrefs.xib in Resources */,
 				51FBBB53549D5B9292F8BE89 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2368,7 +2382,7 @@
 				C4C303B949B95088E8FA89E7 /* main.m in Resources */,
 				A6E5C72F8893B1659C1263C1 /* PC.project in Resources */,
 				874452FE7BFB9DA2C4032E09 /* Main.gorm in Resources */,
-				6258A31EF44F12A5C598703F /* Inspector.gorm in Resources */,
+				6258A31EF44F12A5C598703F /* Inspector.xib in Resources */,
 				2F28C3924A417AE06D6C93EF /* Main.gsmarkup in Resources */,
 				B2D61C128FF34C6158501B59 /* MainMenu-GNUstep.gsmarkup in Resources */,
 				D3AFB633B5CDFDACA1071DE3 /* MainMenu-OSX.gsmarkup in Resources */,
@@ -2383,7 +2397,7 @@
 			files = (
 				3B434393ABE90D577877DC1A /* PC.project in Resources */,
 				F325C1F5D3F05FF7D258EF00 /* Version in Resources */,
-				9D4501ED347C541D2CC90251 /* Inspector.gorm in Resources */,
+				9D4501ED347C541D2CC90251 /* Inspector.xib in Resources */,
 				2B44FF48F5221FD152091CE6 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2392,7 +2406,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA2B7E4E44B280DB64794ED7 /* BuildPrefs.gorm in Resources */,
+				AA2B7E4E44B280DB64794ED7 /* BuildPrefs.xib in Resources */,
 				9322E687F9F3052B9D1D5457 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2401,7 +2415,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FBC476F07038E737612BEB35 /* EditorFSCPrefs.gorm in Resources */,
+				FBC476F07038E737612BEB35 /* EditorFSCPrefs.xib in Resources */,
 				618A543CF92C086DF6368B27 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2421,7 +2435,7 @@
 				9F5E92C43EC62ED9E88CB5E5 /* FileM.tiff in Resources */,
 				B733BFD692187BC67673A816 /* FileMH.tiff in Resources */,
 				89862E6B63360F54D2903CD4 /* FileMM.tiff in Resources */,
-				15B3CB2F969D80BC2150311C /* LineJumper.gorm in Resources */,
+				15B3CB2F969D80BC2150311C /* LineJumper.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2437,7 +2451,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6FB260FE9FAC9E65D9766271 /* PCDebugger.gorm in Resources */,
+				6FB260FE9FAC9E65D9766271 /* PCDebugger.xib in Resources */,
 				71A62F509234D21795FAF121 /* Info.table in Resources */,
 				3BF0455AC3D3BA6ACA8405CF /* go_button.png in Resources */,
 				7D68DDB70622149D7F9592C7 /* continue_button.png in Resources */,
@@ -2456,7 +2470,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4FFF3F90FA296623BB6A3F4F /* PC.project in Resources */,
-				E832FED0CB2905BF54AC06A4 /* Inspector.gorm in Resources */,
+				E832FED0CB2905BF54AC06A4 /* Inspector.xib in Resources */,
 				430011B24946C693F27FF788 /* Info.table in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2467,7 +2481,7 @@
 			files = (
 				05C424B678A232A264066153 /* PC.project in Resources */,
 				E8423C2A9EB1CBE5DE673AFA /* main.m in Resources */,
-				B11A9BAAEA0407CDF246A662 /* Inspector.gorm in Resources */,
+				B11A9BAAEA0407CDF246A662 /* Inspector.xib in Resources */,
 				6926C809FD41C72DC7357C79 /* Info.table in Resources */,
 				300FC0EBA649ED0ED58E6494 /* Info.gnustep in Resources */,
 			);
@@ -2636,6 +2650,8 @@
 				34EEAA5E3EE2E80BBFA23A4D /* PCFileCreator.m in Sources */,
 				AB560BD1BDD9A54BD673CA51 /* PCSaveModified.m in Sources */,
 				2125AE2F10667DC4C0F3213D /* PCProjectManager.m in Sources */,
+				535AA5A0F417FB5BD4EC1335 /* PCGormArchive.m in Sources */,
+				1779DF2815ADA3D81CAF6DC3 /* PCGormXIBWriter.m in Sources */,
 				BD3559D12C621D9E4000D2FA /* PCXcodeProject.m in Sources */,
 				56D673BF9ED679357366154C /* PCNavigators.m in Sources */,
 				60EE038B12DDFC515D329672 /* PCXcodeProjectEditor.m in Sources */,
@@ -2894,7 +2910,7 @@
 					"$(SRCROOT)/Headers",
 					"$(SRCROOT)/Framework",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 0.7.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -3126,7 +3142,7 @@
 					"$(SRCROOT)/Headers",
 					"$(SRCROOT)/Framework",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 0.7.0;
 				SDKROOT = macosx;
 			};

@@ -13,8 +13,10 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 2. **ProjectCenter on macOS.** Build and run ProjectCenter itself from `ProjectCenter.xcodeproj`
    against Cocoa, from the same sources as the GNUstep build.
    - Status: everything compiles.
-   - Still missing at runtime: the `.gorm` interfaces need `.xib` counterparts, and `PCBundleManager`
-     looks for `<bundle>/Resources/Info.table`, which on macOS is `Contents/Resources/Info.table`.
+   - Interfaces: each `.gorm` has a generated `.xib` next to it, which the Xcode targets compile.
+     Embedded unnamed images and GNUstep theme images (`common_ret`) are not converted yet.
+   - Still missing at runtime: `PCBundleManager` looks for `<bundle>/Resources/Info.table`, which on
+     macOS is `Contents/Resources/Info.table`.
 3. **Stay a GNUstep application.** The GNUmakefile build and the GNUstep CI must keep working.
    Changes for macOS must not break or degrade the GNUstep version.
 
@@ -43,6 +45,10 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 
 ## Conventions
 
+- **Interfaces:** the `.gorm` is the source. After changing one in Gorm, regenerate the `.xib` files
+  with `Tools/gorm2xib/regenerate.sh` and commit both. Don't edit the generated `.xib` by hand.
+  `PCGormArchive` must keep writing unchanged archives back byte for byte (`XcodeProjectTests`
+  checks every `.gorm`). See `Tools/gorm2xib/README.md`.
 - **Keep both build systems in sync.** The GNUmakefiles define what each target contains. When adding
   or removing a source or resource, update the GNUmakefile and `ProjectCenter.xcodeproj` together.
 - **Portability:**
