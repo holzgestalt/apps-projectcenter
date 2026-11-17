@@ -175,8 +175,19 @@ NSString *PCEditorDidResignActiveNotification =
   }
 
   /* XIB is XML, but selecting it should open the visual editor rather than
-   * whichever source editor the user has chosen for plain text. */
-  if (!isDir && [[[filePath pathExtension] lowercaseString] isEqual:@"xib"])
+   * whichever source editor the user has chosen for plain text. A .gorm
+   * (a folder) opens there too, read-only, unless it is opened in its own
+   * window and Gorm is there to edit it. */
+  NSString *extension = [[filePath pathExtension] lowercaseString];
+  BOOL     isGorm = isDir && [extension isEqual:@"gorm"];
+
+  if (isGorm && windowed
+      && [[NSWorkspace sharedWorkspace] getBestAppInRole:@"Editor" forExtension:extension] != nil
+      && [[NSWorkspace sharedWorkspace] openFile:filePath])
+  {
+    return nil;
+  }
+  if ((!isDir && [extension isEqual:@"xib"]) || isGorm)
   {
     editor = [_editorsDict objectForKey:filePath];
     if (!editor)

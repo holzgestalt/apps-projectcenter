@@ -4,6 +4,8 @@
 NSImage *PCFileTypeIcon(NSString *extension)
 {
   extension = [extension lowercaseString];
+  /* A Gorm interface opens in the same interface editor as a XIB. */
+  if ([extension isEqual:@"gorm"]) extension = @"xib";
   if (![@[@"m",@"h",@"c",@"xib",@"plist"] containsObject:extension]) return nil;
   static NSMutableDictionary *icons;
   if (!icons) icons = [NSMutableDictionary new];

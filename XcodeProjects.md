@@ -27,6 +27,12 @@ Actions, outlets, constraints and other XML metadata are preserved. This initial
 editor supports title and frame changes; adding controls, editing connections
 and constraints, and legacy XIB formats are not supported.
 
+Gorm interfaces (`.gorm`) open in the same editor. ProjectCenter reads the
+GNUstep archive itself and saves title and frame edits into it, leaving the
+rest of the archive as it was, so Gorm and GNUstep applications load the saved
+interface as before. When Gorm is installed, opening a `.gorm` in its own
+window starts Gorm.
+
 The project window has a toolbar with Run, Stop and Build, and toggles for the
 navigator, the bottom area and the inspector panel (Clean, Debug and Find can
 be added by customizing it). Build and Clean switch the navigator to its Issues

@@ -52,6 +52,34 @@ static void TestGormArchives(void)
   }
   Check(count >= 30, @"the .gorm files of ProjectCenter are found");
 
+  {
+    NSString      *info = [repository stringByAppendingPathComponent:@"English.lproj/Info.gorm/objects.gorm"];
+    NSString      *error = nil;
+    PCGormArchive *archive = [PCGormArchive archiveWithContentsOfFile:info error:&error];
+    PCGormObject  *panel = nil, *field = nil;
+    PCGormArchive *edited;
+    NSData        *data;
+
+    for (PCGormObject *object in [archive allObjects])
+    {
+      if ([object isKindOfClassNamed:@"NSPanel"]) panel = object;
+      if (field == nil && [object isKindOfClassNamed:@"NSTextField"]) field = object;
+    }
+    Check([[panel stringForField:@"title"] isEqual:@"Info"], @"Info panel title");
+    [panel setString:@"Über" forField:@"title"];
+    [[field objectForField:@"cell"] setString:@"Edited" forField:@"contents"];
+    [field setRect:NSMakeRect(1, 2, 300, 40) forField:@"frame"];
+    data = [archive data];
+    edited = [PCGormArchive archiveWithData:data error:&error];
+    Check(edited != nil, [NSString stringWithFormat:@"edited archive reads: %@", error]);
+    Check([[[edited objectWithIdentifier:[panel identifier]] stringForField:@"title"] isEqual:@"Über"],
+          @"edited title (not Latin-1 safe for every character) is kept");
+    Check([[[[edited objectWithIdentifier:[field identifier]] objectForField:@"cell"]
+            stringForField:@"contents"] isEqual:@"Edited"], @"edited cell contents are kept");
+    Check(NSEqualRects([[edited objectWithIdentifier:[field identifier]] rectForField:@"frame"],
+                       NSMakeRect(1, 2, 300, 40)), @"edited frame is kept");
+    Check([[edited data] isEqualToData:data], @"an edited archive is written back unchanged");
+  }
 }
 
 static void Write(NSString *root, NSString *path, NSString *contents)

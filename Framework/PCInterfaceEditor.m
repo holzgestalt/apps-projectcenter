@@ -4,6 +4,8 @@
  * Distributed under the GNU General Public License, version 2 or later.
  */
 #import "PCInterfaceEditor.h"
+#import "PCGormArchive.h"
+#import "PCGormXIBWriter.h"
 #import <ProjectCenter/PCEditorManager.h>
 #include <math.h>
 
@@ -295,6 +297,7 @@ static NSTableCellView *InterfaceObjectCell(void)
 - (void)dealloc
 {
   [_path release]; [_categoryPath release]; [_document release]; [_objects release];
+  [_gorm release];
   [_tree setDelegate:nil]; [_tree setDataSource:nil]; [_rootItem release];
   [_window setDelegate:nil]; [_window close]; [_window release];
   [_component release]; [super dealloc];
@@ -308,10 +311,83 @@ static NSTableCellView *InterfaceObjectCell(void)
   for (NSXMLNode *child in [element children])
     if ([child kind] == NSXMLElementKind) [self collectObjects:(id)child];
 }
+- (BOOL)isGorm
+{
+  return [[[_path pathExtension] lowercaseString] isEqual:@"gorm"];
+}
+/* A .gorm is a GNUstep archive. PCGormArchive reads it as archived and
+ * writes it back; the editor works on its XIB (PCGormXIBWriter), and each
+ * edit is made in the archive too (-applyEdit...), so saving writes the
+ * archive Gorm and GNUstep read, not a conversion of the XIB. */
+- (NSData *)xibDataFromGorm:(NSString **)problem
+{
+  PCGormArchive *archive = [PCGormArchive archiveWithContentsOfFile:
+                            [_path stringByAppendingPathComponent:@"objects.gorm"]
+                                                              error:problem];
+
+  if (archive == nil)
+  {
+    return nil;
+  }
+  ASSIGN(_gorm, archive);
+  return [[PCGormXIBWriter documentForArchive:archive toolsVersion:nil warnings:NULL] XMLData];
+}
+/* The archived object an XIB element stands for. */
+- (PCGormObject *)gormObjectForElement:(NSXMLElement *)element
+{
+  return [PCGormXIBWriter objectForIdentifier:Attribute(element, @"id") inArchive:_gorm];
+}
+- (void)gormSetTitle:(NSString *)title ofElement:(NSXMLElement *)element
+{
+  PCGormObject *object = [self gormObjectForElement:element];
+
+  /* Windows, menus and items have a title; cells their contents; a box
+   * the contents of its title cell. */
+  if ([object hasField:@"title"]) [object setString:title forField:@"title"];
+  else if ([object hasField:@"contents"]) [object setString:title forField:@"contents"];
+  else if ([[object objectForField:@"cell"] hasField:@"contents"])
+    [[object objectForField:@"cell"] setString:title forField:@"contents"];
+}
+- (void)gormSetFrame:(NSRect)frame ofElement:(NSXMLElement *)element
+{
+  PCGormObject *object = [self gormObjectForElement:element];
+
+  if ([object hasField:@"theFrame"])
+  {
+    [object setRect:frame forField:@"theFrame"];
+  }
+  else if ([object hasField:@"frame"])
+  {
+    /* A view's bounds follow its frame size, as -setFrame: does. */
+    [object setRect:frame forField:@"frame"];
+    if ([object hasField:@"bounds"])
+    {
+      NSRect bounds = [object rectForField:@"bounds"];
+      bounds.size = frame.size;
+      [object setRect:bounds forField:@"bounds"];
+    }
+  }
+}
 - (BOOL)loadDocument
 {
   NSError *error = nil;
-  NSData *data = [NSData dataWithContentsOfFile:_path];
+  NSString *problem = nil;
+  NSData *data;
+
+  if ([self isGorm])
+  {
+    data = [self xibDataFromGorm:&problem];
+    if (data == nil)
+    {
+      NSRunAlertPanel(@"Interface Editor",@"Cannot open %@. %@",@"OK",nil,nil,
+                      [_path lastPathComponent], problem);
+      return NO;
+    }
+  }
+  else
+  {
+    data = [NSData dataWithContentsOfFile:_path];
+  }
   NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:data options:NSXMLNodePreserveAll error:&error];
   if (!document || ![[[document rootElement] name] isEqual:@"document"]
       || ![Attribute([document rootElement],@"type") isEqual:@"com.apple.InterfaceBuilder3.Cocoa.XIB"])
@@ -346,7 +422,8 @@ static NSTableCellView *InterfaceObjectCell(void)
 }
 - (id)openFileAtPath:(NSString *)path editorManager:(id)manager editable:(BOOL)editable
 {
-  _manager = manager; _editable = editable; [self setPath:path];
+  _manager = manager; [self setPath:path];
+  _editable = editable;
   _objects = [NSMutableArray new];
   if (![self loadDocument]) return nil;
   _component = [[NSView alloc] initWithFrame:NSMakeRect(0,0,900,600)];
@@ -389,7 +466,7 @@ static NSTableCellView *InterfaceObjectCell(void)
   }
   NSButton *apply = [[[NSButton alloc] initWithFrame:NSMakeRect(x,45,80,26)] autorelease];
   [apply setTitle:@"Apply"]; [apply setTarget:self]; [apply setAction:@selector(applyProperties:)];
-  [apply setEnabled:editable]; [_component addSubview:apply];
+  [apply setEnabled:_editable]; [_component addSubview:apply];
   _status = [[[NSTextField alloc] initWithFrame:NSMakeRect(8,8,880,25)] autorelease];
   [_status setEditable:NO]; [_status setBezeled:NO]; [_status setDrawsBackground:NO];
   [_status setAutoresizingMask:NSViewWidthSizable]; [_component addSubview:_status];
@@ -450,7 +527,9 @@ static NSTableCellView *InterfaceObjectCell(void)
   NSArray *keys = @[@"x",@"y",@"width",@"height"];
   for (NSUInteger i=1; i<5; i++)
   { [_fields[i] setStringValue:Attribute(frame,[keys objectAtIndex:i-1]) ?: @"0"]; [_fields[i] setEnabled:_editable && frame != nil]; }
-  [_status setStringValue:object ? [NSString stringWithFormat:@"%@ · %@ · Frame edits preserve existing Auto Layout constraints",[object name],Attribute(object,@"id") ?: @""] : @"No interface objects"];
+  NSString *note = [self isGorm] ? @"Gorm interface: saved as a Gorm archive"
+                                 : @"Frame edits preserve existing Auto Layout constraints";
+  [_status setStringValue:object ? [NSString stringWithFormat:@"%@ · %@ · %@",[object name],Attribute(object,@"id") ?: @"",note] : @"No interface objects"];
   [(PCInterfaceCanvas *)_canvas showObject:object];
   _updatingSelection = NO;
 }
@@ -467,11 +546,17 @@ static NSTableCellView *InterfaceObjectCell(void)
   }
   BOOL changed = NO;
   if ([_fields[0] isEnabled] && ![Attribute(TitleElement(_selected),@"title") isEqual:[_fields[0] stringValue]])
-  { SetAttribute(TitleElement(_selected),@"title",[_fields[0] stringValue]); changed = YES; }
+  {
+    SetAttribute(TitleElement(_selected),@"title",[_fields[0] stringValue]); changed = YES;
+    if (_gorm) [self gormSetTitle:[_fields[0] stringValue] ofElement:TitleElement(_selected)];
+  }
   NSArray *keys = @[@"x",@"y",@"width",@"height"];
+  BOOL frameChanged = NO;
   for (NSUInteger i=0; frame && i<4; i++)
     if ([Attribute(frame,[keys objectAtIndex:i]) doubleValue] != values[i])
-    { SetAttribute(frame,[keys objectAtIndex:i],[NSString stringWithFormat:@"%.15g",values[i]]); changed = YES; }
+    { SetAttribute(frame,[keys objectAtIndex:i],[NSString stringWithFormat:@"%.15g",values[i]]); changed = frameChanged = YES; }
+  if (_gorm && frameChanged)
+    [self gormSetFrame:NSMakeRect(values[0],values[1],values[2],values[3]) ofElement:_selected];
   if (changed)
   {
     [self setIsEdited:YES]; [_tree reloadData]; [self selectObject:_selected];
@@ -517,7 +602,25 @@ static NSTableCellView *InterfaceObjectCell(void)
 {
   if (!_editable) return NO;
   NSError *error = nil;
-  if (![[_document XMLData] writeToFile:path options:NSDataWritingAtomic error:&error])
+  NSData *data = _gorm ? [(PCGormArchive *)_gorm data] : [_document XMLData];
+  if (_gorm)
+  {
+    /* objects.gorm inside the .gorm; data.classes and data.info stay. A
+     * new .gorm gets copies of them. */
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![[path stringByStandardizingPath] isEqual:[_path stringByStandardizingPath]])
+    {
+      [fm createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:NULL];
+      for (NSString *file in [fm contentsOfDirectoryAtPath:_path error:NULL])
+      {
+        NSString *target = [path stringByAppendingPathComponent:file];
+        if (![file isEqual:@"objects.gorm"] && ![fm fileExistsAtPath:target])
+          [fm copyItemAtPath:[_path stringByAppendingPathComponent:file] toPath:target error:NULL];
+      }
+    }
+    path = [path stringByAppendingPathComponent:@"objects.gorm"];
+  }
+  if (![data writeToFile:path options:NSDataWritingAtomic error:&error])
   { NSRunAlertPanel(@"Save Interface",@"%@",@"OK",nil,nil,[error localizedDescription]); return NO; }
   _edited = NO;
   [[NSNotificationCenter defaultCenter] postNotificationName:PCEditorDidSaveNotification object:self];

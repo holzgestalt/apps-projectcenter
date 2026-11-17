@@ -92,7 +92,7 @@ NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
   if (projectRoot || subprojectName) return @"folder-documents-symbolic";
   if (!file && [[[title pathExtension] lowercaseString] isEqual:@"xib"]) return nil;
   if (!file) return @"folder-symbolic";
-  if ([@[@"m",@"h",@"c",@"xib",@"plist"] containsObject:[[file pathExtension] lowercaseString]]) return nil;
+  if ([@[@"m",@"h",@"c",@"xib",@"gorm",@"plist"] containsObject:[[file pathExtension] lowercaseString]]) return nil;
   if ([@[@"png", @"jpg", @"jpeg", @"tiff", @"svg", @"pdf", @"xcassets"] containsObject:[[file pathExtension] lowercaseString]])
     return @"image-x-generic-symbolic";
   return @"text-x-generic-symbolic";
