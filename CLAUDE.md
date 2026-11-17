@@ -30,7 +30,8 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
   - The app icon is `Images/ProjectCenter.icns`, made once with `sips` and `iconutil` from
     `Images/ProjectCenterx4.tiff`, a 192 px upscale of the GNUstep icon `Images/ProjectCenter.tiff`.
     It holds sizes up to 128 px; macOS scales up for larger ones. `Resources/Info-macOS.plist` holds the Info.plist keys that Xcode
-    doesn't generate.
+    doesn't generate, including the project document types that Open Recent needs. On Cocoa,
+    `PCDocumentController` (`PCProjectDocument.m`) sends recent projects to `-application:openFile:`.
 - **GNUstep:** run `make && make install` with the GNUstep environment loaded.
   - The workspace scripts in `XcodeProjects.md` (`scripts/build-projectcenter.sh`,
     `scripts/test-projectcenter-xcode.sh [--integration]`, `scripts/test-projectcenter-interface.sh`)

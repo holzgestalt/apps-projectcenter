@@ -2,6 +2,8 @@
 
 Use **Project → Open…** to select an `.xcodeproj` directory. Opening
 `project.pbxproj` through the application's file-open handler also works.
+Every opened project is added to **File → Open Recent**, listed under its
+`.xcodeproj` (or ProjectCenter project folder).
 The navigator is a resizable outline on the left of the editor. For an Xcode
 project it shows the project row and below it Xcode's own groups, in project
 order (synchronized folders are sorted by name). Files that are not in any

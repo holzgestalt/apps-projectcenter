@@ -78,3 +78,44 @@
 }
 
 @end
+
+#ifndef GNUSTEP
+/* Cocoa: projects open through the application delegate, not as NSDocuments,
+ * so File > Open Recent hands the Xcode and GNUstep projects that
+ * PCProjectManager records there to -application:openFile:. */
+@interface PCDocumentController : NSDocumentController
+@end
+
+@implementation PCDocumentController
+
+- (void)openDocumentWithContentsOfURL:(NSURL *)url
+                              display:(BOOL)display
+                    completionHandler:(void (^)(NSDocument *, BOOL, NSError *))completionHandler
+{
+  id   delegate = [NSApp delegate];
+  BOOL opened;
+
+  if (![url isFileURL]
+      || ![delegate respondsToSelector:@selector(application:openFile:)])
+  {
+    [super openDocumentWithContentsOfURL:url
+                                 display:display
+                       completionHandler:completionHandler];
+    return;
+  }
+
+  opened = [delegate application:NSApp openFile:[url path]];
+  completionHandler(nil, NO, opened ? nil
+                    : [NSError errorWithDomain:NSCocoaErrorDomain
+                                          code:NSUserCancelledError
+                                      userInfo:nil]);
+}
+
+@end
+
+/* The first document controller made becomes the shared one. */
+void PCInstallDocumentController(void)
+{
+  [PCDocumentController sharedDocumentController];
+}
+#endif

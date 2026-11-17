@@ -22,9 +22,19 @@
 
 #import <AppKit/AppKit.h>
 
+#ifndef GNUSTEP
+extern void PCInstallDocumentController(void);
+#endif
+
 int
 main(int argc, const char **argv)
 {
+#ifndef GNUSTEP
+  @autoreleasepool
+  {
+    PCInstallDocumentController();
+  }
+#endif
   return NSApplicationMain (argc, argv);
 }
 
