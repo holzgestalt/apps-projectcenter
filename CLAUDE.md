@@ -12,11 +12,11 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
    test project is EditGlyphData, with the GTK4Native theme.
 2. **ProjectCenter on macOS.** Build and run ProjectCenter itself from `ProjectCenter.xcodeproj`
    against Cocoa, from the same sources as the GNUstep build.
-   - Status: everything compiles.
+   - Status: builds and runs. Preferences load from the module bundles, and `.xcodeproj` projects open
+     in the Xcode-style window with the navigator.
    - Interfaces: each `.gorm` has a generated `.xib` next to it, which the Xcode targets compile.
      Embedded unnamed images and GNUstep theme images (`common_ret`) are not converted yet.
-   - Still missing at runtime: `PCBundleManager` looks for `<bundle>/Resources/Info.table`, which on
-     macOS is `Contents/Resources/Info.table`.
+   - Not yet checked on macOS: the editor beyond opening files, the XIB editor and most panels.
 3. **Stay a GNUstep application.** The GNUmakefile build and the GNUstep CI must keep working.
    Changes for macOS must not break or degrade the GNUstep version.
 

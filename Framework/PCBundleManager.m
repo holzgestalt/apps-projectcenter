@@ -98,8 +98,11 @@
 
   while ((bundlePath = [enumerator nextObject]))
   {
-    infoTablePath = [NSString
-                     stringWithFormat:@"%@/Resources/Info.table", bundlePath];
+    // Resources/Info.table on GNUstep, Contents/Resources/Info.table
+    // on macOS.
+    infoTablePath = [[NSBundle bundleWithPath:bundlePath]
+                     pathForResource:@"Info"
+                              ofType:@"table"];
     // TODO: fill 'reqBundlesInfo' with element from 'bundlesInfo' if
     // exists
     infoTable = [NSDictionary dictionaryWithContentsOfFile:infoTablePath];

@@ -25,10 +25,14 @@
 void
 PCLog(id sender, int tag, NSString* format, va_list args)
 {
-  [[PCLogController sharedLogController]
-   logMessage:[NSString stringWithFormat:format arguments: args]
-   withTag:tag
-   sender:sender];
+  NSString *message;
+
+  // +stringWithFormat:arguments: is GNUstep only.
+  message = [[NSString alloc] initWithFormat:format arguments:args];
+  [[PCLogController sharedLogController] logMessage:message
+                                            withTag:tag
+                                             sender:sender];
+  RELEASE(message);
 }
 
 void

@@ -47,6 +47,7 @@
   NSWindow        *_window;
   NSView          *_containerView;
   NSPathControl   *_jumpBar;
+  NSMutableArray  *_jumpBarPaths;
 
   BOOL            _isEdited;
   BOOL            _isEditable;

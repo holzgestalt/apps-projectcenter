@@ -227,6 +227,7 @@
 - (void)_updateJumpBar
 {
   NSMutableArray *pathItems = [NSMutableArray array];
+  NSMutableArray *paths = [NSMutableArray array];
   PCProject *project = nil;
   NSArray *components;
 
@@ -266,25 +267,45 @@
     [icon setSize:NSMakeSize(16, 16)];
     [item setTitle:[component objectForKey:@"Title"]];
     [item setImage:icon];
-    if ([component objectForKey:@"Path"])
-    {
-      /* The navigator path; the URL only carries it to the click. */
-      [item setURL:[NSURL URLWithString:[[component objectForKey:@"Path"]
-                                         stringByAddingPercentEncodingWithAllowedCharacters:
-                                           [NSCharacterSet URLPathAllowedCharacterSet]]
-                          relativeToURL:[NSURL URLWithString:@"pcnavigator:///"]]];
-    }
     [pathItems addObject:item];
+    /* The navigator path of each item, by index. Cocoa's NSPathControlItem
+     * has no URL setter to carry it. */
+    [paths addObject:[component objectForKey:@"Path"]
+                     ? [component objectForKey:@"Path"] : (id)[NSNull null]];
   }
   [_jumpBar setPathItems:pathItems];
+  ASSIGN(_jumpBarPaths, paths);
 }
 
 /* Reveal the clicked group or file in the project navigator. */
 - (void)_jumpBarClicked:(id)sender
 {
   NSPathControlItem *item = [_jumpBar clickedPathItem];
-  NSString *navigatorPath = [[[item URL] path] stringByRemovingPercentEncoding];
+  NSArray *items = [_jumpBar pathItems];
+  NSUInteger index = [items indexOfObjectIdenticalTo:item];
+  NSString *navigatorPath = nil;
   PCProject *project = nil;
+
+  if (index == NSNotFound)
+  {
+    /* Cocoa may hand out other item objects than the ones that were set. */
+    NSUInteger i;
+
+    for (i = 0; i < [items count]; i++)
+    {
+      if ([[[items objectAtIndex:i] title] isEqualToString:[item title]])
+      {
+        index = i;
+        break;
+      }
+    }
+  }
+
+  if (index != NSNotFound && index < [_jumpBarPaths count]
+      && [_jumpBarPaths objectAtIndex:index] != [NSNull null])
+  {
+    navigatorPath = [_jumpBarPaths objectAtIndex:index];
+  }
 
   if ([_editorManager respondsToSelector:@selector(project)])
   {
@@ -467,6 +488,7 @@
 
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [_window close];
+  RELEASE(_jumpBarPaths);
 
   // _window is setReleasedWhenClosed:YES
   RELEASE(_path);

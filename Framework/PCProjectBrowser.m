@@ -42,9 +42,11 @@ NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
 
 /* GNUstep's programmatic tables retain cell-based mode by default. Register
  * view prototypes explicitly, just as its XIB loader does. */
+#ifdef GNUSTEP
 @interface NSTableView (PCSourceViewSupport)
 - (void)_registerPrototypeViews:(NSArray *)views;
 @end
+#endif
 
 @interface PCSourceIconView : NSImageView
 {
@@ -171,7 +173,9 @@ static NSTableCellView *SourceCell(void)
     [column release];
     [outline setHeaderView:nil];
     [outline setGridStyleMask:NSTableViewGridNone];
+#ifdef GNUSTEP
     [outline _registerPrototypeViews:@[SourceCell()]];
+#endif
     [outline setRowHeight:20];
     [outline setIndentationPerLevel:14];
     [outline setAllowsMultipleSelection:YES];
@@ -577,7 +581,15 @@ static NSTableCellView *SourceCell(void)
 - (BOOL)outlineView:(NSOutlineView *)view isItemExpandable:(id)item
 { return ((PCSourceItem *)item)->subprojectName != nil || [((PCSourceItem *)item)->children count] > 0; }
 - (id)outlineView:(NSOutlineView *)view objectValueForTableColumn:(NSTableColumn *)column byItem:(id)item
-{ return ((PCSourceItem *)item)->title; }
+{
+#ifdef GNUSTEP
+  return ((PCSourceItem *)item)->title;
+#else
+  /* Cocoa sets the cell view's objectValue from this; its bindings need
+   * the item. */
+  return item;
+#endif
+}
 - (NSView *)outlineView:(NSOutlineView *)view viewForTableColumn:(NSTableColumn *)column item:(id)object
 {
   PCSourceItem *item = object;

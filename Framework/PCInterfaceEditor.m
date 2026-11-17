@@ -126,9 +126,11 @@ static NSString *ObjectTitle(NSXMLElement *element)
 @end
 
 /* Register view rows so the active theme can supply its native outline. */
+#ifdef GNUSTEP
 @interface NSTableView (PCInterfaceViewSupport)
 - (void)_registerPrototypeViews:(NSArray *)views;
 @end
+#endif
 @interface PCInterfaceIconView : NSImageView
 {
   NSString *symbolicIconName;
@@ -358,7 +360,9 @@ static NSTableCellView *InterfaceObjectCell(void)
   [[column headerCell] setStringValue:@"Interface Objects"]; [column setWidth:225];
   [_tree addTableColumn:column]; [_tree setOutlineTableColumn:column];
   [_tree setHeaderView:nil];
+#ifdef GNUSTEP
   [_tree _registerPrototypeViews:@[InterfaceObjectCell()]];
+#endif
   [_tree setIndentationPerLevel:14];
   [_tree setColumnAutoresizingStyle:NSTableViewFirstColumnOnlyAutoresizingStyle];
   [_tree setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
@@ -405,7 +409,15 @@ static NSTableCellView *InterfaceObjectCell(void)
 - (BOOL)outlineView:(NSOutlineView *)view isItemExpandable:(id)item
 { return [((PCInterfaceItem *)item)->children count] > 0; }
 - (id)outlineView:(NSOutlineView *)view objectValueForTableColumn:(NSTableColumn *)column byItem:(id)item
-{ return [item title]; }
+{
+#ifdef GNUSTEP
+  return [item title];
+#else
+  /* Cocoa sets the cell view's objectValue from this; its bindings need
+   * the item. */
+  return item;
+#endif
+}
 - (NSView *)outlineView:(NSOutlineView *)view viewForTableColumn:(NSTableColumn *)column item:(id)item
 {
   NSTableCellView *cell = InterfaceObjectCell(); [cell setObjectValue:item]; return cell;

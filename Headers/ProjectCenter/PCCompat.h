@@ -43,6 +43,42 @@
 - (CGFloat)widthOfString:(NSString *)string;
 
 @end
+
+@interface NSString (PCCompat)
+
+/* The receiver without leading and trailing white space. */
+- (NSString *)stringByTrimmingSpaces;
+
+@end
+
+@interface NSUserDefaults (PCCompat)
+
+/* The user's languages as English names ("English", "German"), like
+ * GNUstep's +userLanguages, which ProjectCenter stores in projects. */
++ (NSArray *)userLanguages;
+
+@end
+
+@interface NSWorkspace (PCCompat)
+
+/* Path of the default application for files with the extension, or nil.
+ * The role is ignored. */
+- (NSString *)getBestAppInRole:(NSString *)role
+                  forExtension:(NSString *)extension;
+
+@end
+
+@interface NSText (PCCompat)
+
+- (void)setText:(NSString *)string;
+
+@end
+
+@interface NSTextField (PCCompat)
+
+- (void)setNextText:(id)anObject;
+
+@end
 #endif
 
 #ifndef RETAIN

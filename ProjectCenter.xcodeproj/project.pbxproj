@@ -93,6 +93,7 @@
 		51FBBB53549D5B9292F8BE89 /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = DA47E5ACEEAF8EC02930CB05 /* Info.table */; };
 		53F1366786A2E641BDB6D3D7 /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		547E29A3E5198CEEEF22B63A /* subprojectSuitcase.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 5754DB34A1F8AF3ADF499F4C /* subprojectSuitcase.tiff */; };
+		550A0D04D65EF0C46D96B6FF /* PCCompat.h in Headers */ = {isa = PBXBuildFile; fileRef = 5262931385D6205A1BBB8DEF /* PCCompat.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		56D673BF9ED679357366154C /* PCNavigators.m in Sources */ = {isa = PBXBuildFile; fileRef = 7B407C85EC230B20A6ED715A /* PCNavigators.m */; };
 		57739F42DC708C169DAF4EFE /* AppController.h in Resources */ = {isa = PBXBuildFile; fileRef = 6E9EDECE4AE8C0245B195B37 /* AppController.h */; };
 		58F674A08AEA78C4204FF949 /* PCBuildPrefs.m in Sources */ = {isa = PBXBuildFile; fileRef = 67AB9734265B637EE1BC8F44 /* PCBuildPrefs.m */; };
@@ -244,6 +245,7 @@
 		CC309747622FEF918499FD4D /* PCProjectLoadedFilesPanel.h in Headers */ = {isa = PBXBuildFile; fileRef = A2BEC30FCEA52ED61DDF1F93 /* PCProjectLoadedFilesPanel.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		CD5190BA4CF85396CC88EA2D /* PCAggregateProject.m in Sources */ = {isa = PBXBuildFile; fileRef = 9882C446DC113466DFA31389 /* PCAggregateProject.m */; };
 		CE3D49D8C3BDFAB4826B5075 /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = 8740CC0866EC60ECA5B3D30F /* Info.table */; };
+		D02787DFDFAF28B4F642E07E /* PCCompat.m in Sources */ = {isa = PBXBuildFile; fileRef = 2F5D9DA7C9E33FD2494F46B3 /* PCCompat.m */; };
 		D034B417D427679D733F3C9A /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		D0C69A1E57F46C59D2DA9481 /* ProjectCenter_cvs.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 5EBB360478F9BAFBB637DF8A /* ProjectCenter_cvs.tiff */; };
 		D0FF0A4366E2CBD4698A161B /* FileH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 8CD1A8C9B3865DFBF53869B6 /* FileH.tiff */; };
@@ -299,8 +301,6 @@
 		FE23BB09701022E4A6C86F59 /* PCProjectLoadedFiles.h in Headers */ = {isa = PBXBuildFile; fileRef = EF9651C4504ED507BBD78577 /* PCProjectLoadedFiles.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FF7004D34EB8B40A08FE46B3 /* PCProjectBrowser.m in Sources */ = {isa = PBXBuildFile; fileRef = 245EF09527E869DFE6CE03E7 /* PCProjectBrowser.m */; };
 		FF773D827116A4C17702EDEE /* PCProjectEditor.h in Headers */ = {isa = PBXBuildFile; fileRef = 4F84FFB71E27BE304EA189AF /* PCProjectEditor.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		550A0D04D65EF0C46D96B6FF /* PCCompat.h in Headers */ = {isa = PBXBuildFile; fileRef = 5262931385D6205A1BBB8DEF /* PCCompat.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		D02787DFDFAF28B4F642E07E /* PCCompat.m in Sources */ = {isa = PBXBuildFile; fileRef = 2F5D9DA7C9E33FD2494F46B3 /* PCCompat.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -644,6 +644,7 @@
 		2DF827F93D605E1728AF75CA /* headerSuitcase.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = headerSuitcase.tiff; sourceTree = "<group>"; };
 		2E45CCDAEC86E6594BBC996F /* PCEditor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCEditor.m; sourceTree = "<group>"; };
 		2F21F18A5272F64D40E3E04C /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		2F5D9DA7C9E33FD2494F46B3 /* PCCompat.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCCompat.m; sourceTree = "<group>"; };
 		2F9E70CEE273D384917E319E /* ProjectCenter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProjectCenter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2FFA83447B9607786ED20ADB /* XcodeProjects.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = XcodeProjects.md; sourceTree = "<group>"; };
 		302F6AACE1F66B3996F72059 /* PCAuxiliaryWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCAuxiliaryWindow.m; sourceTree = "<group>"; };
@@ -687,6 +688,7 @@
 		4FE12E514F550AC7632F3723 /* PCXcodeProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCXcodeProject.h; sourceTree = "<group>"; };
 		5087EFE8D9C0033A4076FBE3 /* PCProjectLauncher.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectLauncher.m; sourceTree = "<group>"; };
 		51A1C1F311016BCE61BA2E73 /* PCAppProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCAppProject.h; sourceTree = "<group>"; };
+		5262931385D6205A1BBB8DEF /* PCCompat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCCompat.h; sourceTree = "<group>"; };
 		53139B6AC545DCD96BFB4A8E /* PCFileTypeIcon.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCFileTypeIcon.m; sourceTree = "<group>"; };
 		53D71787C4BE1CD10079A2E8 /* Version */ = {isa = PBXFileReference; lastKnownFileType = text; path = Version; sourceTree = "<group>"; };
 		5533FF87310AE3B70E1F6178 /* ObjCMethodHandler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjCMethodHandler.h; sourceTree = "<group>"; };
@@ -914,8 +916,6 @@
 		FE126D15C40C0D6ED083CD36 /* PCBundleProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCBundleProject.h; sourceTree = "<group>"; };
 		FEE64CCCC99031DB4F56DE65 /* stepout_button.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = stepout_button.png; sourceTree = "<group>"; };
 		FF3B193D46B8B527CC9FDB48 /* ResourceSet.project */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ResourceSet.project; sourceTree = BUILT_PRODUCTS_DIR; };
-		5262931385D6205A1BBB8DEF /* PCCompat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCCompat.h; sourceTree = "<group>"; };
-		2F5D9DA7C9E33FD2494F46B3 /* PCCompat.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCCompat.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2888,8 +2888,6 @@
 		1988CF1C7C68207B396CD8AE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Headers/ProjectCenter/PCCompat.h;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = NO;
@@ -2900,6 +2898,8 @@
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Headers/ProjectCenter/PCCompat.h;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -3125,8 +3125,6 @@
 		4545BA15FFC43504EB9CC84D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Headers/ProjectCenter/PCCompat.h;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = NO;
@@ -3136,6 +3134,8 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Headers/ProjectCenter/PCCompat.h;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
