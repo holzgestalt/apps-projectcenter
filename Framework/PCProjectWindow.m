@@ -39,6 +39,7 @@
 #import <ProjectCenter/PCProjectInspector.h>
 #import "PCNavigators.h"
 #import "PCXcodeProjectEditor.h"
+#import "PCXcodeProject.h"
 
 #import <Protocols/Preferences.h>
 #import <Protocols/CodeEditorView.h>
@@ -193,7 +194,8 @@
 
   if ([builder project] == project)
   {
-    /* Run, Stop and Build depend on the build state. */
+    /* Run, Stop, Build and the build selection depend on the build state. */
+    [self updateBuildSelection];
     [[projectWindow toolbar] validateVisibleItems];
   }
   /* Like Xcode: show the issues when a build ends with errors. */
@@ -253,10 +255,131 @@ static NSString * const PCToolbarFind = @"PCToolbarFind";
 static NSString * const PCToolbarNavigator = @"PCToolbarNavigator";
 static NSString * const PCToolbarBottomArea = @"PCToolbarBottomArea";
 static NSString * const PCToolbarInspector = @"PCToolbarInspector";
+static NSString * const PCToolbarScheme = @"PCToolbarScheme";
+static NSString * const PCToolbarDestination = @"PCToolbarDestination";
+static NSString * const PCToolbarConfiguration = @"PCToolbarConfiguration";
+
+/* An Xcode project chooses a scheme, a build configuration and, where
+ * xcodebuild builds it, a run destination, as in Xcode's toolbar. */
+- (BOOL)_hasBuildSelection
+{
+  return [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"] != nil;
+}
+
+- (BOOL)_buildsWithXcodebuild
+{
+#ifdef GNUSTEP
+  return NO;
+#else
+  return [self _hasBuildSelection]
+    && [[project projectDict] objectForKey:@"XCODE_BuildScript"] == nil
+    && [PCXcodeProject xcodebuildPath] != nil;
+#endif
+}
+
+- (NSPopUpButton *)_toolbarPopUp:(NSString *)identifier
+{
+  for (NSToolbarItem *item in [[projectWindow toolbar] items])
+  {
+    if ([[item itemIdentifier] isEqual:identifier])
+    {
+      return (NSPopUpButton *)[item view];
+    }
+  }
+  return nil;
+}
+
+static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
+{
+  if (popUp == nil)
+  {
+    return;
+  }
+  [popUp removeAllItems];
+  [popUp addItemsWithTitles:titles];
+  if (selected && [popUp indexOfItemWithTitle:selected] < 0)
+  {
+    [popUp addItemWithTitle:selected];
+  }
+  [popUp selectItemWithTitle:selected];
+}
+
+- (void)updateBuildSelection
+{
+  NSDictionary     *projectDict = [project projectDict];
+  NSString         *path = [projectDict objectForKey:@"XCODE_PROJECT_PATH"];
+  NSDictionary     *selection;
+  NSDictionary     *scheme;
+  PCProjectBuilder *builder = [project projectBuilder];
+  BOOL             enabled = !([builder isBuilding] || [builder isCleaning]);
+  NSPopUpButton    *popUp;
+
+  if (path == nil)
+  {
+    return;
+  }
+  selection = [PCXcodeProject buildSelectionForProject:projectDict];
+  scheme = [selection objectForKey:@"Scheme"];
+  FillPopUp([self _toolbarPopUp:PCToolbarScheme],
+            [[PCXcodeProject schemesOfProjectAtPath:path] valueForKey:@"Name"],
+            [scheme objectForKey:@"Name"]);
+  FillPopUp([self _toolbarPopUp:PCToolbarConfiguration],
+            [PCXcodeProject configurationsOfProjectAtPath:path],
+            [selection objectForKey:@"Configuration"]);
+  FillPopUp([self _toolbarPopUp:PCToolbarDestination],
+            [[PCXcodeProject runDestinations] valueForKey:@"Name"],
+            [[selection objectForKey:@"Destination"] objectForKey:@"Name"]);
+  popUp = [self _toolbarPopUp:PCToolbarScheme];
+  [popUp setToolTip:[NSString stringWithFormat:@"Scheme %@: builds %@%@",
+                     [scheme objectForKey:@"Name"],
+                     [[scheme objectForKey:@"Targets"] componentsJoinedByString:@", "],
+                     ([scheme objectForKey:@"RunTarget"]
+                      ? [NSString stringWithFormat:@"; runs %@", [scheme objectForKey:@"RunTarget"]]
+                      : @"")]];
+  [[self _toolbarPopUp:PCToolbarConfiguration] setToolTip:
+   [NSString stringWithFormat:@"Build configuration for Build and Run (the scheme uses %@)",
+    [[scheme objectForKey:@"Configurations"] objectForKey:@"Run"]]];
+  [[self _toolbarPopUp:PCToolbarDestination] setToolTip:
+   @"Run destination: the architectures to build, and where Run starts the product"];
+  for (NSString *identifier in @[PCToolbarScheme, PCToolbarConfiguration, PCToolbarDestination])
+  {
+    [[self _toolbarPopUp:identifier] setEnabled:enabled];
+  }
+  [[projectWindow toolbar] validateVisibleItems];
+}
+
+- (void)selectBuildScheme:(id)sender
+{
+  [PCXcodeProject selectScheme:[sender titleOfSelectedItem] configuration:nil
+                   destination:nil forProject:[project projectDict]];
+  [self updateBuildSelection];
+}
+
+- (void)selectBuildConfiguration:(id)sender
+{
+  [PCXcodeProject selectScheme:nil configuration:[sender titleOfSelectedItem]
+                   destination:nil forProject:[project projectDict]];
+  [self updateBuildSelection];
+}
+
+- (void)selectBuildDestination:(id)sender
+{
+  [PCXcodeProject selectScheme:nil configuration:nil
+                   destination:[sender titleOfSelectedItem] forProject:[project projectDict]];
+  [self updateBuildSelection];
+}
+
+/* Schemes added or changed in Xcode show up the next time the menu opens. */
+- (void)buildSelectionWillPopUp:(NSNotification *)aNotif
+{
+  [self updateBuildSelection];
+}
 
 - (void)_createToolbar
 {
-  NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"PCProjectWindowToolbar"];
+  NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:
+                        ([self _hasBuildSelection] ? @"PCXcodeProjectWindowToolbar"
+                         : @"PCProjectWindowToolbar")];
   [toolbar setDelegate:(id)self];
   [toolbar setAllowsUserCustomization:YES];
   [toolbar setDisplayMode:NSToolbarDisplayModeIconOnly];
@@ -266,17 +389,42 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
 
 - (NSArray *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar
 {
-  return [NSArray arrayWithObjects:PCToolbarRun, PCToolbarStop, PCToolbarBuild,
-          PCToolbarClean, PCToolbarFind, PCToolbarNavigator,
-          PCToolbarBottomArea, PCToolbarInspector, NSToolbarFlexibleSpaceItemIdentifier,
-          NSToolbarSpaceItemIdentifier, NSToolbarSeparatorItemIdentifier, nil];
+  NSMutableArray *identifiers = [NSMutableArray arrayWithObjects:PCToolbarRun,
+                                 PCToolbarStop, PCToolbarBuild, PCToolbarClean,
+                                 PCToolbarFind, PCToolbarNavigator, PCToolbarBottomArea,
+                                 PCToolbarInspector, NSToolbarFlexibleSpaceItemIdentifier,
+                                 NSToolbarSpaceItemIdentifier,
+                                 NSToolbarSeparatorItemIdentifier, nil];
+
+  if ([self _hasBuildSelection])
+  {
+    [identifiers addObjectsFromArray:@[PCToolbarScheme, PCToolbarConfiguration]];
+  }
+  if ([self _buildsWithXcodebuild])
+  {
+    [identifiers addObject:PCToolbarDestination];
+  }
+  return identifiers;
 }
 
 - (NSArray *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar
 {
-  return [NSArray arrayWithObjects:PCToolbarRun, PCToolbarStop, PCToolbarBuild,
-          NSToolbarFlexibleSpaceItemIdentifier, PCToolbarNavigator,
-          PCToolbarBottomArea, PCToolbarInspector, nil];
+  NSMutableArray *identifiers = [NSMutableArray arrayWithObjects:PCToolbarRun,
+                                 PCToolbarStop, PCToolbarBuild, nil];
+
+  /* Xcode's scheme and destination picker follows Run and Stop. */
+  if ([self _buildsWithXcodebuild])
+  {
+    [identifiers addObjectsFromArray:@[PCToolbarScheme, PCToolbarDestination,
+                                       PCToolbarConfiguration]];
+  }
+  else if ([self _hasBuildSelection])
+  {
+    [identifiers addObject:PCToolbarConfiguration];
+  }
+  [identifiers addObjectsFromArray:@[NSToolbarFlexibleSpaceItemIdentifier, PCToolbarNavigator,
+                                     PCToolbarBottomArea, PCToolbarInspector]];
+  return identifiers;
 }
 
 - (NSToolbarItem *)toolbar:(NSToolbar *)toolbar
@@ -293,6 +441,38 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
                          @[@"Debug Area", @"Hide or show build and run output", @"toggleBottomArea:", @"GSBottomPaneTemplate"], PCToolbarBottomArea,
                          @[@"Inspector", @"Show the project inspector", @"showProjectInspector:", @"GSInspectorPaneTemplate"], PCToolbarInspector,
                          nil];
+  NSDictionary *popUps = [NSDictionary dictionaryWithObjectsAndKeys:
+                          @[@"Scheme", @"selectBuildScheme:", @170], PCToolbarScheme,
+                          @[@"Destination", @"selectBuildDestination:", @180], PCToolbarDestination,
+                          @[@"Configuration", @"selectBuildConfiguration:", @100], PCToolbarConfiguration,
+                          nil];
+  NSArray *popUpDescription = [popUps objectForKey:identifier];
+  if (popUpDescription)
+  {
+    NSToolbarItem *item = [[[NSToolbarItem alloc] initWithItemIdentifier:identifier] autorelease];
+    CGFloat       width = [[popUpDescription objectAtIndex:2] floatValue];
+    NSPopUpButton *popUp = [[[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, width, 24)
+                                                       pullsDown:NO] autorelease];
+
+    [popUp setTarget:self];
+    [popUp setAction:NSSelectorFromString([popUpDescription objectAtIndex:1])];
+    [item setLabel:[popUpDescription objectAtIndex:0]];
+    [item setPaletteLabel:[popUpDescription objectAtIndex:0]];
+    [item setView:popUp];
+#ifdef GNUSTEP
+    [item setMinSize:NSMakeSize(width, 24)];
+    [item setMaxSize:NSMakeSize(width, 24)];
+#endif
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(buildSelectionWillPopUp:)
+                                                 name:NSPopUpButtonWillPopUpNotification
+                                               object:popUp];
+    if (!flag)
+    {
+      [popUp addItemWithTitle:[popUpDescription objectAtIndex:0]];
+    }
+    return item;
+  }
   NSArray *description = [items objectForKey:identifier];
   if (!description) return nil;
   NSToolbarItem *item = [[[NSToolbarItem alloc] initWithItemIdentifier:identifier] autorelease];
@@ -315,7 +495,8 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   BOOL running = [launcher isRunning] || [launcher isDebugging];
 
   if ([identifier isEqual:PCToolbarRun])
-    return [project isExecutable] && !running && !building;
+    return [project isExecutable] && !running && !building
+      && (![self _buildsWithXcodebuild] || [PCXcodeProject canRunProject:[project projectDict]]);
   if ([identifier isEqual:PCToolbarStop]) return building || running;
   if ([identifier isEqual:PCToolbarBuild] || [identifier isEqual:PCToolbarClean])
     return !building;
@@ -411,6 +592,7 @@ static NSString * const PCToolbarInspector = @"PCToolbarInspector";
   [h_split setFrame:[[projectWindow contentView] bounds]];
   [h_split setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [self _createToolbar];
+  [self updateBuildSelection];
   [h_split setDelegate:self];
   [h_split setVertical:YES];
 

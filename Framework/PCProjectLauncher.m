@@ -517,6 +517,17 @@ enum {
                           selector:@selector(runDidTerminate:)
                               name:NSTaskDidTerminateNotification
                             object:launchTask];
+#ifndef GNUSTEP
+  /* "My Mac (Rosetta)": start a universal product as x86_64. */
+  NSString *architecture = [PCXcodeProject launchArchitectureForProject:[project projectDict]];
+  if (architecture && [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]
+      && ![[project projectDict] objectForKey:@"XCODE_Executable"])
+  {
+    [args insertObject:[@"-" stringByAppendingString:architecture] atIndex:0];
+    [args insertObject:executablePath atIndex:1];
+    executablePath = @"/usr/bin/arch";
+  }
+#endif
   [launchTask setArguments:args];
   [launchTask setCurrentDirectoryPath:[project projectPath]];
   [launchTask setLaunchPath:executablePath];

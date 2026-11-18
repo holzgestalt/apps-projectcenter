@@ -494,7 +494,16 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
     }
   }
 
-  if ([[projectDict objectForKey:PCBuilderDebug] isEqualToString:@"YES"])
+  if ([projectDict objectForKey:@"XCODE_PROJECT_PATH"])
+  { // An Xcode project's chosen build configuration: Debug builds with
+    // debug=yes, as Xcode's Debug configuration has no optimization.
+    NSString *configuration = [[PCXcodeProject buildSelectionForProject:projectDict]
+                               objectForKey:@"Configuration"];
+
+    [args addObject:([[configuration lowercaseString] hasPrefix:@"debug"]
+                     ? @"debug=yes" : @"debug=no")];
+  }
+  else if ([[projectDict objectForKey:PCBuilderDebug] isEqualToString:@"YES"])
   { // there is no clear default; the default configuration of GNUstep-make
     // uses debug=no (since release 2.2.1, it had debug=yes before), but
     // that default can easily be changed at configuration time with the

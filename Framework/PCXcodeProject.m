@@ -1,5 +1,9 @@
 #import "PCXcodeProject.h"
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
 static NSString * const PCXcodeProjectMarker = @"XCODE_PROJECT_PATH";
 
 static NSMutableDictionary *Group(NSString *name)
@@ -330,6 +334,490 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
   [overview setObject:targets forKey:@"Targets"];
   return overview;
 }
+// --- Schemes, configurations and run destinations
+
+static NSString * const PCXcodeSelectionsDefault = @"PCXcodeBuildSelections";
+
+static NSString *ProjectBundlePath(NSString *path)
+{
+  path = [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+  if ([[path lastPathComponent] isEqual:@"project.pbxproj"])
+  {
+    path = [path stringByDeletingLastPathComponent];
+  }
+  return path;
+}
+
+static NSDictionary *ProjectObjects(NSString *path, NSDictionary **project)
+{
+  NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:
+                         [path stringByAppendingPathComponent:@"project.pbxproj"]];
+  NSDictionary *objects = [plist objectForKey:@"objects"];
+  NSDictionary *root = [objects objectForKey:[plist objectForKey:@"rootObject"]];
+
+  if (![objects isKindOfClass:[NSDictionary class]]
+      || ![[root objectForKey:@"isa"] isEqual:@"PBXProject"])
+  {
+    return nil;
+  }
+  if (project)
+  {
+    *project = root;
+  }
+  return objects;
+}
+
+static NSString *UserDataPath(NSString *path)
+{
+  return [path stringByAppendingPathComponent:
+          [NSString stringWithFormat:@"xcuserdata/%@.xcuserdatad", NSUserName()]];
+}
+
+/* Changes when the project, its scheme folders or the user's scheme order
+ * change, so cached schemes are read again. */
+static NSString *ProjectSignature(NSString *path)
+{
+  NSFileManager   *fm = [NSFileManager defaultManager];
+  NSMutableString *signature = [NSMutableString stringWithString:path];
+  NSArray         *files = @[@"project.pbxproj", @"xcshareddata/xcschemes",
+                             @"xcshareddata/xcschemes/xcschememanagement.plist"];
+
+  files = [files arrayByAddingObjectsFromArray:
+           @[[UserDataPath(@"") stringByAppendingPathComponent:@"xcschemes"],
+             [UserDataPath(@"") stringByAppendingPathComponent:@"xcschemes/xcschememanagement.plist"]]];
+  for (NSString *file in files)
+  {
+    NSString *full = [path stringByAppendingPathComponent:file];
+    NSArray  *names = [[full pathExtension] length] ? nil : [fm contentsOfDirectoryAtPath:full error:NULL];
+
+    [signature appendFormat:@"|%@", [[fm attributesOfItemAtPath:full error:NULL] fileModificationDate]];
+    /* A scheme edited in place leaves its folder's date unchanged. */
+    for (NSString *name in names)
+    {
+      [signature appendFormat:@",%@", [[fm attributesOfItemAtPath:[full stringByAppendingPathComponent:name]
+                                                            error:NULL] fileModificationDate]];
+    }
+  }
+  return signature;
+}
+
+static NSString *Attribute(NSXMLElement *element, NSString *name)
+{
+  NSString *value = [[element attributeForName:name] stringValue];
+
+  return [value length] ? value : nil;
+}
+
+static NSArray *Elements(NSXMLNode *node, NSString *query)
+{
+  NSArray *nodes = [node nodesForXPath:query error:NULL];
+
+  return nodes ? nodes : [NSArray array];
+}
+
+/* {Name, Shared, Targets, RunTarget, Configurations} from an .xcscheme. */
+static NSMutableDictionary *ReadScheme(NSString *file, BOOL shared)
+{
+  NSData              *data = [NSData dataWithContentsOfFile:file];
+  NSXMLDocument       *document;
+  NSXMLElement        *root;
+  NSMutableArray      *targets = [NSMutableArray array];
+  NSMutableArray      *allTargets = [NSMutableArray array];
+  NSMutableDictionary *configurations = [NSMutableDictionary dictionary];
+  NSMutableDictionary *scheme;
+  NSDictionary        *actions;
+  NSString            *runTarget;
+
+  if (data == nil)
+  {
+    return nil;
+  }
+  document = [[[NSXMLDocument alloc] initWithData:data options:0 error:NULL] autorelease];
+  root = [document rootElement];
+  if (![[root name] isEqual:@"Scheme"])
+  {
+    return nil;
+  }
+  for (NSXMLElement *entry in Elements(root, @"BuildAction/BuildActionEntries/BuildActionEntry"))
+  {
+    NSString *name = Attribute([Elements(entry, @"BuildableReference") lastObject],
+                               @"BlueprintName");
+
+    if (name == nil)
+    {
+      continue;
+    }
+    [allTargets addObject:name];
+    if ([Attribute(entry, @"buildForRunning") isEqual:@"YES"])
+    {
+      [targets addObject:name];
+    }
+  }
+  actions = [NSDictionary dictionaryWithObjectsAndKeys:
+             @"Run", @"LaunchAction", @"Test", @"TestAction",
+             @"Profile", @"ProfileAction", @"Analyze", @"AnalyzeAction",
+             @"Archive", @"ArchiveAction", nil];
+  for (NSString *action in actions)
+  {
+    NSString *configuration = Attribute([Elements(root, action) lastObject],
+                                        @"buildConfiguration");
+
+    if (configuration)
+    {
+      [configurations setObject:configuration forKey:[actions objectForKey:action]];
+    }
+  }
+  runTarget = Attribute([Elements(root, @"LaunchAction/BuildableProductRunnable/BuildableReference")
+                         lastObject], @"BlueprintName");
+  scheme = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+            [[file lastPathComponent] stringByDeletingPathExtension], @"Name",
+            [NSNumber numberWithBool:shared], @"Shared",
+            [NSNumber numberWithBool:NO], @"Implicit",
+            ([targets count] ? targets : allTargets), @"Targets",
+            configurations, @"Configurations", nil];
+  if (runTarget)
+  {
+    [scheme setObject:runTarget forKey:@"RunTarget"];
+  }
+  return scheme;
+}
+
+static NSArray *SchemeFiles(NSString *directory)
+{
+  NSMutableArray *files = [NSMutableArray array];
+  NSArray        *names = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:NULL];
+
+  for (NSString *name in [names sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)])
+  {
+    if ([[name pathExtension] isEqual:@"xcscheme"])
+    {
+      [files addObject:[directory stringByAppendingPathComponent:name]];
+    }
+  }
+  return files;
+}
+
+static NSInteger CompareSchemes(id a, id b, void *context)
+{
+  NSComparisonResult result = [[a objectForKey:@"_Hint"] compare:[b objectForKey:@"_Hint"]];
+
+  return result != NSOrderedSame ? result : [[a objectForKey:@"_Index"] compare:[b objectForKey:@"_Index"]];
+}
+
+static NSArray *ConfigurationNames(NSDictionary *objects, NSDictionary *project)
+{
+  return [Configurations(objects, [project objectForKey:@"buildConfigurationList"])
+          valueForKey:@"Name"];
+}
+
+static NSArray *ReadSchemes(NSString *path)
+{
+  NSDictionary   *project = nil;
+  NSDictionary   *objects = ProjectObjects(path, &project);
+  NSMutableArray *schemes = [NSMutableArray array];
+  NSMutableSet   *built = [NSMutableSet set];
+  NSString       *user = UserDataPath(path);
+  NSDictionary   *state;
+  NSArray        *names = ConfigurationNames(objects, project);
+  NSString       *runConfiguration;
+  NSString       *releaseConfiguration;
+  NSUInteger     index = 0;
+
+  if (objects == nil)
+  {
+    return [NSArray array];
+  }
+  for (NSString *file in SchemeFiles([path stringByAppendingPathComponent:@"xcshareddata/xcschemes"]))
+  {
+    NSMutableDictionary *scheme = ReadScheme(file, YES);
+    if (scheme) [schemes addObject:scheme];
+  }
+  for (NSString *file in SchemeFiles([user stringByAppendingPathComponent:@"xcschemes"]))
+  {
+    NSMutableDictionary *scheme = ReadScheme(file, NO);
+    if (scheme) [schemes addObject:scheme];
+  }
+  for (NSDictionary *scheme in schemes)
+  {
+    [built addObjectsFromArray:[scheme objectForKey:@"Targets"]];
+  }
+
+  /* Xcode creates a scheme for each target that none builds, with the
+   * configurations of a new scheme. */
+  runConfiguration = [names containsObject:@"Debug"] ? @"Debug" : [names firstObject];
+  releaseConfiguration = [[objects objectForKey:[project objectForKey:@"buildConfigurationList"]]
+                          objectForKey:@"defaultConfigurationName"];
+  if (![names containsObject:releaseConfiguration])
+  {
+    releaseConfiguration = [names containsObject:@"Release"] ? @"Release" : [names lastObject];
+  }
+  for (NSString *identifier in [project objectForKey:@"targets"])
+  {
+    NSDictionary        *target = [objects objectForKey:identifier];
+    NSString            *name = [target objectForKey:@"name"];
+    NSString            *type = [target objectForKey:@"productType"];
+    NSMutableDictionary *scheme;
+
+    if (![name isKindOfClass:[NSString class]] || [built containsObject:name])
+    {
+      continue;
+    }
+    scheme = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+              name, @"Name", [NSNumber numberWithBool:YES], @"Shared",
+              [NSNumber numberWithBool:YES], @"Implicit", @[name], @"Targets",
+              [NSMutableDictionary dictionary], @"Configurations", nil];
+    if (runConfiguration)
+    {
+      for (NSString *action in @[@"Run", @"Test", @"Analyze"])
+        [[scheme objectForKey:@"Configurations"] setObject:runConfiguration forKey:action];
+    }
+    if (releaseConfiguration)
+    {
+      for (NSString *action in @[@"Profile", @"Archive"])
+        [[scheme objectForKey:@"Configurations"] setObject:releaseConfiguration forKey:action];
+    }
+    if ([type isEqual:@"com.apple.product-type.application"]
+        || [type isEqual:@"com.apple.product-type.tool"])
+    {
+      [scheme setObject:name forKey:@"RunTarget"];
+    }
+    [schemes addObject:scheme];
+  }
+
+  /* The order and visibility the user chose in Manage Schemes. */
+  state = [[NSDictionary dictionaryWithContentsOfFile:
+            [user stringByAppendingPathComponent:@"xcschemes/xcschememanagement.plist"]]
+           objectForKey:@"SchemeUserState"];
+  for (NSMutableDictionary *scheme in [[schemes copy] autorelease])
+  {
+    NSString     *file = [[scheme objectForKey:@"Name"] stringByAppendingPathExtension:@"xcscheme"];
+    NSDictionary *entry = [state objectForKey:[file stringByAppendingString:@"_^#shared#^_"]];
+    id           hint;
+
+    if (entry == nil)
+    {
+      entry = [state objectForKey:file];
+    }
+    if ([entry objectForKey:@"isShown"] && ![[entry objectForKey:@"isShown"] boolValue])
+    {
+      [schemes removeObject:scheme];
+      continue;
+    }
+    hint = [entry objectForKey:@"orderHint"];
+    [scheme setObject:[NSNumber numberWithInteger:([hint respondsToSelector:@selector(integerValue)]
+                                                   ? [hint integerValue] : NSIntegerMax)]
+               forKey:@"_Hint"];
+    [scheme setObject:[NSNumber numberWithUnsignedInteger:index++] forKey:@"_Index"];
+  }
+  [schemes sortUsingFunction:CompareSchemes context:NULL];
+  [schemes makeObjectsPerformSelector:@selector(removeObjectForKey:) withObject:@"_Hint"];
+  [schemes makeObjectsPerformSelector:@selector(removeObjectForKey:) withObject:@"_Index"];
+  return schemes;
+}
+
+/* The architecture of this computer, also when running under Rosetta. */
+static NSString *NativeArchitecture(void)
+{
+#ifdef __APPLE__
+  int    arm64 = 0;
+  size_t size = sizeof(arm64);
+
+  if (sysctlbyname("hw.optional.arm64", &arm64, &size, NULL, 0) == 0 && arm64)
+  {
+    return @"arm64";
+  }
+  return @"x86_64";
+#elif defined(__aarch64__)
+  return @"arm64";
+#else
+  return @"x86_64";
+#endif
+}
+
++ (NSArray *)schemesOfProjectAtPath:(NSString *)path
+{
+  static NSMutableDictionary *cache = nil;
+  NSString *signature;
+  NSArray  *schemes;
+
+  path = ProjectBundlePath(path);
+  signature = ProjectSignature(path);
+  if (cache == nil)
+  {
+    cache = [NSMutableDictionary new];
+  }
+  schemes = [[cache objectForKey:path] objectForKey:@"Schemes"];
+  if (schemes == nil || ![[[cache objectForKey:path] objectForKey:@"Signature"] isEqual:signature])
+  {
+    schemes = ReadSchemes(path);
+    [cache setObject:@{@"Schemes": schemes, @"Signature": signature} forKey:path];
+  }
+  return schemes;
+}
+
++ (NSArray *)configurationsOfProjectAtPath:(NSString *)path
+{
+  NSDictionary *project = nil;
+  NSDictionary *objects = ProjectObjects(ProjectBundlePath(path), &project);
+  NSArray      *names = objects ? ConfigurationNames(objects, project) : nil;
+
+  return names ? names : [NSArray array];
+}
+
++ (NSArray *)runDestinations
+{
+  NSString       *native = NativeArchitecture();
+  NSMutableArray *destinations = [NSMutableArray array];
+  NSNumber       *no = [NSNumber numberWithBool:NO];
+
+  [destinations addObject:@{@"Name": @"My Mac", @"Architecture": native, @"BuildOnly": no,
+                            @"Destination": [@"platform=macOS,arch=" stringByAppendingString:native]}];
+  /* Intel code runs on Apple silicon only where Rosetta is installed. */
+  if ([native isEqual:@"arm64"]
+      && [[NSFileManager defaultManager] fileExistsAtPath:@"/Library/Apple/usr/libexec/oah/libRosettaRuntime"])
+  {
+    [destinations addObject:@{@"Name": @"My Mac (Rosetta)", @"Architecture": @"x86_64",
+                              @"BuildOnly": no, @"Destination": @"platform=macOS,arch=x86_64"}];
+  }
+  [destinations addObject:@{@"Name": @"Any Mac (arm64, x86_64)",
+                            @"BuildOnly": [NSNumber numberWithBool:YES],
+                            @"Destination": @"generic/platform=macOS"}];
+  return destinations;
+}
+
+static NSDictionary *Named(NSArray *entries, NSString *name)
+{
+  for (NSDictionary *entry in entries)
+  {
+    if ([[entry objectForKey:@"Name"] isEqual:name])
+    {
+      return entry;
+    }
+  }
+  return nil;
+}
+
+static NSDictionary *SavedSelection(NSString *path)
+{
+  return [[[NSUserDefaults standardUserDefaults] dictionaryForKey:PCXcodeSelectionsDefault]
+          objectForKey:path];
+}
+
++ (NSDictionary *)buildSelectionForProject:(NSDictionary *)projectDict
+{
+  NSString     *path = [projectDict objectForKey:PCXcodeProjectMarker];
+  NSString     *application = [projectDict objectForKey:@"PROJECT_NAME"];
+  NSArray      *schemes;
+  NSArray      *configurations;
+  NSArray      *destinations = [self runDestinations];
+  NSDictionary *saved;
+  NSDictionary *scheme = nil;
+  NSString     *configuration;
+  NSDictionary *destination;
+
+  if (path == nil)
+  {
+    return nil;
+  }
+  schemes = [self schemesOfProjectAtPath:path];
+  configurations = [self configurationsOfProjectAtPath:path];
+  saved = SavedSelection(path);
+  scheme = Named(schemes, [saved objectForKey:@"Scheme"]);
+  if (scheme == nil)
+  {
+    scheme = Named(schemes, application);
+  }
+  if (scheme == nil)
+  {
+    for (NSDictionary *candidate in schemes)
+    {
+      if ([[candidate objectForKey:@"RunTarget"] isEqual:application])
+      {
+        scheme = candidate;
+        break;
+      }
+    }
+  }
+  if (scheme == nil)
+  {
+    scheme = [schemes firstObject];
+  }
+  if (scheme == nil && application)
+  {
+    scheme = @{@"Name": application, @"Shared": @YES, @"Implicit": @YES,
+               @"Targets": @[application], @"RunTarget": application,
+               @"Configurations": @{}};
+  }
+  configuration = [[saved objectForKey:@"Configurations"] objectForKey:[scheme objectForKey:@"Name"]];
+  if (![configurations containsObject:configuration])
+  {
+    configuration = [[scheme objectForKey:@"Configurations"] objectForKey:@"Run"];
+  }
+  if (configuration == nil)
+  {
+    configuration = [configurations containsObject:@"Debug"] || [configurations count] == 0
+      ? @"Debug" : [configurations firstObject];
+  }
+  destination = Named(destinations, [saved objectForKey:@"Destination"]);
+  if (destination == nil)
+  {
+    destination = [destinations firstObject];
+  }
+  return [NSDictionary dictionaryWithObjectsAndKeys:scheme, @"Scheme",
+          configuration, @"Configuration", destination, @"Destination", nil];
+}
+
++ (void)selectScheme:(NSString *)scheme
+       configuration:(NSString *)configuration
+         destination:(NSString *)destination
+          forProject:(NSDictionary *)projectDict
+{
+  NSUserDefaults      *defaults = [NSUserDefaults standardUserDefaults];
+  NSString            *path = [projectDict objectForKey:PCXcodeProjectMarker];
+  NSMutableDictionary *all;
+  NSMutableDictionary *saved;
+  NSMutableDictionary *overrides;
+  NSDictionary        *current;
+  NSString            *schemeName;
+  NSString            *own;
+
+  if (path == nil)
+  {
+    return;
+  }
+  all = [NSMutableDictionary dictionaryWithDictionary:
+         [defaults dictionaryForKey:PCXcodeSelectionsDefault]];
+  saved = [NSMutableDictionary dictionaryWithDictionary:[all objectForKey:path]];
+  overrides = [NSMutableDictionary dictionaryWithDictionary:[saved objectForKey:@"Configurations"]];
+  if (scheme)
+  {
+    [saved setObject:scheme forKey:@"Scheme"];
+  }
+  if (destination)
+  {
+    [saved setObject:destination forKey:@"Destination"];
+  }
+  [all setObject:saved forKey:path];
+  [defaults setObject:all forKey:PCXcodeSelectionsDefault];
+  if (configuration)
+  {
+    current = [self buildSelectionForProject:projectDict];
+    schemeName = [[current objectForKey:@"Scheme"] objectForKey:@"Name"];
+    own = [[[current objectForKey:@"Scheme"] objectForKey:@"Configurations"] objectForKey:@"Run"];
+    if ([configuration isEqual:own])
+    {
+      [overrides removeObjectForKey:schemeName];
+    }
+    else if (schemeName)
+    {
+      [overrides setObject:configuration forKey:schemeName];
+    }
+    [saved setObject:overrides forKey:@"Configurations"];
+    [all setObject:saved forKey:path];
+    [defaults setObject:all forKey:PCXcodeSelectionsDefault];
+  }
+}
+
 // --- Building with xcodebuild
 
 static NSData *RunTool(NSString *tool, NSArray *arguments)
@@ -378,24 +866,20 @@ static id JSONFromTool(NSString *tool, NSArray *arguments)
   return [[NSFileManager defaultManager] isExecutableFileAtPath:path] ? path : nil;
 }
 
-/* -project and -scheme (or -target) for the application target. */
-+ (NSArray *)_xcodebuildSelectionForProject:(NSDictionary *)projectDict
+/* The schemes that xcodebuild can build, asked again when the project's
+ * schemes change. */
++ (NSArray *)_xcodebuildSchemesOfProjectAtPath:(NSString *)path
 {
-  static NSMutableDictionary *schemes = nil;
-  NSString *path = [projectDict objectForKey:PCXcodeProjectMarker];
-  NSString *target = [projectDict objectForKey:@"PROJECT_NAME"];
+  static NSMutableDictionary *cache = nil;
+  NSString *signature = ProjectSignature(path);
   NSArray  *known;
 
-  if (path == nil || target == nil || [self xcodebuildPath] == nil)
+  if (cache == nil)
   {
-    return nil;
+    cache = [NSMutableDictionary new];
   }
-  if (schemes == nil)
-  {
-    schemes = [NSMutableDictionary new];
-  }
-  known = [schemes objectForKey:path];
-  if (known == nil)
+  known = [[cache objectForKey:path] objectForKey:@"Schemes"];
+  if (known == nil || ![[[cache objectForKey:path] objectForKey:@"Signature"] isEqual:signature])
   {
     NSDictionary *list = JSONFromTool([self xcodebuildPath],
                                       @[@"-list", @"-json", @"-project", path]);
@@ -405,66 +889,144 @@ static id JSONFromTool(NSString *tool, NSArray *arguments)
     {
       known = [NSArray array];
     }
-    [schemes setObject:known forKey:path];
+    [cache setObject:@{@"Schemes": known, @"Signature": signature} forKey:path];
   }
-  if ([known containsObject:target])
+  return known;
+}
+
+/* -project, -scheme or -target, -configuration and the architectures. */
++ (NSArray *)_xcodebuildSelectionForProject:(NSDictionary *)projectDict
+                                  selection:(NSDictionary *)selection
+                               knownSchemes:(NSArray *)knownSchemes
+{
+  NSString       *path = [projectDict objectForKey:PCXcodeProjectMarker];
+  NSDictionary   *scheme = [selection objectForKey:@"Scheme"];
+  NSDictionary   *destination = [selection objectForKey:@"Destination"];
+  NSString       *name = [scheme objectForKey:@"Name"];
+  NSMutableArray *arguments;
+
+  if (path == nil || name == nil)
   {
-    return @[@"-project", path, @"-scheme", target];
+    return nil;
   }
-  return @[@"-project", path, @"-target", target];
+  arguments = [NSMutableArray arrayWithObjects:@"-project", path, nil];
+  if ([knownSchemes containsObject:name])
+  {
+    [arguments addObjectsFromArray:@[@"-scheme", name,
+                                     @"-configuration", [selection objectForKey:@"Configuration"]]];
+    if ([destination objectForKey:@"Destination"])
+    {
+      [arguments addObjectsFromArray:@[@"-destination", [destination objectForKey:@"Destination"]]];
+    }
+    return arguments;
+  }
+
+  /* Without a scheme there is no run destination: ask for its
+   * architectures instead. */
+  NSString *target = [scheme objectForKey:@"RunTarget"];
+  if (target == nil)
+  {
+    target = [[scheme objectForKey:@"Targets"] firstObject];
+  }
+  if (target == nil)
+  {
+    target = name;
+  }
+  [arguments addObjectsFromArray:@[@"-target", target,
+                                   @"-configuration", [selection objectForKey:@"Configuration"]]];
+  if ([[destination objectForKey:@"BuildOnly"] boolValue])
+  {
+    [arguments addObject:@"ONLY_ACTIVE_ARCH=NO"];
+  }
+  else if ([destination objectForKey:@"Architecture"]
+           && ![[destination objectForKey:@"Architecture"] isEqual:NativeArchitecture()])
+  {
+    [arguments addObjectsFromArray:@[@"-arch", [destination objectForKey:@"Architecture"]]];
+  }
+  return arguments;
+}
+
++ (NSArray *)xcodebuildArgumentsForProject:(NSDictionary *)projectDict
+                                    action:(NSString *)action
+                                 selection:(NSDictionary *)selection
+                              knownSchemes:(NSArray *)knownSchemes
+{
+  NSArray *arguments = [self _xcodebuildSelectionForProject:projectDict
+                                                  selection:selection
+                                               knownSchemes:knownSchemes];
+
+  /* -quiet leaves the warnings, errors and the result. */
+  return [arguments arrayByAddingObjectsFromArray:@[@"-quiet", action]];
 }
 
 + (NSArray *)xcodebuildArgumentsForProject:(NSDictionary *)projectDict
                                     action:(NSString *)action
 {
-  NSArray *selection = [self _xcodebuildSelectionForProject:projectDict];
+  NSString *path = [projectDict objectForKey:PCXcodeProjectMarker];
 
-  if (selection == nil)
+  if (path == nil || [self xcodebuildPath] == nil)
   {
     return nil;
   }
-  /* -quiet leaves the warnings, errors and the result. Building for this
-   * Mac's architecture, as Xcode's "My Mac" destination does. */
-  return [selection arrayByAddingObjectsFromArray:
-          @[@"-configuration", @"Debug",
-#if defined(__arm64__) || defined(__aarch64__)
-            @"-destination", @"platform=macOS,arch=arm64",
-#else
-            @"-destination", @"platform=macOS,arch=x86_64",
-#endif
-            @"-quiet", action]];
+  return [self xcodebuildArgumentsForProject:projectDict
+                                      action:action
+                                   selection:[self buildSelectionForProject:projectDict]
+                                knownSchemes:[self _xcodebuildSchemesOfProjectAtPath:path]];
+}
+
++ (BOOL)canRunProject:(NSDictionary *)projectDict
+{
+  NSDictionary *selection = [self buildSelectionForProject:projectDict];
+
+  return [[selection objectForKey:@"Scheme"] objectForKey:@"RunTarget"] != nil
+    && ![[[selection objectForKey:@"Destination"] objectForKey:@"BuildOnly"] boolValue];
+}
+
++ (NSString *)launchArchitectureForProject:(NSDictionary *)projectDict
+{
+  NSString *architecture = [[[self buildSelectionForProject:projectDict]
+                             objectForKey:@"Destination"] objectForKey:@"Architecture"];
+
+  return [architecture isEqual:NativeArchitecture()] ? nil : architecture;
 }
 
 + (NSString *)builtExecutableForProject:(NSDictionary *)projectDict
 {
   static NSMutableDictionary *executables = nil;
-  NSString *path = [projectDict objectForKey:PCXcodeProjectMarker];
-  NSString *target = [projectDict objectForKey:@"PROJECT_NAME"];
-  NSArray  *selection;
-  NSString *executable;
+  NSString     *path = [projectDict objectForKey:PCXcodeProjectMarker];
+  NSDictionary *selection;
+  NSString     *target;
+  NSArray      *arguments;
+  NSString     *key;
+  NSString     *executable;
 
-  if (path == nil)
+  if (path == nil || [self xcodebuildPath] == nil)
   {
     return nil;
   }
+  selection = [self buildSelectionForProject:projectDict];
+  target = [[selection objectForKey:@"Scheme"] objectForKey:@"RunTarget"];
+  if (target == nil)
+  {
+    return nil;
+  }
+  arguments = [self _xcodebuildSelectionForProject:projectDict
+                                         selection:selection
+                                      knownSchemes:[self _xcodebuildSchemesOfProjectAtPath:path]];
+  key = [[arguments componentsJoinedByString:@"\n"] stringByAppendingFormat:@"\n%@",
+         ProjectSignature(path)];
   if (executables == nil)
   {
     executables = [NSMutableDictionary new];
   }
-  executable = [executables objectForKey:path];
+  executable = [executables objectForKey:key];
   if (executable != nil)
   {
     return executable;
   }
-  selection = [self _xcodebuildSelectionForProject:projectDict];
-  if (selection == nil)
-  {
-    return nil;
-  }
   for (NSDictionary *entry in JSONFromTool([self xcodebuildPath],
-                                           [selection arrayByAddingObjectsFromArray:
-                                            @[@"-configuration", @"Debug",
-                                              @"-showBuildSettings", @"-json"]]))
+                                           [arguments arrayByAddingObjectsFromArray:
+                                            @[@"-showBuildSettings", @"-json"]]))
   {
     NSDictionary *settings = [entry objectForKey:@"buildSettings"];
     NSString     *directory = [settings objectForKey:@"TARGET_BUILD_DIR"];
@@ -473,7 +1035,7 @@ static id JSONFromTool(NSString *tool, NSArray *arguments)
     if ([[entry objectForKey:@"target"] isEqual:target] && directory && relative)
     {
       executable = [directory stringByAppendingPathComponent:relative];
-      [executables setObject:executable forKey:path];
+      [executables setObject:executable forKey:key];
       break;
     }
   }

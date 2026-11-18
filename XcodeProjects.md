@@ -68,8 +68,8 @@ SDK/build-product references and unresolved build-setting paths are omitted.
 One application target must be selected. A project containing one application
 target works immediately (test and aggregate targets do not count). For several
 application targets, select one with `TargetName` below. Framework/tool-only
-projects, `.xcworkspace`, scheme selection, build-setting expansion, Swift
-packages and Xcode project editing are not implemented.
+projects, `.xcworkspace`, build-setting expansion, Swift packages and Xcode
+project editing are not implemented.
 
 ## Project and targets
 
@@ -112,14 +112,45 @@ Xcode's own breakpoint files are not read.
 The debugger needs gdb (Preferences → Build → Debugger, default `/usr/bin/gdb`)
 and a build with debug information.
 
+## Schemes, configurations and run destinations
+
+As in Xcode, the toolbar of an Xcode project chooses what Build and Run do:
+
+- **Scheme**: the targets to build, and the target that Run starts. The menu
+  lists the schemes as Xcode does: the shared ones (`xcshareddata/xcschemes`),
+  your own (`xcuserdata/<user>.xcuserdatad/xcschemes`), and one for each
+  target that no scheme builds, which Xcode (and `xcodebuild`) create by
+  themselves. They are in the order of Xcode's Manage Schemes, which also
+  hides schemes. A scheme without a run target (a framework, say) only
+  builds. Schemes added or changed in Xcode appear the next time the menu
+  opens.
+- **Destination** (macOS only): **My Mac** builds for this Mac's architecture,
+  **My Mac (Rosetta)** for x86_64 on Apple silicon with Rosetta installed, and
+  **Any Mac (arm64, x86_64)** builds both. Any Mac is for building only, so Run
+  is disabled, as in Xcode. With Xcode's usual settings, Debug builds only the
+  destination's architecture and Release builds both.
+- **Configuration**: the build configuration for Build and Run (Debug,
+  Release, or the project's own). A scheme starts with its Run action's
+  configuration, as Xcode's Edit Scheme sets it; a different choice is kept
+  for each scheme. Choosing the scheme's own configuration again removes it.
+
+Opening a project selects the scheme of its application target. The choices
+are kept per user in ProjectCenter's defaults (`PCXcodeBuildSelections`); the
+Xcode project and its schemes are not changed. Configurations for Test,
+Profile, Analyze and Archive are read but not used, because ProjectCenter has
+only Build and Run.
+
 ## Building and running on macOS
 
-ProjectCenter built with Xcode builds an Xcode project with `xcodebuild`
-(Debug configuration, the scheme named after the application target), so the
-products go to Xcode's DerivedData as when building in Xcode. A `BuildScript`
-in `GNUstep/ProjectCenter.plist` still takes precedence. Run starts the built
-application; it runs under the debugger only where gdb is available, which
-macOS doesn't ship.
+ProjectCenter built with Xcode builds an Xcode project with `xcodebuild`:
+`-scheme`, `-configuration` and `-destination` are the toolbar's choices, so
+the products go to Xcode's DerivedData as when building in Xcode. A scheme that
+`xcodebuild` doesn't list is built with `-target` instead. A `BuildScript` in
+`GNUstep/ProjectCenter.plist` still takes precedence, and then only the
+configuration is shown. Run starts the run target that was built for the chosen
+configuration and destination (through `arch -x86_64` for My Mac (Rosetta)). It
+does not build first. It runs under the debugger only where gdb is available,
+which macOS doesn't ship.
 
 ## GNUstep build and debug integration
 
@@ -141,6 +172,8 @@ root. Alternatively, create `GNUstep/ProjectCenter.plist` beside the
 `.xcodeproj`. The script is invoked with `/bin/bash` when Build/Clean is selected,
 with the project root as its working directory and GNUstep Make arguments
 (including `all`/`clean`) forwarded to it. Opening a project does not execute it.
+The toolbar's Configuration chooses `debug=yes` for a configuration named
+Debug and `debug=no` for others, in place of the Build Options' debug switch.
 Without a script or makefile, browsing/editing still works and Build explains
 that a GNUstep build is required. `Executable` selects the binary for Run/Debug;
 otherwise ProjectCenter searches its standard GNUstep output locations.

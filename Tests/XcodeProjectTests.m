@@ -90,6 +90,130 @@ static void Write(NSString *root, NSString *path, NSString *contents)
   Check([contents writeToFile:file atomically:YES encoding:NSUTF8StringEncoding error:NULL], path);
 }
 
+static NSString *SchemeXML(NSString *target, NSString *run, NSString *archive, BOOL runnable)
+{
+  NSString *reference = [NSString stringWithFormat:@"<BuildableReference BuildableIdentifier=\"primary\" "
+                         "BlueprintName=\"%@\" ReferencedContainer=\"container:Sample.xcodeproj\"/>", target];
+
+  return [NSString stringWithFormat:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Scheme version=\"1.7\">"
+          "<BuildAction><BuildActionEntries><BuildActionEntry buildForRunning=\"YES\" buildForTesting=\"YES\">%@"
+          "</BuildActionEntry></BuildActionEntries></BuildAction>"
+          "<TestAction buildConfiguration=\"Debug\"/><LaunchAction buildConfiguration=\"%@\">%@</LaunchAction>"
+          "<ProfileAction buildConfiguration=\"Release\"/><AnalyzeAction buildConfiguration=\"Debug\"/>"
+          "<ArchiveAction buildConfiguration=\"%@\"/></Scheme>",
+          reference, run,
+          (runnable ? [NSString stringWithFormat:@"<BuildableProductRunnable>%@</BuildableProductRunnable>", reference] : @""),
+          archive];
+}
+
+/* Schemes as Xcode lists them, and the scheme, configuration and destination
+ * that the toolbar chooses for xcodebuild. */
+static void TestBuildSelection(void)
+{
+  NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
+  NSString *bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
+  NSString *user = [NSString stringWithFormat:@"Sample.xcodeproj/xcuserdata/%@.xcuserdatad/xcschemes", NSUserName()];
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  id savedDefault = [[defaults objectForKey:@"PCXcodeBuildSelections"] retain];
+
+  Write(root, @"Sample.xcodeproj/project.pbxproj", @"// !$*UTF8*$!\n{objectVersion=77; rootObject=PROJ; objects={"
+        "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(APP,LIB,TOOL,HIDDEN);buildConfigurationList=PLIST;};"
+        "PLIST={isa=XCConfigurationList;buildConfigurations=(PDEBUG,PRELEASE);defaultConfigurationName=Release;};"
+        "PDEBUG={isa=XCBuildConfiguration;name=Debug;buildSettings={};};"
+        "PRELEASE={isa=XCBuildConfiguration;name=Release;buildSettings={};};"
+        "APP={isa=PBXNativeTarget;name=App;productType=\"com.apple.product-type.application\";};"
+        "LIB={isa=PBXNativeTarget;name=Lib;productType=\"com.apple.product-type.framework\";};"
+        "TOOL={isa=PBXNativeTarget;name=Tool;productType=\"com.apple.product-type.tool\";};"
+        "HIDDEN={isa=PBXAggregateTarget;name=Hidden;};"
+        "ROOT={isa=PBXGroup;children=();sourceTree=\"<group>\";};};}");
+  Write(root, @"Sample.xcodeproj/xcshareddata/xcschemes/App.xcscheme", SchemeXML(@"App", @"Debug", @"Release", YES));
+  Write(root, [user stringByAppendingPathComponent:@"Lib Release.xcscheme"], SchemeXML(@"Lib", @"Release", @"Release", NO));
+  Write(root, [user stringByAppendingPathComponent:@"xcschememanagement.plist"],
+        @"{SchemeUserState={\"Lib Release.xcscheme\"={orderHint=0;};\"App.xcscheme_^#shared#^_\"={orderHint=1;};"
+        "\"Hidden.xcscheme_^#shared#^_\"={isShown=0;};};}");
+
+  NSArray *schemes = [PCXcodeProject schemesOfProjectAtPath:bundle];
+  Check([[schemes valueForKey:@"Name"] isEqual:(@[@"Lib Release", @"App", @"Tool"])],
+        [NSString stringWithFormat:@"schemes in the user's order, one made for each target without one, hidden ones left out: %@",
+         [schemes valueForKey:@"Name"]]);
+  NSDictionary *app = [schemes objectAtIndex:1];
+  NSDictionary *lib = [schemes objectAtIndex:0];
+  NSDictionary *tool = [schemes objectAtIndex:2];
+  Check([[app objectForKey:@"Targets"] isEqual:@[@"App"]] && [[app objectForKey:@"RunTarget"] isEqual:@"App"]
+        && [[app objectForKey:@"Shared"] boolValue] && ![[app objectForKey:@"Implicit"] boolValue], @"shared scheme");
+  Check([[[app objectForKey:@"Configurations"] objectForKey:@"Run"] isEqual:@"Debug"]
+        && [[[app objectForKey:@"Configurations"] objectForKey:@"Archive"] isEqual:@"Release"], @"configuration for each action");
+  Check(![[lib objectForKey:@"Shared"] boolValue] && [lib objectForKey:@"RunTarget"] == nil
+        && [[[lib objectForKey:@"Configurations"] objectForKey:@"Run"] isEqual:@"Release"], @"user scheme without a runnable");
+  Check([[tool objectForKey:@"Implicit"] boolValue] && [[tool objectForKey:@"RunTarget"] isEqual:@"Tool"]
+        && [[[tool objectForKey:@"Configurations"] objectForKey:@"Run"] isEqual:@"Debug"]
+        && [[[tool objectForKey:@"Configurations"] objectForKey:@"Archive"] isEqual:@"Release"], @"implicit scheme for a tool");
+  Check([[PCXcodeProject configurationsOfProjectAtPath:bundle] isEqual:(@[@"Debug", @"Release"])], @"project configurations");
+  NSArray *destinations = [PCXcodeProject runDestinations];
+  Check([[[destinations objectAtIndex:0] objectForKey:@"Name"] isEqual:@"My Mac"]
+        && [[[destinations lastObject] objectForKey:@"BuildOnly"] boolValue]
+        && [[[destinations lastObject] objectForKey:@"Destination"] isEqual:@"generic/platform=macOS"], @"run destinations");
+
+  NSError *error = nil;
+  NSString *problem = nil;
+  NSDictionary *dict = [PCXcodeProject projectAtPath:bundle error:&problem];
+  Check(dict != nil, problem);
+  [defaults removeObjectForKey:@"PCXcodeBuildSelections"];
+  NSDictionary *selection = [PCXcodeProject buildSelectionForProject:dict];
+  Check([[[selection objectForKey:@"Scheme"] objectForKey:@"Name"] isEqual:@"App"]
+        && [[selection objectForKey:@"Configuration"] isEqual:@"Debug"]
+        && [[[selection objectForKey:@"Destination"] objectForKey:@"Name"] isEqual:@"My Mac"],
+        @"default selection: the application's scheme, its Run configuration, My Mac");
+  NSArray *arguments = [PCXcodeProject xcodebuildArgumentsForProject:dict action:@"build"
+                                                           selection:selection knownSchemes:@[@"App"]];
+  NSArray *expected = @[@"-project", bundle, @"-scheme", @"App", @"-configuration", @"Debug", @"-destination",
+                        [[destinations objectAtIndex:0] objectForKey:@"Destination"], @"-quiet", @"build"];
+  Check([arguments isEqual:expected], [NSString stringWithFormat:@"xcodebuild arguments for a scheme: %@", arguments]);
+
+  [PCXcodeProject selectScheme:@"Tool" configuration:nil destination:nil forProject:dict];
+  [PCXcodeProject selectScheme:nil configuration:@"Release" destination:nil forProject:dict];
+  selection = [PCXcodeProject buildSelectionForProject:dict];
+  Check([[[selection objectForKey:@"Scheme"] objectForKey:@"Name"] isEqual:@"Tool"]
+        && [[selection objectForKey:@"Configuration"] isEqual:@"Release"], @"scheme and configuration chosen");
+  arguments = [PCXcodeProject xcodebuildArgumentsForProject:dict action:@"clean"
+                                                  selection:selection knownSchemes:@[@"App"]];
+  Check([[arguments subarrayWithRange:NSMakeRange(2, 4)] isEqual:(@[@"-target", @"Tool", @"-configuration", @"Release"])]
+        && [[arguments lastObject] isEqual:@"clean"], @"a scheme xcodebuild doesn't know builds its target");
+  [PCXcodeProject selectScheme:@"App" configuration:nil destination:nil forProject:dict];
+  Check([[[PCXcodeProject buildSelectionForProject:dict] objectForKey:@"Configuration"] isEqual:@"Debug"],
+        @"each scheme keeps its own configuration");
+  [PCXcodeProject selectScheme:@"Tool" configuration:@"Debug" destination:nil forProject:dict];
+  Check([[[defaults objectForKey:@"PCXcodeBuildSelections"] objectForKey:bundle] objectForKey:@"Configurations"] != nil
+        && [[[[defaults objectForKey:@"PCXcodeBuildSelections"] objectForKey:bundle] objectForKey:@"Configurations"] count] == 0,
+        @"choosing the scheme's own configuration removes the override");
+  Check([PCXcodeProject canRunProject:dict], @"a tool scheme runs on My Mac");
+
+  [PCXcodeProject selectScheme:nil configuration:nil destination:@"Any Mac (arm64, x86_64)" forProject:dict];
+  selection = [PCXcodeProject buildSelectionForProject:dict];
+  Check(![PCXcodeProject canRunProject:dict], @"Any Mac only builds");
+  arguments = [PCXcodeProject xcodebuildArgumentsForProject:dict action:@"build"
+                                                  selection:selection knownSchemes:@[@"Tool"]];
+  Check([arguments containsObject:@"generic/platform=macOS"], @"Any Mac destination for a scheme");
+  arguments = [PCXcodeProject xcodebuildArgumentsForProject:dict action:@"build"
+                                                  selection:selection knownSchemes:@[]];
+  Check([arguments containsObject:@"ONLY_ACTIVE_ARCH=NO"] && ![arguments containsObject:@"-destination"],
+        @"Any Mac without a scheme builds every architecture");
+  [PCXcodeProject selectScheme:@"Lib Release" configuration:nil destination:@"My Mac" forProject:dict];
+  Check(![PCXcodeProject canRunProject:dict], @"a scheme without a run target doesn't run");
+  Check([[[PCXcodeProject buildSelectionForProject:dict] objectForKey:@"Configuration"] isEqual:@"Release"],
+        @"the scheme's own Run configuration");
+
+  /* A scheme removed in Xcode falls back to the application's. */
+  [[NSFileManager defaultManager] removeItemAtPath:[root stringByAppendingPathComponent:user] error:&error];
+  Check([[[[PCXcodeProject buildSelectionForProject:dict] objectForKey:@"Scheme"] objectForKey:@"Name"] isEqual:@"App"],
+        @"a removed scheme falls back to the application's");
+
+  if (savedDefault) [defaults setObject:savedDefault forKey:@"PCXcodeBuildSelections"];
+  else [defaults removeObjectForKey:@"PCXcodeBuildSelections"];
+  [savedDefault release];
+  [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+}
+
 int main(int argc, char **argv)
 {
   @autoreleasepool
@@ -181,6 +305,7 @@ int main(int argc, char **argv)
       Check([[dict objectForKey:@"CLASS_FILES"] containsObject:@"EditGlyphData/GSWindowController.m"], @"EditGlyphData main controller");
       NSLog(@"EditGlyphData: %lu source files, %lu headers, %lu interfaces", (unsigned long)[[dict objectForKey:@"CLASS_FILES"] count], (unsigned long)[[dict objectForKey:@"HEADER_FILES"] count], (unsigned long)[[dict objectForKey:@"INTERFACES"] count]);
     }
+    TestBuildSelection();
     TestGormArchives();
     NSLog(@"Xcode project adapter tests passed");
   }
