@@ -48,7 +48,7 @@
                         <buttonCell key="cell" type="push" title="GoTo Line" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g25">
                             <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
-                            <string key="keyEquivalent"></string>
+                            <string key="keyEquivalent" base64-UTF8="YES">DQ</string>
                         </buttonCell>
                         <connections>
                             <action selector="goToLine:" target="-2" id="x3"/>

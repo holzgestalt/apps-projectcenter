@@ -1000,10 +1000,12 @@ static id V(id value)
     {
       keyEquivalent = @"\r";
     }
-    if (![Clean(keyEquivalent) isEqualToString:keyEquivalent])
+    if (![Clean(keyEquivalent) isEqualToString:keyEquivalent]
+        || [keyEquivalent rangeOfCharacterFromSet:[NSCharacterSet controlCharacterSet]].location != NSNotFound)
     {
-      /* XML can't hold it (Escape, for instance); Interface Builder writes
-       * such keys base64-encoded. */
+      /* XML can't hold it (Escape, for instance), or a parser changes it
+       * (Return becomes a line feed); Interface Builder writes such keys
+       * base64-encoded. */
       [string addAttribute:[NSXMLNode attributeWithName:@"base64-UTF8" stringValue:@"YES"]];
       keyEquivalent = [[[keyEquivalent dataUsingEncoding:NSUTF8StringEncoding]
                         base64EncodedStringWithOptions:0]
