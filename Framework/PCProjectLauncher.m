@@ -435,6 +435,10 @@ enum {
   [runButton setEnabled:NO];
   [[project projectWindow] showDebugArea:[debugger debugAreaView]];
   [debugger setProject:project];
+  if ([(id)debugger respondsToSelector:@selector(setProgramArguments:)])
+  {
+    [(id)debugger setProgramArguments:[PCXcodeProject launchArgumentsForProject:[project projectDict]]];
+  }
   [debugger runExecutableAtPath:executablePath withDebugger:gdbPath];
 
   // turn debug button off...
@@ -444,6 +448,11 @@ enum {
 - (void)run:(id)sender
 {
   NSMutableArray  *args = [[NSMutableArray alloc] init];
+
+#ifdef GNUSTEP
+  /* The project's GNUstep theme (GNUstep/ProjectCenter.plist). */
+  [args addObjectsFromArray:[PCXcodeProject launchArgumentsForProject:[project projectDict]]];
+#endif
   NSPipe          *logPipe;
   NSPipe          *errorPipe;
   NSString        *executablePath;

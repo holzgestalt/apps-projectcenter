@@ -992,10 +992,36 @@ static NSButton *DebugBarButton(NSString *image, NSString *toolTip, SEL action, 
 }
 
 // action methods for toolbar...
+- (void)setProgramArguments:(NSArray *)arguments
+{
+  ASSIGN(programArguments, arguments);
+}
+
+/* gdb takes the rest of the line as the program's arguments, split as a
+ * shell would split them. */
+- (void)_sendProgramArguments
+{
+  NSMutableArray *quoted = [NSMutableArray array];
+
+  for (NSString *argument in programArguments)
+  {
+    NSMutableString *escaped = [NSMutableString stringWithString:argument];
+
+    [escaped replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:0
+                                  range:NSMakeRange(0, [escaped length])];
+    [escaped replaceOccurrencesOfString:@"\"" withString:@"\\\"" options:0
+                                  range:NSMakeRange(0, [escaped length])];
+    [quoted addObject:[NSString stringWithFormat:@"\"%@\"", escaped]];
+  }
+  [debuggerWrapper putString:[NSString stringWithFormat:@"-exec-arguments %@\n",
+                              [quoted componentsJoinedByString:@" "]]];
+}
+
 - (void) go: (id) sender
 {
   /* each run makes a new PID but we parse it only if non-zero */
   [self setSubProcessId:0];
+  [self _sendProgramArguments];
   [debuggerWrapper putString: @"-exec-run\n"];
 }
 
@@ -1015,6 +1041,7 @@ static NSButton *DebugBarButton(NSString *image, NSString *toolTip, SEL action, 
   [self interrupt];
   /* each run makes a new PID but we parse it only if non-zero */
   [self setSubProcessId:0];
+  [self _sendProgramArguments];
   [debuggerWrapper putString: @"-exec-run\n"];
 }
 
@@ -1063,6 +1090,7 @@ static NSButton *DebugBarButton(NSString *image, NSString *toolTip, SEL action, 
   RELEASE(breakpoints);
   RELEASE(breakpointNumbers);
   RELEASE(symbolNumbers);
+  RELEASE(programArguments);
   RELEASE(frames);
   RELEASE(stopReason);
   RELEASE(state);

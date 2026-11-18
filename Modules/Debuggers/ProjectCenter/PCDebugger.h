@@ -65,6 +65,7 @@ extern NSString *PCDBDebuggerStartedNotification;
   NSUInteger     selectedFrame;
   NSString       *stopReason;
   NSString       *state;
+  NSArray        *programArguments;
   BOOL           runWhenReady;
   BOOL           exitPosted;
 }
@@ -97,5 +98,8 @@ extern NSString *PCDBDebuggerStartedNotification;
 - (void)setStackFrames:(NSArray *)miFrames;
 - (void)recordSymbolicBreakpoint:(NSDictionary *)bkpt;
 - (BOOL)isLineBreakpointRecord:(NSDictionary *)bkpt;
+
+/* Arguments the program is run with (gdb's -exec-arguments). */
+- (void)setProgramArguments:(NSArray *)arguments;
 
 @end

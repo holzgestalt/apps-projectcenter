@@ -135,13 +135,38 @@ project editing are not implemented.
 
 Select the project row at the top of the navigator to see the project as
 Xcode shows it: the project and its targets on the left; General, Build
-Settings and Build Phases on the right. General shows the target type,
-product name, bundle identifier, deployment target, version, configurations
-(with their base `.xcconfig` files) and dependencies, and for the target
-ProjectCenter builds also the GNUstep build script and executable. Build
-Settings lists each setting per configuration, target values over project
-values. Settings that come only from `.xcconfig` files are not shown.
-Everything here is read-only.
+Settings and Build Phases on the right. Build Settings lists each setting per
+configuration, target values over project values. Settings that come only
+from `.xcconfig` files are not shown.
+
+General is laid out in sections, as in Xcode. For a target:
+
+- **Target**: its type and product name.
+- **Identity**: display name, bundle identifier, version and build, from the
+  target's Info.plist or the build settings Xcode generates it from.
+- **Deployment**: the minimum macOS version, the main interface and the
+  Info.plist.
+- **App Icon**, and **Frameworks and Libraries** (the libraries it links).
+- **Build**: configurations (with their base `.xcconfig` files),
+  dependencies and an external target's build tool.
+- **GNUstep**, for the target ProjectCenter builds: the build script, the
+  executable and the theme (see below). These are ProjectCenter's own
+  settings, kept in `GNUstep/ProjectCenter.plist`, and can be edited here: a
+  path is saved when you press Return or leave the field.
+
+What Xcode's General pane has only for the App Store or for Xcode itself (App
+Category, Supported Destinations, Development Assets) is left out. Everything
+from the Xcode project is read-only.
+
+**Theme** chooses the GNUstep theme Run starts the application with: Run
+passes `-GSTheme <Name>`, also when it runs the program under gdb. The menu
+lists the themes installed as GNUstep finds them, a `<Name>.theme` bundle in
+the `Themes` folder of a GNUstep Library directory (for instance
+`~/GNUstep/Library/Themes` or `/usr/GNUstep/Local/Library/Themes`), and
+GNUstep's built-in theme. **Default** passes no theme, so the user's own
+`GSTheme` default applies (`defaults write <App> GSTheme <Name>`). A theme that
+is set but not installed is shown as "not installed". The theme only affects
+runs on GNUstep; the Cocoa build on macOS doesn't use GNUstep themes.
 
 ## Debugging
 
@@ -224,6 +249,7 @@ root. Alternatively, create `GNUstep/ProjectCenter.plist` beside the
     TargetName = MyApp;
     BuildScript = "scripts/build-gnustep.sh";
     Executable = "build/MyApp.app/MyApp";
+    Theme = GTK4Native;
 }
 ```
 
@@ -237,6 +263,10 @@ Debug and `debug=no` for others, in place of the Build Options' debug switch.
 Without a script or makefile, browsing/editing still works and Build explains
 that a GNUstep build is required. `Executable` selects the binary for Run/Debug;
 otherwise ProjectCenter searches its standard GNUstep output locations.
+`Theme` is the GNUstep theme Run uses (`-GSTheme`). The project editor's
+General pane edits `BuildScript`, `Executable` and `Theme`, and writes the
+file sorted, as above; on macOS, a `BuildScript` also replaces `xcodebuild`
+for Build.
 Launch ProjectCenter from a shell with the correct GNUstep environment loaded.
 Project settings changed in the Inspector/Build panels are session-local;
 edit the sidecar file for persistent configuration.

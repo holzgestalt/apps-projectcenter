@@ -10,6 +10,28 @@
  * {Name, Kind, Files, Script}. */
 + (NSDictionary *)overviewOfProjectAtPath:(NSString *)path error:(NSString **)error;
 
+/* GNUstep settings: GNUstep/ProjectCenter.plist beside the .xcodeproj,
+ * ProjectCenter's own file (the Xcode project stays unchanged). Keys are
+ * TargetName, BuildScript, Executable and Theme, all strings as written
+ * (paths not resolved). +projectAtPath:error: puts them in the project
+ * dictionary as XCODE_<Key>, with paths resolved. */
++ (NSDictionary *)GNUstepSettingsOfProjectAtPath:(NSString *)path;
+/* Sets one of them; an empty or nil value removes it. Creates the file
+ * when needed and removes it when no setting is left. */
++ (BOOL)setGNUstepSetting:(NSString *)value
+                   forKey:(NSString *)key
+         ofProjectAtPath:(NSString *)path
+                    error:(NSString **)error;
+
+/* GNUstep themes, found as GSTheme finds them: <Name>.theme bundles in the
+ * Themes folder of each Library directory. Sorted names without the
+ * extension; GNUstep's built-in theme is not a bundle and not listed. */
++ (NSArray *)installedThemes;
++ (NSArray *)themesInLibraries:(NSArray *)libraries;
+/* Arguments for running the application with the project's Theme on
+ * GNUstep (-GSTheme Name), or an empty array. */
++ (NSArray *)launchArgumentsForProject:(NSDictionary *)projectDict;
+
 /* Schemes, configurations and run destinations, as Xcode's toolbar offers
  * them. A scheme picks the targets to build and, for each action, the build
  * configuration; the run destination picks the architectures. */

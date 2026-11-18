@@ -334,7 +334,7 @@ int main(int argc, char **argv)
     Check([[[overviewEditor selection] objectForKey:@"Name"] isEqual:@"EditGlyphData"], @"the built target is selected first");
     NSDictionary *general = RowsByFirstColumn([overviewEditor generalRows]);
     Check([[general objectForKey:@"Type"] isEqual:@"Application"] && [[general objectForKey:@"Product Name"] isEqual:@"EditGlyphData"], @"general information for the target");
-    Check([[general objectForKey:@"GNUstep Build Script"] hasSuffix:@"build-editglyphdata.sh"], @"general information shows the GNUstep build");
+    Check([[general objectForKey:@"Build Script"] hasSuffix:@"build-editglyphdata.sh"], @"general information shows the GNUstep build");
     Check([[overviewEditor configurationNames] isEqual:(@[@"Debug", @"Release"])], @"build settings per configuration");
     NSArray *settingNames = [RowsByFirstColumn([overviewEditor settingRows]) allKeys];
     Check([settingNames containsObject:@"PRODUCT_BUNDLE_IDENTIFIER"] && [settingNames containsObject:@"CLANG_ENABLE_OBJC_ARC"], @"target settings merged with project settings");

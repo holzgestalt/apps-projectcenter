@@ -392,6 +392,63 @@ static void Write(NSString *root, NSString *path, NSString *contents)
   Check([contents writeToFile:file atomically:YES encoding:NSUTF8StringEncoding error:NULL], path);
 }
 
+/* The GNUstep settings beside an Xcode project, which the General pane
+ * edits, and the themes it offers. */
+static void TestGNUstepSettings(void)
+{
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSString      *root = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                         [[NSProcessInfo processInfo] globallyUniqueString]];
+  NSString      *bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
+  NSString      *file = [root stringByAppendingPathComponent:@"GNUstep/ProjectCenter.plist"];
+  NSString      *error = nil;
+  NSDictionary  *dict;
+  NSArray       *themes;
+
+  Write(root, @"Sample.xcodeproj/project.pbxproj", @"{objectVersion=77; rootObject=PROJ; objects={"
+        "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(APP);};"
+        "APP={isa=PBXNativeTarget;name=Sample;productType=\"com.apple.product-type.application\";};"
+        "ROOT={isa=PBXGroup;children=();sourceTree=\"<group>\";};};}");
+  Check([[PCXcodeProject GNUstepSettingsOfProjectAtPath:bundle] count] == 0, @"no settings file");
+  Check([PCXcodeProject setGNUstepSetting:@"GTK4 \"Native\"" forKey:@"Theme" ofProjectAtPath:bundle error:&error],
+        error);
+  Check([PCXcodeProject setGNUstepSetting:@"scripts/build.sh" forKey:@"BuildScript"
+                          ofProjectAtPath:[bundle stringByAppendingPathComponent:@"project.pbxproj"] error:&error],
+        error);
+  Check([[NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding error:NULL]
+         isEqual:@"{\n    BuildScript = \"scripts/build.sh\";\n    Theme = \"GTK4 \\\"Native\\\"\";\n}\n"],
+        @"settings written as an OpenStep property list, sorted and quoted");
+  dict = [PCXcodeProject projectAtPath:bundle error:&error];
+  Check([[dict objectForKey:@"XCODE_Theme"] isEqual:@"GTK4 \"Native\""]
+        && [[dict objectForKey:@"XCODE_BuildScript"] isEqual:[root stringByAppendingPathComponent:@"scripts/build.sh"]],
+        @"the project reads the theme, and the build script's path is resolved");
+  Check([[PCXcodeProject launchArgumentsForProject:dict] isEqual:(@[@"-GSTheme", @"GTK4 \"Native\""])],
+        @"Run passes the theme");
+  Check([PCXcodeProject setGNUstepSetting:@"" forKey:@"Theme" ofProjectAtPath:bundle error:&error]
+        && [[PCXcodeProject GNUstepSettingsOfProjectAtPath:bundle] objectForKey:@"Theme"] == nil
+        && [[PCXcodeProject launchArgumentsForProject:[PCXcodeProject projectAtPath:bundle error:NULL]] count] == 0,
+        @"Default removes the theme");
+  Check([PCXcodeProject setGNUstepSetting:nil forKey:@"BuildScript" ofProjectAtPath:bundle error:&error]
+        && ![fm fileExistsAtPath:[file stringByDeletingLastPathComponent]],
+        @"the file, and the empty GNUstep folder, go with the last setting");
+  Write(root, @"GNUstep/ProjectCenter.plist", @"{ broken");
+  Check(![PCXcodeProject setGNUstepSetting:@"X" forKey:@"Theme" ofProjectAtPath:bundle error:&error]
+        && [error length]
+        && [[NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding error:NULL] isEqual:@"{ broken"],
+        @"an unreadable file is not overwritten");
+
+  Write(root, @"Local/Themes/GTK4Native.theme/Resources/Info-gnustep.plist", @"{}");
+  Write(root, @"User/Themes/Neos.theme/Resources/Info-gnustep.plist", @"{}");
+  Write(root, @"User/Themes/GTK4Native.theme/Resources/Info-gnustep.plist", @"{}");
+  Write(root, @"User/Themes/notes.txt", @"not a theme");
+  themes = [PCXcodeProject themesInLibraries:@[[root stringByAppendingPathComponent:@"User"],
+                                                [root stringByAppendingPathComponent:@"Local"],
+                                                [root stringByAppendingPathComponent:@"Missing"]]];
+  Check([themes isEqual:(@[@"GTK4Native", @"Neos"])],
+        [NSString stringWithFormat:@"themes of every Library folder, once each: %@", themes]);
+  [fm removeItemAtPath:root error:NULL];
+}
+
 /* Edit → Convert → To XIB...: the interfaces of a project, without the
  * copies in build products, and their XIBs as gorm2xib writes them. */
 static void TestConvertToXIB(void)
@@ -663,6 +720,7 @@ int main(int argc, char **argv)
     }
     TestBuildSelection();
     TestConvertToXIB();
+    TestGNUstepSettings();
     TestGormArchives();
     TestInterfaceDocument();
     TestConstraintNames();

@@ -27,10 +27,11 @@
   PCTargetList  *targetList;
   NSSegmentedControl *sections;
   NSTabView     *tabs;
-  NSTableView   *generalTable;
+  NSScrollView  *generalScroll;    // the General form
+  NSDictionary  *editableRows;     // label -> GNUstep setting it edits
   NSTableView   *settingsTable;
   NSTableView   *phasesTable;
-  NSArray       *generalRows;      // [Property, Value]
+  NSArray       *generalRows;      // [Section] or [Property, Value]
   NSArray       *settingRows;      // [Setting, value per configuration...]
   NSArray       *phaseRows;        // [Phase, Item]
   NSArray       *configurationNames;
@@ -47,7 +48,12 @@
 - (NSTabView *)tabView;
 /* General (0), Build Settings (1), Build Phases (2). */
 - (void)selectSectionAtIndex:(NSInteger)index;
+/* The General pane: [Section title] rows start a section, as Xcode's, and
+ * [Property, Value] rows follow. */
 - (NSArray *)generalRows;
+/* Sets a GNUstep setting of the project (GNUstep/ProjectCenter.plist):
+ * BuildScript, Executable or Theme; nil or empty removes it. */
+- (BOOL)setGNUstepSetting:(NSString *)value forKey:(NSString *)key;
 - (NSArray *)settingRows;
 - (NSArray *)phaseRows;
 - (NSArray *)configurationNames;

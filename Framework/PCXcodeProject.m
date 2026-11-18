@@ -204,7 +204,7 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
       settings = [NSDictionary dictionaryWithContentsOfFile:settingsPath];
       if (!settings) [NSException raise:@"XcodeImport" format:@"Invalid %@", settingsPath];
     }
-    for (NSString *key in @[@"TargetName", @"BuildScript", @"Executable"])
+    for (NSString *key in @[@"TargetName", @"BuildScript", @"Executable", @"Theme"])
       if ([settings objectForKey:key] && ![[settings objectForKey:key] isKindOfClass:[NSString class]])
         [NSException raise:@"XcodeImport" format:@"%@ must be a string in %@", key, settingsPath];
     NSMutableArray *targets = [NSMutableArray array];
@@ -257,6 +257,8 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
         [result setObject:([value isAbsolutePath] ? value : [[root stringByAppendingPathComponent:value] stringByStandardizingPath])
                    forKey:[@"XCODE_" stringByAppendingString:key]];
     }
+    if ([[settings objectForKey:@"Theme"] length])
+      [result setObject:[settings objectForKey:@"Theme"] forKey:@"XCODE_Theme"];
     return result;
   }
   @catch (NSException *exception)
@@ -334,6 +336,134 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
   [overview setObject:targets forKey:@"Targets"];
   return overview;
 }
+// --- GNUstep settings and themes
+
+static NSString *SettingsPath(NSString *path)
+{
+  path = [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+  if ([[path lastPathComponent] isEqual:@"project.pbxproj"])
+  {
+    path = [path stringByDeletingLastPathComponent];
+  }
+  return [[path stringByDeletingLastPathComponent]
+          stringByAppendingPathComponent:@"GNUstep/ProjectCenter.plist"];
+}
+
+/* An OpenStep property list of strings, as the file is written by hand. */
+static NSString *Quoted(NSString *string)
+{
+  NSMutableString *quoted = [NSMutableString stringWithString:string];
+
+  [quoted replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:0
+                               range:NSMakeRange(0, [quoted length])];
+  [quoted replaceOccurrencesOfString:@"\"" withString:@"\\\"" options:0
+                               range:NSMakeRange(0, [quoted length])];
+  [quoted replaceOccurrencesOfString:@"\n" withString:@"\\n" options:0
+                               range:NSMakeRange(0, [quoted length])];
+  return [NSString stringWithFormat:@"\"%@\"", quoted];
+}
+
++ (NSDictionary *)GNUstepSettingsOfProjectAtPath:(NSString *)path
+{
+  NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:SettingsPath(path)];
+
+  return [settings isKindOfClass:[NSDictionary class]] ? settings : [NSDictionary dictionary];
+}
+
++ (BOOL)setGNUstepSetting:(NSString *)value
+                   forKey:(NSString *)key
+         ofProjectAtPath:(NSString *)path
+                    error:(NSString **)error
+{
+  NSFileManager       *fm = [NSFileManager defaultManager];
+  NSString            *file = SettingsPath(path);
+  NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithDictionary:
+                                   [self GNUstepSettingsOfProjectAtPath:path]];
+  NSMutableString     *text = [NSMutableString stringWithString:@"{\n"];
+
+  if (error) *error = nil;
+  if ([fm fileExistsAtPath:file] && [NSDictionary dictionaryWithContentsOfFile:file] == nil)
+  {
+    if (error) *error = [NSString stringWithFormat:@"%@ is not a valid property list.", file];
+    return NO;
+  }
+  if ([value length])
+  {
+    [settings setObject:value forKey:key];
+  }
+  else
+  {
+    [settings removeObjectForKey:key];
+  }
+  if ([settings count] == 0)
+  {
+    if ([fm fileExistsAtPath:file] && ![fm removeItemAtPath:file error:NULL])
+    {
+      if (error) *error = [NSString stringWithFormat:@"Cannot remove %@.", file];
+      return NO;
+    }
+    /* The GNUstep folder too, when nothing else is in it. */
+    if ([[fm contentsOfDirectoryAtPath:[file stringByDeletingLastPathComponent] error:NULL] count] == 0)
+    {
+      [fm removeItemAtPath:[file stringByDeletingLastPathComponent] error:NULL];
+    }
+    return YES;
+  }
+  for (NSString *name in [[settings allKeys] sortedArrayUsingSelector:@selector(compare:)])
+  {
+    id entry = [settings objectForKey:name];
+
+    [text appendFormat:@"    %@ = %@;\n", name,
+     [entry isKindOfClass:[NSString class]] ? Quoted(entry) : [entry description]];
+  }
+  [text appendString:@"}\n"];
+  [fm createDirectoryAtPath:[file stringByDeletingLastPathComponent]
+withIntermediateDirectories:YES attributes:nil error:NULL];
+  if (![text writeToFile:file atomically:YES encoding:NSUTF8StringEncoding error:NULL])
+  {
+    if (error) *error = [NSString stringWithFormat:@"Cannot write %@.", file];
+    return NO;
+  }
+  return YES;
+}
+
++ (NSArray *)themesInLibraries:(NSArray *)libraries
+{
+  NSMutableSet *themes = [NSMutableSet set];
+
+  for (NSString *library in libraries)
+  {
+    NSString *folder = [library stringByAppendingPathComponent:@"Themes"];
+
+    for (NSString *name in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:folder error:NULL])
+    {
+      BOOL isDirectory = NO;
+
+      if ([[name pathExtension] isEqual:@"theme"]
+          && [[NSFileManager defaultManager] fileExistsAtPath:[folder stringByAppendingPathComponent:name]
+                                                  isDirectory:&isDirectory]
+          && isDirectory)
+      {
+        [themes addObject:[name stringByDeletingPathExtension]];
+      }
+    }
+  }
+  return [[themes allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+}
+
++ (NSArray *)installedThemes
+{
+  return [self themesInLibraries:NSSearchPathForDirectoriesInDomains(NSAllLibrariesDirectory,
+                                                                     NSAllDomainsMask, YES)];
+}
+
++ (NSArray *)launchArgumentsForProject:(NSDictionary *)projectDict
+{
+  NSString *theme = [projectDict objectForKey:@"XCODE_Theme"];
+
+  return [theme length] ? [NSArray arrayWithObjects:@"-GSTheme", theme, nil] : [NSArray array];
+}
+
 // --- Schemes, configurations and run destinations
 
 static NSString * const PCXcodeSelectionsDefault = @"PCXcodeBuildSelections";

@@ -1,7 +1,8 @@
 /*
  PCXcodeProjectEditor.m
 
- Read-only project editor for Xcode projects.
+ Project editor for Xcode projects: the Xcode project is shown read-only;
+ the GNUstep settings (GNUstep/ProjectCenter.plist) can be edited.
 
  This file is part of GNUstep ProjectCenter.
 
@@ -16,6 +17,17 @@
 #import "PCNavigators.h"
 
 #import <ProjectCenter/PCProject.h>
+
+/* The General pane's form, laid out from the top. */
+@interface PCFormView : NSView
+@end
+
+@implementation PCFormView
+- (BOOL)isFlipped
+{
+  return YES;
+}
+@end
 
 // ============================================================================
 // ==== Project and targets list
@@ -198,8 +210,14 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
       [tabs addTabViewItem:item];
     }
     [view addSubview:tabs];
-    generalTable = Table([NSArray arrayWithObjects:@"Property", @"Value", nil], 180, self,
-                         [[tabs tabViewItemAtIndex:0] view]);
+    generalScroll = [[[NSScrollView alloc] initWithFrame:[[[tabs tabViewItemAtIndex:0] view] bounds]]
+                     autorelease];
+    [generalScroll setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [generalScroll setHasVerticalScroller:YES];
+    [generalScroll setAutohidesScrollers:YES];
+    [generalScroll setBorderType:NSNoBorder];
+    [generalScroll setDrawsBackground:NO];
+    [[[tabs tabViewItemAtIndex:0] view] addSubview:generalScroll];
     settingsTable = Table([NSArray arrayWithObject:@"Setting"], 300, self,
                           [[tabs tabViewItemAtIndex:1] view]);
     phasesTable = Table([NSArray arrayWithObjects:@"Phase", @"Contents", nil], 240, self,
@@ -210,7 +228,6 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
 
 - (void)dealloc
 {
-  [generalTable setDataSource:nil]; [generalTable setDelegate:nil];
   [settingsTable setDataSource:nil]; [settingsTable setDelegate:nil];
   [phasesTable setDataSource:nil]; [phasesTable setDelegate:nil];
   [targetList release];
@@ -218,6 +235,7 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   [overview release];
   [selection release];
   [generalRows release];
+  [editableRows release];
   [settingRows release];
   [phaseRows release];
   [configurationNames release];
@@ -300,9 +318,47 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   return [parts componentsJoinedByString:@", "];
 }
 
+/* $(NAME) and ${NAME} from the build settings, as Xcode expands them in
+ * Info.plist values. */
+static NSString *Expanded(id value, NSDictionary *settings)
+{
+  NSMutableString *text = [NSMutableString stringWithString:DisplayValue(value)];
+  NSUInteger      pass;
+
+  for (pass = 0; pass < 4; pass++)
+  {
+    BOOL changed = NO;
+
+    for (NSString *name in settings)
+    {
+      for (NSString *form in @[@"$(%@)", @"${%@}"])
+      {
+        NSString *macro = [NSString stringWithFormat:form, name];
+
+        if ([text rangeOfString:macro].location != NSNotFound)
+        {
+          [text replaceOccurrencesOfString:macro withString:DisplayValue([settings objectForKey:name])
+                                   options:0 range:NSMakeRange(0, [text length])];
+          changed = YES;
+        }
+      }
+    }
+    if (!changed) break;
+  }
+  return text;
+}
+
 - (void)_buildGeneralRows
 {
-  NSMutableArray *rows = [NSMutableArray array];
+  NSMutableArray      *rows = [NSMutableArray array];
+  NSMutableDictionary *editable = [NSMutableDictionary dictionary];
+  __block NSUInteger  sectionStart = 0;
+  void (^section)(NSString *) = ^(NSString *title) {
+    /* A section without rows is left out. */
+    if ([rows count] == sectionStart + 1) [rows removeLastObject];
+    [rows addObject:[NSArray arrayWithObject:title]];
+    sectionStart = [rows count] - 1;
+  };
   void (^add)(NSString *, id) = ^(NSString *name, id value) {
     NSString *text = DisplayValue(value);
     if ([text length]) [rows addObject:[NSArray arrayWithObjects:name, text, nil]];
@@ -310,45 +366,284 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
 
   if (selection == overview)
   {
+    section(@"Project Document");
     add(@"Project", [overview objectForKey:@"Name"]);
+    add(@"Location", [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]);
     add(@"Project Format", [overview objectForKey:@"Format"]
         ? [NSString stringWithFormat:@"objectVersion %@", [overview objectForKey:@"Format"]] : nil);
+    section(@"Localizations");
     add(@"Development Region", [overview objectForKey:@"DevelopmentRegion"]);
     add(@"Localizations", [[overview objectForKey:@"KnownRegions"] componentsJoinedByString:@", "]);
+    section(@"Build");
     add(@"Configurations", [self _configurationSummary:[overview objectForKey:@"Configurations"]]);
     add(@"Targets", [[[overview objectForKey:@"Targets"] valueForKey:@"Name"] componentsJoinedByString:@", "]);
-    add(@"Location", [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]);
   }
   else
   {
-    NSString *first = [[[selection objectForKey:@"Configurations"] firstObject] objectForKey:@"Name"];
-    NSDictionary *settings = [self _mergedSettings:first];
-    NSString *productName = DisplayValue([settings objectForKey:@"PRODUCT_NAME"]);
-    NSString *version = DisplayValue([settings objectForKey:@"MARKETING_VERSION"]);
-    NSString *build = DisplayValue([settings objectForKey:@"CURRENT_PROJECT_VERSION"]);
+    NSString            *first = [[[selection objectForKey:@"Configurations"] firstObject] objectForKey:@"Name"];
+    NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithDictionary:[self _mergedSettings:first]];
+    NSString            *name = [selection objectForKey:@"Name"];
+    NSString            *infoFile = DisplayValue([settings objectForKey:@"INFOPLIST_FILE"]);
+    NSDictionary        *info = nil;
+    NSString            *productName;
+    BOOL                built = [name isEqual:[[project projectDict] objectForKey:@"PROJECT_NAME"]];
+    id (^value)(NSString *, NSString *) = ^id(NSString *infoKey, NSString *setting) {
+      /* The Info.plist's value, else what Xcode generates it from. */
+      id found = [info objectForKey:infoKey];
+      if (found == nil) found = [settings objectForKey:[@"INFOPLIST_KEY_" stringByAppendingString:infoKey]];
+      if (found == nil && setting) found = [settings objectForKey:setting];
+      return found ? Expanded(found, settings) : nil;
+    };
 
-    productName = [productName stringByReplacingOccurrencesOfString:@"$(TARGET_NAME)"
-                                                         withString:[selection objectForKey:@"Name"]];
-    add(@"Target", [selection objectForKey:@"Name"]);
+    if (![settings objectForKey:@"TARGET_NAME"]) [settings setObject:name forKey:@"TARGET_NAME"];
+    productName = Expanded([settings objectForKey:@"PRODUCT_NAME"] ? [settings objectForKey:@"PRODUCT_NAME"]
+                           : [selection objectForKey:@"ProductName"], settings);
+    [settings setObject:productName forKey:@"PRODUCT_NAME"];
+    if (![settings objectForKey:@"EXECUTABLE_NAME"]) [settings setObject:productName forKey:@"EXECUTABLE_NAME"];
+    if ([infoFile length])
+    {
+      info = [NSDictionary dictionaryWithContentsOfFile:
+              [[project projectPath] stringByAppendingPathComponent:Expanded(infoFile, settings)]];
+    }
+
+    section(@"Target");
+    add(@"Target", name);
     add(@"Type", ProductTypeName([selection objectForKey:@"ProductType"], [selection objectForKey:@"Kind"]));
-    add(@"Product Name", [productName length] ? productName : [selection objectForKey:@"ProductName"]);
-    add(@"Bundle Identifier", [settings objectForKey:@"PRODUCT_BUNDLE_IDENTIFIER"]);
-    add(@"Deployment Target", [settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"]
-        ? [NSString stringWithFormat:@"macOS %@", DisplayValue([settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"])] : nil);
-    add(@"Version", [version length] && [build length]
-        ? [NSString stringWithFormat:@"%@ (%@)", version, build] : ([version length] ? version : build));
-    add(@"Info.plist", [settings objectForKey:@"INFOPLIST_FILE"]);
+    add(@"Product Name", productName);
+
+    /* Xcode's General pane, without what only the App Store and Xcode use
+     * (App Category, Supported Destinations, Development Assets). */
+    section(@"Identity");
+    add(@"Display Name", value(@"CFBundleDisplayName", nil));
+    add(@"Bundle Identifier", value(@"CFBundleIdentifier", @"PRODUCT_BUNDLE_IDENTIFIER"));
+    add(@"Version", value(@"CFBundleShortVersionString", @"MARKETING_VERSION"));
+    add(@"Build", value(@"CFBundleVersion", @"CURRENT_PROJECT_VERSION"));
+
+    section(@"Deployment");
+    add(@"Minimum macOS", [settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"]);
+    add(@"Main Interface", value(@"NSMainNibFile", nil) ? value(@"NSMainNibFile", nil)
+        : value(@"NSMainStoryboardFile", nil));
+    add(@"Info.plist", infoFile);
+
+    section(@"App Icon");
+    add(@"App Icon", [settings objectForKey:@"ASSETCATALOG_COMPILER_APPICON_NAME"]
+        ? [settings objectForKey:@"ASSETCATALOG_COMPILER_APPICON_NAME"] : value(@"CFBundleIconFile", nil));
+
+    section(@"Frameworks and Libraries");
+    for (NSDictionary *phase in [selection objectForKey:@"Phases"])
+      if ([[phase objectForKey:@"Kind"] isEqual:@"Link Binary With Libraries"])
+        for (NSString *file in [phase objectForKey:@"Files"])
+          add(@"", file);
+
+    section(@"Build");
     add(@"Configurations", [self _configurationSummary:[selection objectForKey:@"Configurations"]]);
     add(@"Dependencies", [[selection objectForKey:@"Dependencies"] componentsJoinedByString:@", "]);
     add(@"Build Tool", [selection objectForKey:@"BuildTool"]);
-    if ([[selection objectForKey:@"Name"] isEqual:[[project projectDict] objectForKey:@"PROJECT_NAME"]])
+
+    if (built)
     {
-      /* The target ProjectCenter builds and runs on GNUstep. */
-      add(@"GNUstep Build Script", [[project projectDict] objectForKey:@"XCODE_BuildScript"]);
-      add(@"GNUstep Executable", [[project projectDict] objectForKey:@"XCODE_Executable"]);
+      /* The target ProjectCenter builds and runs on GNUstep; its settings
+       * are ProjectCenter's own, so they can be edited. */
+      NSDictionary *gnustep = [PCXcodeProject GNUstepSettingsOfProjectAtPath:
+                               [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]];
+      NSString     *theme = [gnustep objectForKey:@"Theme"];
+
+      section(@"GNUstep");
+      [rows addObject:[NSArray arrayWithObjects:@"Build Script",
+                       DisplayValue([gnustep objectForKey:@"BuildScript"]), nil]];
+      [rows addObject:[NSArray arrayWithObjects:@"Executable",
+                       DisplayValue([gnustep objectForKey:@"Executable"]), nil]];
+      [rows addObject:[NSArray arrayWithObjects:@"Theme", ([theme length] ? theme : @"Default"), nil]];
+      [editable setObject:@"BuildScript" forKey:@"Build Script"];
+      [editable setObject:@"Executable" forKey:@"Executable"];
+      [editable setObject:@"Theme" forKey:@"Theme"];
     }
   }
+  if ([rows count] == sectionStart + 1) [rows removeLastObject];
   ASSIGN(generalRows, rows);
+  ASSIGN(editableRows, editable);
+}
+
+// --- The General form
+
+static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
+{
+  NSTextField *field = [[[NSTextField alloc] initWithFrame:frame] autorelease];
+
+  [field setStringValue:text];
+  [field setEditable:editable];
+  [field setSelectable:YES];
+  [field setBezeled:editable];
+  [field setDrawsBackground:editable];
+  [[field cell] setScrollable:YES];
+  [[field cell] setLineBreakMode:NSLineBreakByTruncatingMiddle];
+  return field;
+}
+
+- (NSPopUpButton *)_themePopUp:(NSRect)frame selected:(NSString *)theme
+{
+  NSPopUpButton *popUp = [[[NSPopUpButton alloc] initWithFrame:frame pullsDown:NO] autorelease];
+  NSArray       *installed = [PCXcodeProject installedThemes];
+  NSMenuItem    *item;
+
+  /* Default passes no theme: the user's own GSTheme default applies. */
+  [popUp addItemWithTitle:@"Default"];
+  [[popUp menu] addItem:[NSMenuItem separatorItem]];
+  [popUp addItemWithTitle:@"GNUstep"];
+  [[popUp lastItem] setRepresentedObject:@"GNUstep"];
+  for (NSString *name in installed)
+  {
+    if ([name isEqual:@"GNUstep"]) continue;
+    [popUp addItemWithTitle:name];
+    [[popUp lastItem] setRepresentedObject:name];
+  }
+  if ([theme length] && ![theme isEqual:@"GNUstep"] && ![installed containsObject:theme])
+  {
+    [popUp addItemWithTitle:[NSString stringWithFormat:@"%@ (not installed)", theme]];
+    [[popUp lastItem] setRepresentedObject:theme];
+  }
+  for (item in [popUp itemArray])
+  {
+    if ([theme length] ? [[item representedObject] isEqual:theme] : [[item title] isEqual:@"Default"])
+    {
+      [popUp selectItem:item];
+    }
+  }
+  [popUp setTarget:self];
+  [popUp setAction:@selector(themeChanged:)];
+  [popUp setToolTip:@"The theme Run starts the application with on GNUstep (-GSTheme). "
+                    @"Default leaves the user's own theme."];
+  return popUp;
+}
+
+- (void)_layoutGeneralForm
+{
+  CGFloat    width = MAX(400, [generalScroll contentSize].width);
+  CGFloat    labelWidth = 180;
+  CGFloat    x = labelWidth + 32;
+  CGFloat    y = 16;
+  PCFormView *form = [[[PCFormView alloc] initWithFrame:NSMakeRect(0, 0, width, 100)] autorelease];
+  NSFont     *bold = [NSFont boldSystemFontOfSize:0];
+
+  [form setAutoresizingMask:NSViewWidthSizable];
+  for (NSArray *row in generalRows)
+  {
+    if ([row count] == 1)
+    {
+      /* A section: its title over a line, as in Xcode. */
+      NSTextField *title = FormField(NSMakeRect(20, y + 8, width - 40, 18), [row objectAtIndex:0], NO);
+      NSBox       *line = [[[NSBox alloc] initWithFrame:NSMakeRect(20, y + 30, width - 40, 1)] autorelease];
+
+      [title setFont:bold];
+      [title setSelectable:NO];
+      [title setAutoresizingMask:NSViewWidthSizable];
+      [line setBoxType:NSBoxSeparator];
+      [line setAutoresizingMask:NSViewWidthSizable];
+      [form addSubview:title];
+      [form addSubview:line];
+      y += 40;
+      continue;
+    }
+
+    NSString    *label = [row objectAtIndex:0];
+    NSString    *text = [row objectAtIndex:1];
+    NSString    *key = [editableRows objectForKey:label];
+    NSTextField *name = FormField(NSMakeRect(20, y + 3, labelWidth, 18), label, NO);
+    NSView      *control;
+
+    [name setAlignment:NSRightTextAlignment];
+    [name setSelectable:NO];
+    [form addSubview:name];
+    if ([key isEqual:@"Theme"])
+    {
+      control = [self _themePopUp:NSMakeRect(x, y, MIN(260, width - x - 20), 24)
+                         selected:[[PCXcodeProject GNUstepSettingsOfProjectAtPath:
+                                    [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]]
+                                   objectForKey:@"Theme"]];
+    }
+    else if (key)
+    {
+      NSTextField *field = FormField(NSMakeRect(x, y + 1, width - x - 20, 22), text, YES);
+
+      [[field cell] setPlaceholderString:([key isEqual:@"BuildScript"]
+                                          ? @"GNUmakefile in the project folder"
+                                          : @"found in the GNUstep build folders")];
+      [field setTarget:self];
+      [field setAction:@selector(settingFieldChanged:)];
+      [field setDelegate:(id)self];
+      [field setTag:[key isEqual:@"BuildScript"] ? 1 : 2];
+      [field setToolTip:@"A path, relative to the folder of the .xcodeproj or absolute. "
+                        @"Saved in GNUstep/ProjectCenter.plist."];
+      control = field;
+    }
+    else
+    {
+      control = FormField(NSMakeRect(x, y + 3, width - x - 20, 18), text, NO);
+      [control setToolTip:text];
+    }
+    if (!key || ![key isEqual:@"Theme"]) [control setAutoresizingMask:NSViewWidthSizable];
+    [form addSubview:control];
+    y += 28;
+  }
+  [form setFrameSize:NSMakeSize(width, MAX(y + 16, [generalScroll contentSize].height))];
+  [generalScroll setDocumentView:form];
+}
+
+- (BOOL)setGNUstepSetting:(NSString *)value forKey:(NSString *)key
+{
+  NSString            *path = [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
+  NSString            *error = nil;
+  NSDictionary        *fresh;
+  NSMutableDictionary *projectDict = (NSMutableDictionary *)[project projectDict];
+
+  if (path == nil)
+  {
+    return NO;
+  }
+  value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+  if ([DisplayValue([[PCXcodeProject GNUstepSettingsOfProjectAtPath:path] objectForKey:key])
+       isEqual:(value ? value : @"")])
+  {
+    return YES;
+  }
+  if (![PCXcodeProject setGNUstepSetting:value forKey:key ofProjectAtPath:path error:&error])
+  {
+    NSRunAlertPanel(@"GNUstep Settings", @"%@", @"OK", nil, nil, error);
+    return NO;
+  }
+  /* Build and Run read the settings from the project dictionary. */
+  fresh = [PCXcodeProject projectAtPath:path error:&error];
+  for (NSString *name in @[@"BuildScript", @"Executable", @"Theme"])
+  {
+    NSString *projectKey = [@"XCODE_" stringByAppendingString:name];
+    id       setting = [fresh objectForKey:projectKey];
+
+    if (setting) [projectDict setObject:setting forKey:projectKey];
+    else [projectDict removeObjectForKey:projectKey];
+  }
+  if (fresh == nil)
+  {
+    NSRunAlertPanel(@"GNUstep Settings", @"%@", @"OK", nil, nil, error);
+  }
+  return YES;
+}
+
+- (void)settingFieldChanged:(id)sender
+{
+  [self setGNUstepSetting:[sender stringValue]
+                   forKey:([sender tag] == 1 ? @"BuildScript" : @"Executable")];
+  [self _buildGeneralRows];
+}
+
+- (void)controlTextDidEndEditing:(NSNotification *)notification
+{
+  [self settingFieldChanged:[notification object]];
+}
+
+- (void)themeChanged:(id)sender
+{
+  [self setGNUstepSetting:[[sender selectedItem] representedObject] forKey:@"Theme"];
+  [self _buildGeneralRows];
 }
 
 - (void)_buildSettingRows
@@ -430,14 +725,13 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   [self _buildSettingRows];
   [self _buildPhaseRows];
   /* The project has no build phases of its own. */
-  [generalTable reloadData];
+  [self _layoutGeneralForm];
   [settingsTable reloadData];
   [phasesTable reloadData];
 }
 
 - (NSArray *)_rowsForTable:(NSTableView *)table
 {
-  if (table == generalTable) return generalRows;
   if (table == settingsTable) return settingRows;
   return phaseRows;
 }
