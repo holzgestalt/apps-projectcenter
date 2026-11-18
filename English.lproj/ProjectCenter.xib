@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="25503" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="NO">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="25503" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="25503"/>
-        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -187,22 +187,22 @@
                             <menuItem title="Find" id="g115">
                                 <menu key="submenu" title="Find" id="g118" userLabel="Menu(12)">
                                     <items>
-                                        <menuItem title="Find Panel..." keyEquivalent="f" tag="1" id="g120">
+                                        <menuItem title="Find Panel..." tag="1" keyEquivalent="f" id="g120">
                                             <connections>
                                                 <action selector="performFindPanelAction:" target="-1" id="x59"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Find Next" keyEquivalent="g" tag="2" id="g123">
+                                        <menuItem title="Find Next" tag="2" keyEquivalent="g" id="g123">
                                             <connections>
                                                 <action selector="performFindPanelAction:" target="-1" id="x60"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Find Previous" keyEquivalent="d" tag="3" id="g126">
+                                        <menuItem title="Find Previous" tag="3" keyEquivalent="d" id="g126">
                                             <connections>
                                                 <action selector="performFindPanelAction:" target="-1" id="x61"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Enter Selection" keyEquivalent="e" tag="7" id="g129">
+                                        <menuItem title="Enter Selection" tag="7" keyEquivalent="e" id="g129">
                                             <connections>
                                                 <action selector="performFindPanelAction:" target="-1" id="x62"/>
                                             </connections>
@@ -376,6 +376,7 @@
                     </connections>
                 </menuItem>
             </items>
+            <point key="canvasLocation" x="140" y="154"/>
         </menu>
         <customObject id="g3" userLabel="PCAppController" customClass="PCAppController">
             <connections>
