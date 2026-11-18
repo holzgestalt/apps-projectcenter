@@ -449,6 +449,85 @@ static void TestGNUstepSettings(void)
   [fm removeItemAtPath:root error:NULL];
 }
 
+/* The General pane's edits: one entry of project.pbxproj or the Info.plist
+ * at a time, the rest of the file unchanged. */
+static void TestProjectEditing(void)
+{
+  NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                    [[NSProcessInfo processInfo] globallyUniqueString]];
+  NSString *bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
+  NSString *file = [bundle stringByAppendingPathComponent:@"project.pbxproj"];
+  NSString *info = [root stringByAppendingPathComponent:@"Info.plist"];
+  NSString *error = nil;
+  NSString *head = @"// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tobjectVersion = 77;\n\tobjects = {\n\n"
+    "/* Begin PBXProject section */\n"
+    "\t\tPROJ /* Project object */ = {\n\t\t\tisa = PBXProject;\n"
+    "\t\t\tbuildConfigurationList = PLIST /* Build configuration list */;\n"
+    "\t\t\tdevelopmentRegion = en;\n\t\t\tknownRegions = (\n\t\t\t\ten,\n\t\t\t\tBase,\n\t\t\t);\n"
+    "\t\t\tmainGroup = ROOT;\n\t\t\ttargets = (\n\t\t\t\tAPP /* Sample */,\n\t\t\t);\n\t\t};\n"
+    "/* End PBXProject section */\n\n";
+  NSString *rest = @"\t\tAPP /* Sample */ = {\n\t\t\tisa = PBXNativeTarget;\n\t\t\tbuildConfigurationList = TLIST;\n"
+    "\t\t\tname = Sample;\n\t\t\tproductType = \"com.apple.product-type.application\";\n\t\t};\n"
+    "\t\tTLIST = {\n\t\t\tisa = XCConfigurationList;\n\t\t\tbuildConfigurations = (\n"
+    "\t\t\t\tDEBUG /* Debug */,\n\t\t\t\tRELEASE /* Release */,\n\t\t\t);\n\t\t};\n"
+    "\t\tPLIST = {\n\t\t\tisa = XCConfigurationList;\n\t\t\tbuildConfigurations = (\n\t\t\t);\n\t\t};\n"
+    "\t\tROOT = {\n\t\t\tisa = PBXGroup;\n\t\t\tchildren = (\n\t\t\t);\n\t\t\tsourceTree = \"<group>\";\n\t\t};\n"
+    "\t};\n\trootObject = PROJ /* Project object */;\n}\n";
+  NSString *debug = @"\t\tDEBUG /* Debug */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n"
+    "\t\t\t\tINFOPLIST_FILE = \"Info-macOS.plist\";\n\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 12.0;\n"
+    "\t\t\t\t\"OTHER_LDFLAGS[arch=*]\" = (\n\t\t\t\t\t\"-lm\",\n\t\t\t\t);\n"
+    "\t\t\t\tPRODUCT_NAME = \"$(TARGET_NAME)\";\n\t\t\t};\n\t\t\tname = Debug;\n\t\t};\n";
+  NSString *release = @"\t\tRELEASE /* Release */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n"
+    "\t\t\t};\n\t\t\tname = Release;\n\t\t};\n";
+  NSString *text, *expected;
+  NSDictionary *overview;
+
+  Write(root, @"Sample.xcodeproj/project.pbxproj", [NSString stringWithFormat:@"%@%@%@%@", head, debug, release, rest]);
+  overview = [PCXcodeProject overviewOfProjectAtPath:bundle error:&error];
+  Check([[overview objectForKey:@"Identifier"] isEqual:@"PROJ"]
+        && [[[[[overview objectForKey:@"Targets"] objectAtIndex:0] objectForKey:@"Configurations"]
+              valueForKey:@"Identifier"] isEqual:(@[@"DEBUG", @"RELEASE"])],
+        @"the overview has the identifiers to edit");
+
+  Check([PCXcodeProject setBuildSetting:@"MACOSX_DEPLOYMENT_TARGET" to:@"13.0"
+                       inConfigurations:@[@"DEBUG", @"RELEASE"] ofProjectAtPath:bundle error:&error], error);
+  Check([PCXcodeProject setBuildSetting:@"PRODUCT_BUNDLE_IDENTIFIER" to:@"org.example.my-app"
+                       inConfigurations:@[@"DEBUG"] ofProjectAtPath:bundle error:&error], error);
+  Check([PCXcodeProject setBuildSetting:@"INFOPLIST_FILE" to:nil
+                       inConfigurations:@[@"DEBUG", @"RELEASE"] ofProjectAtPath:bundle error:&error], error);
+  Check([PCXcodeProject setAttribute:@"developmentRegion" to:@"de" ofObject:@"PROJ"
+                     ofProjectAtPath:bundle error:&error], error);
+  text = [NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding error:NULL];
+  expected = [NSString stringWithFormat:@"%@%@%@%@",
+              [head stringByReplacingOccurrencesOfString:@"developmentRegion = en;" withString:@"developmentRegion = de;"],
+              @"\t\tDEBUG /* Debug */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n"
+              "\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 13.0;\n"
+              "\t\t\t\t\"OTHER_LDFLAGS[arch=*]\" = (\n\t\t\t\t\t\"-lm\",\n\t\t\t\t);\n"
+              "\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = \"org.example.my-app\";\n"
+              "\t\t\t\tPRODUCT_NAME = \"$(TARGET_NAME)\";\n\t\t\t};\n\t\t\tname = Debug;\n\t\t};\n",
+              @"\t\tRELEASE /* Release */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n"
+              "\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 13.0;\n\t\t\t};\n\t\t\tname = Release;\n\t\t};\n", rest];
+  Check([text isEqual:expected], [NSString stringWithFormat:@"build settings and attributes edited in place, "
+                                  @"in Xcode's order and quoting:\n%@", text]);
+  Check(![PCXcodeProject setBuildSetting:@"X" to:@"1" inConfigurations:@[@"MISSING"]
+                         ofProjectAtPath:bundle error:&error] && [error length]
+        && [[NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding error:NULL] isEqual:expected],
+        @"an unknown configuration leaves the file unchanged");
+
+  Write(root, @"Info.plist", @"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\">\n<dict>\n"
+        "\t<key>CFBundleShortVersionString</key>\n\t<string>1.0</string>\n"
+        "\t<key>CFBundleVersion</key>\n\t<string>$(CURRENT_PROJECT_VERSION)</string>\n</dict>\n</plist>\n");
+  Check([PCXcodeProject setInfoValue:@"2.0 <beta>" forKey:@"CFBundleShortVersionString" inFile:info error:&error]
+        && [PCXcodeProject setInfoValue:@"Sample & Co" forKey:@"CFBundleDisplayName" inFile:info error:&error]
+        && [PCXcodeProject setInfoValue:nil forKey:@"CFBundleVersion" inFile:info error:&error], error);
+  text = [NSString stringWithContentsOfFile:info encoding:NSUTF8StringEncoding error:NULL];
+  Check([text isEqual:@"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\">\n<dict>\n"
+         "\t<key>CFBundleShortVersionString</key>\n\t<string>2.0 &lt;beta&gt;</string>\n"
+         "\t<key>CFBundleDisplayName</key>\n\t<string>Sample &amp; Co</string>\n</dict>\n</plist>\n"],
+        [NSString stringWithFormat:@"Info.plist edited in place:\n%@", text]);
+  [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+}
+
 /* Edit → Convert → To XIB...: the interfaces of a project, without the
  * copies in build products, and their XIBs as gorm2xib writes them. */
 static void TestConvertToXIB(void)
@@ -721,6 +800,7 @@ int main(int argc, char **argv)
     TestBuildSelection();
     TestConvertToXIB();
     TestGNUstepSettings();
+    TestProjectEditing();
     TestGormArchives();
     TestInterfaceDocument();
     TestConstraintNames();

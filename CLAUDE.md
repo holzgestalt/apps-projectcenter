@@ -7,9 +7,10 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 
 1. **Xcode projects on GNUstep.** Open `.xcodeproj` bundles directly and work on them as in Xcode:
    navigator with Xcode's groups, jump bar, toolbar, bottom area, inspector, integrated gdb debugger,
-   and a visual XIB editor. Xcode metadata stays read-only. Builds go through an existing GNUmakefile
-   or `GNUstep/ProjectCenter.plist`. See `XcodeProjects.md` for the user-facing behaviour. The main
-   test project is EditGlyphData, with the GTK4Native theme.
+   and a visual XIB editor. Xcode metadata stays read-only, except for the values of the project
+   editor's General pane, which `PCXcodeProject` changes one line at a time. Builds go through an
+   existing GNUmakefile or `GNUstep/ProjectCenter.plist`. See `XcodeProjects.md` for the user-facing
+   behaviour. The main test project is EditGlyphData, with the GTK4Native theme.
 2. **ProjectCenter on macOS.** Build and run ProjectCenter itself from `ProjectCenter.xcodeproj`
    against Cocoa, from the same sources as the GNUstep build.
    - Status: builds and runs. Preferences load from the module bundles, and `.xcodeproj` projects open

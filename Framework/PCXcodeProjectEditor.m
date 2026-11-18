@@ -235,7 +235,6 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
   [overview release];
   [selection release];
   [generalRows release];
-  [editableRows release];
   [settingRows release];
   [phaseRows release];
   [configurationNames release];
@@ -348,10 +347,56 @@ static NSString *Expanded(id value, NSDictionary *settings)
   return text;
 }
 
+/* "$(NAME)" or "${NAME}" alone: the build setting an Info.plist value comes
+ * from, as Xcode's General pane edits it. */
+static NSString *MacroName(id value)
+{
+  NSString *name;
+
+  if (![value isKindOfClass:[NSString class]] || [value length] < 4) return nil;
+  if (!(([value hasPrefix:@"$("] && [value hasSuffix:@")"])
+        || ([value hasPrefix:@"${"] && [value hasSuffix:@"}"])))
+  {
+    return nil;
+  }
+  name = [value substringWithRange:NSMakeRange(2, [value length] - 3)];
+  if ([name rangeOfCharacterFromSet:[[NSCharacterSet characterSetWithCharactersInString:
+        @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"] invertedSet]].location
+      != NSNotFound)
+  {
+    return nil;
+  }
+  return name;
+}
+
+/* A popup item: [Title, Value], NSNull for no value. */
+static NSArray *Choice(NSString *title, id value)
+{
+  return [NSArray arrayWithObjects:title, (value ? value : [NSNull null]), nil];
+}
+
+/* Names of the files with one of the extensions, without it, once each. */
+static NSArray *NamesWithExtensions(NSArray *files, NSArray *extensions)
+{
+  NSMutableArray *names = [NSMutableArray array];
+
+  for (NSString *file in files)
+  {
+    NSString *name = [[file lastPathComponent] stringByDeletingPathExtension];
+
+    if ([extensions containsObject:[[file pathExtension] lowercaseString]]
+        && ![names containsObject:name])
+    {
+      [names addObject:name];
+    }
+  }
+  return [names sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+}
+
 - (void)_buildGeneralRows
 {
   NSMutableArray      *rows = [NSMutableArray array];
-  NSMutableDictionary *editable = [NSMutableDictionary dictionary];
+  NSString            *projectPath = [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
   __block NSUInteger  sectionStart = 0;
   void (^section)(NSString *) = ^(NSString *title) {
     /* A section without rows is left out. */
@@ -363,16 +408,39 @@ static NSString *Expanded(id value, NSDictionary *settings)
     NSString *text = DisplayValue(value);
     if ([text length]) [rows addObject:[NSArray arrayWithObjects:name, text, nil]];
   };
+  /* An editable row: [Name, Value, Edit], Edit saying what it changes. An
+   * editable row is shown when empty, so it can be set. */
+  void (^edit)(NSString *, id, NSDictionary *) = ^(NSString *name, id value, NSDictionary *how) {
+    if (how == nil) add(name, value);
+    else [rows addObject:[NSArray arrayWithObjects:name, DisplayValue(value), how, nil]];
+  };
+  NSDictionary *(^choices)(NSDictionary *, NSArray *) = ^NSDictionary *(NSDictionary *how, NSArray *list) {
+    NSMutableDictionary *result;
+
+    if (how == nil) return nil;
+    result = [NSMutableDictionary dictionaryWithDictionary:how];
+    [result setObject:list forKey:@"Choices"];
+    return result;
+  };
 
   if (selection == overview)
   {
+    NSMutableArray *regions = [NSMutableArray array];
+
     section(@"Project Document");
     add(@"Project", [overview objectForKey:@"Name"]);
-    add(@"Location", [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]);
+    add(@"Location", projectPath);
     add(@"Project Format", [overview objectForKey:@"Format"]
         ? [NSString stringWithFormat:@"objectVersion %@", [overview objectForKey:@"Format"]] : nil);
     section(@"Localizations");
-    add(@"Development Region", [overview objectForKey:@"DevelopmentRegion"]);
+    for (NSString *region in [overview objectForKey:@"KnownRegions"])
+    {
+      if (![region isEqual:@"Base"]) [regions addObject:Choice(region, region)];
+    }
+    edit(@"Development Region", [overview objectForKey:@"DevelopmentRegion"],
+         ([overview objectForKey:@"Identifier"] && [regions count]
+          ? [NSDictionary dictionaryWithObjectsAndKeys:@"Attribute", @"Kind", @"developmentRegion", @"Key",
+             [overview objectForKey:@"Identifier"], @"Object", regions, @"Choices", nil] : nil));
     add(@"Localizations", [[overview objectForKey:@"KnownRegions"] componentsJoinedByString:@", "]);
     section(@"Build");
     add(@"Configurations", [self _configurationSummary:[overview objectForKey:@"Configurations"]]);
@@ -384,16 +452,17 @@ static NSString *Expanded(id value, NSDictionary *settings)
     NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithDictionary:[self _mergedSettings:first]];
     NSString            *name = [selection objectForKey:@"Name"];
     NSString            *infoFile = DisplayValue([settings objectForKey:@"INFOPLIST_FILE"]);
+    NSArray             *configurations = [[selection objectForKey:@"Configurations"] valueForKey:@"Identifier"];
+    NSMutableArray      *resources = [NSMutableArray array];
+    NSMutableArray      *resourcePaths = [NSMutableArray array];
+    NSMutableArray      *iconSets = [NSMutableArray array];
+    NSMutableArray      *list;
+    NSString            *infoPath = nil;
     NSDictionary        *info = nil;
     NSString            *productName;
+    NSString            *mainKey;
+    BOOL                generated = [DisplayValue([settings objectForKey:@"GENERATE_INFOPLIST_FILE"]) isEqual:@"YES"];
     BOOL                built = [name isEqual:[[project projectDict] objectForKey:@"PROJECT_NAME"]];
-    id (^value)(NSString *, NSString *) = ^id(NSString *infoKey, NSString *setting) {
-      /* The Info.plist's value, else what Xcode generates it from. */
-      id found = [info objectForKey:infoKey];
-      if (found == nil) found = [settings objectForKey:[@"INFOPLIST_KEY_" stringByAppendingString:infoKey]];
-      if (found == nil && setting) found = [settings objectForKey:setting];
-      return found ? Expanded(found, settings) : nil;
-    };
 
     if (![settings objectForKey:@"TARGET_NAME"]) [settings setObject:name forKey:@"TARGET_NAME"];
     productName = Expanded([settings objectForKey:@"PRODUCT_NAME"] ? [settings objectForKey:@"PRODUCT_NAME"]
@@ -402,32 +471,136 @@ static NSString *Expanded(id value, NSDictionary *settings)
     if (![settings objectForKey:@"EXECUTABLE_NAME"]) [settings setObject:productName forKey:@"EXECUTABLE_NAME"];
     if ([infoFile length])
     {
-      info = [NSDictionary dictionaryWithContentsOfFile:
-              [[project projectPath] stringByAppendingPathComponent:Expanded(infoFile, settings)]];
+      infoPath = [[[projectPath stringByDeletingLastPathComponent]
+                   stringByAppendingPathComponent:Expanded(infoFile, settings)] stringByStandardizingPath];
+      info = [NSDictionary dictionaryWithContentsOfFile:infoPath];
+      if (![info isKindOfClass:[NSDictionary class]])
+      {
+        info = nil;
+        infoPath = nil;
+      }
     }
+    for (NSDictionary *phase in [selection objectForKey:@"Phases"])
+    {
+      if ([[phase objectForKey:@"Kind"] isEqual:@"Copy Bundle Resources"])
+      {
+        [resources addObjectsFromArray:[phase objectForKey:@"Files"]];
+        [resourcePaths addObjectsFromArray:[phase objectForKey:@"Paths"]];
+      }
+    }
+    for (NSString *catalog in resourcePaths)
+    {
+      NSDirectoryEnumerator *enumerator;
+      NSString              *entry;
+
+      if (![[[catalog pathExtension] lowercaseString] isEqual:@"xcassets"]) continue;
+      enumerator = [[NSFileManager defaultManager] enumeratorAtPath:catalog];
+      while ((entry = [enumerator nextObject]))
+      {
+        if ([[entry pathExtension] isEqual:@"appiconset"])
+        {
+          [iconSets addObject:[[entry lastPathComponent] stringByDeletingPathExtension]];
+          [enumerator skipDescendents];
+        }
+      }
+    }
+
+    /* Edits go where Xcode puts them: a build setting in every configuration
+     * of the target, or a key of its Info.plist. */
+    NSDictionary *(^setting)(NSString *) = ^NSDictionary *(NSString *key) {
+      if ([configurations count] == 0 || projectPath == nil) return nil;
+      return [NSDictionary dictionaryWithObjectsAndKeys:@"Setting", @"Kind", key, @"Key",
+              configurations, @"Configurations", nil];
+    };
+    NSDictionary *(^infoEdit)(NSString *) = ^NSDictionary *(NSString *key) {
+      if (infoPath == nil) return nil;
+      return [NSDictionary dictionaryWithObjectsAndKeys:@"Info", @"Kind", key, @"Key", infoPath, @"File", nil];
+    };
+    /* An Info.plist key: its own value, the build setting it names
+     * ("$(MARKETING_VERSION)"), or the setting Xcode generates it from. */
+    NSDictionary *(^infoKey)(NSString *, NSString *) = ^NSDictionary *(NSString *key, NSString *fallback) {
+      id       raw = [info objectForKey:key];
+      NSString *generatedKey = [@"INFOPLIST_KEY_" stringByAppendingString:key];
+
+      if (raw)
+      {
+        if (MacroName(raw)) return setting(MacroName(raw));
+        return [raw isKindOfClass:[NSString class]] ? infoEdit(key) : nil;
+      }
+      if ([settings objectForKey:generatedKey]) return setting(generatedKey);
+      if (fallback) return setting(fallback);
+      if (info) return infoEdit(key);
+      return generated ? setting(generatedKey) : nil;
+    };
+    id (^value)(NSString *, NSString *) = ^id(NSString *infoKey, NSString *setting) {
+      /* The Info.plist's value, else what Xcode generates it from. */
+      id found = [info objectForKey:infoKey];
+      if (found == nil) found = [settings objectForKey:[@"INFOPLIST_KEY_" stringByAppendingString:infoKey]];
+      if (found == nil && setting) found = [settings objectForKey:setting];
+      return found ? Expanded(found, settings) : nil;
+    };
 
     section(@"Target");
     add(@"Target", name);
+    /* Fixed when the target is made, as in Xcode. */
     add(@"Type", ProductTypeName([selection objectForKey:@"ProductType"], [selection objectForKey:@"Kind"]));
-    add(@"Product Name", productName);
+    edit(@"Product Name", productName, setting(@"PRODUCT_NAME"));
 
     /* Xcode's General pane, without what only the App Store and Xcode use
      * (App Category, Supported Destinations, Development Assets). */
     section(@"Identity");
-    add(@"Display Name", value(@"CFBundleDisplayName", nil));
-    add(@"Bundle Identifier", value(@"CFBundleIdentifier", @"PRODUCT_BUNDLE_IDENTIFIER"));
-    add(@"Version", value(@"CFBundleShortVersionString", @"MARKETING_VERSION"));
-    add(@"Build", value(@"CFBundleVersion", @"CURRENT_PROJECT_VERSION"));
+    edit(@"Display Name", value(@"CFBundleDisplayName", nil), infoKey(@"CFBundleDisplayName", nil));
+    edit(@"Bundle Identifier", value(@"CFBundleIdentifier", @"PRODUCT_BUNDLE_IDENTIFIER"),
+         infoKey(@"CFBundleIdentifier", @"PRODUCT_BUNDLE_IDENTIFIER"));
+    edit(@"Version", value(@"CFBundleShortVersionString", @"MARKETING_VERSION"),
+         infoKey(@"CFBundleShortVersionString", @"MARKETING_VERSION"));
+    edit(@"Build", value(@"CFBundleVersion", @"CURRENT_PROJECT_VERSION"),
+         infoKey(@"CFBundleVersion", @"CURRENT_PROJECT_VERSION"));
 
     section(@"Deployment");
-    add(@"Minimum macOS", [settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"]);
-    add(@"Main Interface", value(@"NSMainNibFile", nil) ? value(@"NSMainNibFile", nil)
-        : value(@"NSMainStoryboardFile", nil));
-    add(@"Info.plist", infoFile);
+    list = [NSMutableArray array];
+    if ([settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"] == nil)
+    {
+      [list addObject:Choice(@"SDK Default", nil)];
+    }
+    for (NSString *version in @[@"10.13", @"10.14", @"10.15", @"11.0", @"12.0", @"13.0", @"14.0",
+                                @"15.0", @"26.0"])
+    {
+      [list addObject:Choice(version, version)];
+    }
+    edit(@"Minimum macOS", [settings objectForKey:@"MACOSX_DEPLOYMENT_TARGET"],
+         choices(setting(@"MACOSX_DEPLOYMENT_TARGET"), list));
+    mainKey = value(@"NSMainStoryboardFile", nil) ? @"NSMainStoryboardFile" : @"NSMainNibFile";
+    list = [NSMutableArray arrayWithObject:Choice(@"None", nil)];
+    for (NSString *interface in NamesWithExtensions(resources, ([mainKey isEqual:@"NSMainNibFile"]
+                                                                ? @[@"xib", @"nib"] : @[@"storyboard"])))
+    {
+      [list addObject:Choice(interface, interface)];
+    }
+    edit(@"Main Interface", value(mainKey, nil), choices(infoKey(mainKey, nil), list));
+    edit(@"Info.plist", infoFile, setting(@"INFOPLIST_FILE"));
 
     section(@"App Icon");
-    add(@"App Icon", [settings objectForKey:@"ASSETCATALOG_COMPILER_APPICON_NAME"]
-        ? [settings objectForKey:@"ASSETCATALOG_COMPILER_APPICON_NAME"] : value(@"CFBundleIconFile", nil));
+    list = [NSMutableArray arrayWithObject:Choice(@"None", nil)];
+    if ([iconSets count] || [settings objectForKey:@"ASSETCATALOG_COMPILER_APPICON_NAME"])
+    {
+      /* An app icon set of the asset catalogs. */
+      for (NSString *icon in [iconSets sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)])
+      {
+        [list addObject:Choice(icon, icon)];
+      }
+      edit(@"App Icon", [settings objectForKey:@"ASSETCATALOG_COMPILER_APPICON_NAME"],
+           choices(setting(@"ASSETCATALOG_COMPILER_APPICON_NAME"), list));
+    }
+    else
+    {
+      /* An .icns file of the resources. */
+      for (NSString *icon in NamesWithExtensions(resources, @[@"icns"]))
+      {
+        [list addObject:Choice(icon, icon)];
+      }
+      edit(@"App Icon", value(@"CFBundleIconFile", nil), choices(infoKey(@"CFBundleIconFile", nil), list));
+    }
 
     section(@"Frameworks and Libraries");
     for (NSDictionary *phase in [selection objectForKey:@"Phases"])
@@ -443,25 +616,26 @@ static NSString *Expanded(id value, NSDictionary *settings)
     if (built)
     {
       /* The target ProjectCenter builds and runs on GNUstep; its settings
-       * are ProjectCenter's own, so they can be edited. */
-      NSDictionary *gnustep = [PCXcodeProject GNUstepSettingsOfProjectAtPath:
-                               [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]];
+       * are ProjectCenter's own. */
+      NSDictionary *gnustep = [PCXcodeProject GNUstepSettingsOfProjectAtPath:projectPath];
       NSString     *theme = [gnustep objectForKey:@"Theme"];
+      NSString     *pathTip = @"A path, relative to the folder of the .xcodeproj or absolute. "
+                              @"Saved in GNUstep/ProjectCenter.plist.";
 
       section(@"GNUstep");
-      [rows addObject:[NSArray arrayWithObjects:@"Build Script",
-                       DisplayValue([gnustep objectForKey:@"BuildScript"]), nil]];
-      [rows addObject:[NSArray arrayWithObjects:@"Executable",
-                       DisplayValue([gnustep objectForKey:@"Executable"]), nil]];
-      [rows addObject:[NSArray arrayWithObjects:@"Theme", ([theme length] ? theme : @"Default"), nil]];
-      [editable setObject:@"BuildScript" forKey:@"Build Script"];
-      [editable setObject:@"Executable" forKey:@"Executable"];
-      [editable setObject:@"Theme" forKey:@"Theme"];
+      edit(@"Build Script", [gnustep objectForKey:@"BuildScript"],
+           [NSDictionary dictionaryWithObjectsAndKeys:@"GNUstep", @"Kind", @"BuildScript", @"Key",
+            @"GNUmakefile in the project folder", @"Placeholder", pathTip, @"ToolTip", nil]);
+      edit(@"Executable", [gnustep objectForKey:@"Executable"],
+           [NSDictionary dictionaryWithObjectsAndKeys:@"GNUstep", @"Kind", @"Executable", @"Key",
+            @"found in the GNUstep build folders", @"Placeholder", pathTip, @"ToolTip", nil]);
+      edit(@"Theme", ([theme length] ? theme : @"Default"),
+           [NSDictionary dictionaryWithObjectsAndKeys:@"GNUstep", @"Kind", @"Theme", @"Key",
+            @"Theme", @"Control", nil]);
     }
   }
   if ([rows count] == sectionStart + 1) [rows removeLastObject];
   ASSIGN(generalRows, rows);
-  ASSIGN(editableRows, editable);
 }
 
 // --- The General form
@@ -509,10 +683,34 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
       [popUp selectItem:item];
     }
   }
-  [popUp setTarget:self];
-  [popUp setAction:@selector(themeChanged:)];
   [popUp setToolTip:@"The theme Run starts the application with on GNUstep (-GSTheme). "
                     @"Default leaves the user's own theme."];
+  return popUp;
+}
+
+/* A popup of [Title, Value] choices; a current value that is not among them
+ * is added, so it is shown as it is. */
+- (NSPopUpButton *)_popUp:(NSRect)frame choices:(NSArray *)list selected:(NSString *)current
+{
+  NSPopUpButton *popUp = [[[NSPopUpButton alloc] initWithFrame:frame pullsDown:NO] autorelease];
+  NSMenuItem    *selected = nil;
+  NSMenuItem    *item;
+
+  if (![current length]) current = nil;
+  for (NSArray *choice in list)
+  {
+    id value = [choice objectAtIndex:1];
+
+    item = [[popUp menu] addItemWithTitle:[choice objectAtIndex:0] action:NULL keyEquivalent:@""];
+    [item setRepresentedObject:(value == [NSNull null] ? nil : value)];
+    if (current ? [value isEqual:current] : value == [NSNull null]) selected = item;
+  }
+  if (selected == nil && current)
+  {
+    selected = [[popUp menu] addItemWithTitle:current action:NULL keyEquivalent:@""];
+    [selected setRepresentedObject:current];
+  }
+  if (selected) [popUp selectItem:selected];
   return popUp;
 }
 
@@ -522,12 +720,16 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
   CGFloat    labelWidth = 180;
   CGFloat    x = labelWidth + 32;
   CGFloat    y = 16;
+  NSPoint    scrolled = [[generalScroll contentView] bounds].origin;
   PCFormView *form = [[[PCFormView alloc] initWithFrame:NSMakeRect(0, 0, width, 100)] autorelease];
   NSFont     *bold = [NSFont boldSystemFontOfSize:0];
+  NSUInteger index;
 
   [form setAutoresizingMask:NSViewWidthSizable];
-  for (NSArray *row in generalRows)
+  for (index = 0; index < [generalRows count]; index++)
   {
+    NSArray *row = [generalRows objectAtIndex:index];
+
     if ([row count] == 1)
     {
       /* A section: its title over a line, as in Xcode. */
@@ -545,48 +747,81 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
       continue;
     }
 
-    NSString    *label = [row objectAtIndex:0];
-    NSString    *text = [row objectAtIndex:1];
-    NSString    *key = [editableRows objectForKey:label];
-    NSTextField *name = FormField(NSMakeRect(20, y + 3, labelWidth, 18), label, NO);
-    NSView      *control;
+    NSString     *text = [row objectAtIndex:1];
+    NSDictionary *how = [row count] > 2 ? [row objectAtIndex:2] : nil;
+    NSTextField  *name = FormField(NSMakeRect(20, y + 3, labelWidth, 18), [row objectAtIndex:0], NO);
+    NSView       *control;
 
     [name setAlignment:NSRightTextAlignment];
     [name setSelectable:NO];
     [form addSubview:name];
-    if ([key isEqual:@"Theme"])
+    if ([[how objectForKey:@"Control"] isEqual:@"Theme"] || [how objectForKey:@"Choices"])
     {
-      control = [self _themePopUp:NSMakeRect(x, y, MIN(260, width - x - 20), 24)
-                         selected:[[PCXcodeProject GNUstepSettingsOfProjectAtPath:
-                                    [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]]
-                                   objectForKey:@"Theme"]];
+      NSRect        frame = NSMakeRect(x, y, MIN(260, width - x - 20), 24);
+      NSPopUpButton *popUp = ([how objectForKey:@"Choices"]
+                              ? [self _popUp:frame choices:[how objectForKey:@"Choices"] selected:text]
+                              : [self _themePopUp:frame selected:
+                                 [[PCXcodeProject GNUstepSettingsOfProjectAtPath:
+                                   [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]]
+                                  objectForKey:@"Theme"]]);
+
+      [popUp setTag:index];
+      [popUp setTarget:self];
+      [popUp setAction:@selector(generalChoiceChanged:)];
+      control = popUp;
     }
-    else if (key)
+    else if (how)
     {
       NSTextField *field = FormField(NSMakeRect(x, y + 1, width - x - 20, 22), text, YES);
 
-      [[field cell] setPlaceholderString:([key isEqual:@"BuildScript"]
-                                          ? @"GNUmakefile in the project folder"
-                                          : @"found in the GNUstep build folders")];
+      if ([how objectForKey:@"Placeholder"])
+      {
+        [[field cell] setPlaceholderString:[how objectForKey:@"Placeholder"]];
+      }
+      [field setTag:index];
       [field setTarget:self];
-      [field setAction:@selector(settingFieldChanged:)];
+      [field setAction:@selector(generalFieldChanged:)];
       [field setDelegate:(id)self];
-      [field setTag:[key isEqual:@"BuildScript"] ? 1 : 2];
-      [field setToolTip:@"A path, relative to the folder of the .xcodeproj or absolute. "
-                        @"Saved in GNUstep/ProjectCenter.plist."];
+      [field setAutoresizingMask:NSViewWidthSizable];
       control = field;
     }
     else
     {
       control = FormField(NSMakeRect(x, y + 3, width - x - 20, 18), text, NO);
-      [control setToolTip:text];
+      [control setAutoresizingMask:NSViewWidthSizable];
     }
-    if (!key || ![key isEqual:@"Theme"]) [control setAutoresizingMask:NSViewWidthSizable];
+    [control setToolTip:([how objectForKey:@"ToolTip"] ? [how objectForKey:@"ToolTip"]
+                         : how ? [self _whereSaved:how] : text)];
     [form addSubview:control];
     y += 28;
   }
   [form setFrameSize:NSMakeSize(width, MAX(y + 16, [generalScroll contentSize].height))];
   [generalScroll setDocumentView:form];
+  /* Rebuilt after an edit: keep the place. */
+  [[generalScroll contentView] scrollToPoint:scrolled];
+  [generalScroll reflectScrolledClipView:[generalScroll contentView]];
+}
+
+/* Where an edit is saved, for its tooltip. */
+- (NSString *)_whereSaved:(NSDictionary *)how
+{
+  NSString *kind = [how objectForKey:@"Kind"];
+
+  if ([kind isEqual:@"Setting"])
+  {
+    return [NSString stringWithFormat:@"The build setting %@, for every configuration of the target.",
+            [how objectForKey:@"Key"]];
+  }
+  if ([kind isEqual:@"Info"])
+  {
+    return [NSString stringWithFormat:@"%@ in %@.", [how objectForKey:@"Key"],
+            [[how objectForKey:@"File"] lastPathComponent]];
+  }
+  if ([kind isEqual:@"Attribute"])
+  {
+    return [NSString stringWithFormat:@"%@ of the project.", [how objectForKey:@"Key"]];
+  }
+  return @"Saved in GNUstep/ProjectCenter.plist.";
 }
 
 - (BOOL)setGNUstepSetting:(NSString *)value forKey:(NSString *)key
@@ -628,22 +863,68 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
   return YES;
 }
 
-- (void)settingFieldChanged:(id)sender
+- (BOOL)setGeneralValue:(NSString *)value atRow:(NSUInteger)index
 {
-  [self setGNUstepSetting:[sender stringValue]
-                   forKey:([sender tag] == 1 ? @"BuildScript" : @"Executable")];
-  [self _buildGeneralRows];
+  NSString     *path = [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
+  NSArray      *row = index < [generalRows count] ? [generalRows objectAtIndex:index] : nil;
+  NSDictionary *how = [row count] > 2 ? [row objectAtIndex:2] : nil;
+  NSString     *kind = [how objectForKey:@"Kind"];
+  NSString     *key = [how objectForKey:@"Key"];
+  NSString     *error = nil;
+  BOOL         done = NO;
+
+  if (how == nil || path == nil)
+  {
+    return NO;
+  }
+  value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+  if (![value length]) value = nil;
+  if ([kind isEqual:@"GNUstep"])
+  {
+    done = [self setGNUstepSetting:value forKey:key];
+  }
+  else if ([DisplayValue(value) isEqual:[row objectAtIndex:1]])
+  {
+    /* Unchanged: a value shown expanded keeps its $(SETTING). */
+    return YES;
+  }
+  else if ([kind isEqual:@"Setting"])
+  {
+    done = [PCXcodeProject setBuildSetting:key to:value inConfigurations:[how objectForKey:@"Configurations"]
+                           ofProjectAtPath:path error:&error];
+  }
+  else if ([kind isEqual:@"Info"])
+  {
+    done = [PCXcodeProject setInfoValue:value forKey:key inFile:[how objectForKey:@"File"] error:&error];
+  }
+  else if ([kind isEqual:@"Attribute"])
+  {
+    done = [PCXcodeProject setAttribute:key to:value ofObject:[how objectForKey:@"Object"]
+                        ofProjectAtPath:path error:&error];
+  }
+  if (!done && error)
+  {
+    NSRunAlertPanel(@"Project Settings", @"%@", @"OK", nil, nil, error);
+  }
+  /* Show what the files say now, once the field has finished editing. */
+  [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(reload) object:nil];
+  [self performSelector:@selector(reload) withObject:nil afterDelay:0];
+  return done;
+}
+
+- (void)generalFieldChanged:(id)sender
+{
+  [self setGeneralValue:[sender stringValue] atRow:[sender tag]];
 }
 
 - (void)controlTextDidEndEditing:(NSNotification *)notification
 {
-  [self settingFieldChanged:[notification object]];
+  [self generalFieldChanged:[notification object]];
 }
 
-- (void)themeChanged:(id)sender
+- (void)generalChoiceChanged:(id)sender
 {
-  [self setGNUstepSetting:[[sender selectedItem] representedObject] forKey:@"Theme"];
-  [self _buildGeneralRows];
+  [self setGeneralValue:[[sender selectedItem] representedObject] atRow:[sender tag]];
 }
 
 - (void)_buildSettingRows

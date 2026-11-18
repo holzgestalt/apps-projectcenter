@@ -4,11 +4,36 @@
 @interface PCXcodeProject : NSObject
 + (NSDictionary *)projectAtPath:(NSString *)path error:(NSString **)error;
 /* A read-only description of the project for the project editor:
- * {Name, Format, DevelopmentRegion, KnownRegions, Configurations, Targets}.
- * Configurations are [{Name, Base, Settings}]; each target is {Name, Kind,
+ * {Name, Identifier, Format, DevelopmentRegion, KnownRegions, Configurations, Targets}.
+ * Configurations are [{Name, Identifier, Base, Settings}]; each target is {Name, Identifier, Kind,
  * ProductType, ProductName, Configurations, Phases, Dependencies}, a phase
- * {Name, Kind, Files, Script}. */
+ * {Name, Kind, Files, Paths, Script}, Paths being the files found locally. */
 + (NSDictionary *)overviewOfProjectAtPath:(NSString *)path error:(NSString **)error;
+
+/* Editing the project, for the General pane. project.pbxproj is changed as
+ * text, one entry at a time, so the rest of the file stays as Xcode wrote it;
+ * it is only written when the result still reads as a property list. A nil
+ * value removes the entry. The identifiers are the Identifier values of
+ * +overviewOfProjectAtPath:error:. */
+
+/* A build setting in each of the given build configurations. */
++ (BOOL)setBuildSetting:(NSString *)key
+                     to:(NSString *)value
+       inConfigurations:(NSArray *)identifiers
+        ofProjectAtPath:(NSString *)path
+                  error:(NSString **)error;
+/* An attribute of an object, such as the project's developmentRegion. */
++ (BOOL)setAttribute:(NSString *)key
+                  to:(NSString *)value
+            ofObject:(NSString *)identifier
+     ofProjectAtPath:(NSString *)path
+               error:(NSString **)error;
+/* A string in an Info.plist. An XML file is edited in place; other formats
+ * are written again as XML. */
++ (BOOL)setInfoValue:(NSString *)value
+              forKey:(NSString *)key
+              inFile:(NSString *)file
+               error:(NSString **)error;
 
 /* GNUstep settings: GNUstep/ProjectCenter.plist beside the .xcodeproj,
  * ProjectCenter's own file (the Xcode project stays unchanged). Keys are

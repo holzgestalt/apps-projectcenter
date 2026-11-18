@@ -112,7 +112,8 @@ In File Open, navigate inside the `.xcodeproj` directory and select
 `project.pbxproj` to load the project rather than a text editor. GTK's file
 chooser navigates into folders; to select the wrapper folder itself use
 Project Open instead.
-Source files can be edited and saved normally. Xcode metadata is read-only:
+Source files can be edited and saved normally. Xcode metadata is read-only,
+apart from the values the project editor's General pane edits (see below):
 ProjectCenter does not convert the project, write a `.pcproj`, regenerate the
 GNUmakefile or rewrite the application's Info plist. Reopen to refresh the
 file list after changing Xcode metadata or a synchronized folder's contents.
@@ -129,7 +130,7 @@ One application target must be selected. A project containing one application
 target works immediately (test and aggregate targets do not count). For several
 application targets, select one with `TargetName` below. Framework/tool-only
 projects, `.xcworkspace`, build-setting expansion, Swift packages and Xcode
-project editing are not implemented.
+project editing beyond the General pane are not implemented.
 
 ## Project and targets
 
@@ -155,8 +156,27 @@ General is laid out in sections, as in Xcode. For a target:
   path is saved when you press Return or leave the field.
 
 What Xcode's General pane has only for the App Store or for Xcode itself (App
-Category, Supported Destinations, Development Assets) is left out. Everything
-from the Xcode project is read-only.
+Category, Supported Destinations, Development Assets) is left out.
+
+Values that Xcode's General pane edits can be edited here too, and are saved
+where Xcode saves them:
+
+- **Product name, bundle identifier, version, build and Info.plist** are text
+  fields, saved when you press Return or leave the field.
+- **Minimum macOS, main interface and app icon** are popups. The main
+  interface lists the XIBs of the target's resources, and the app icon the
+  icon sets of its asset catalogs, or else its `.icns` files.
+- **Development region**, on the project row, is a popup of the project's
+  localizations.
+- **Where they go:** a build setting goes into every configuration of the
+  target. A value the Info.plist has itself goes into the Info.plist; one it
+  takes from a setting (`$(MARKETING_VERSION)`) goes into that setting. Each
+  field's tooltip says where.
+- **How:** only the edited line of `project.pbxproj` or the Info.plist changes,
+  and the rest stays as Xcode wrote it. `project.pbxproj` is only written when
+  the result still reads as a property list.
+- **Read-only:** the target's type, which is fixed when the target is made, as
+  in Xcode, and everything else.
 
 **Theme** chooses the GNUstep theme Run starts the application with: Run
 passes `-GSTheme <Name>`, also when it runs the program under gdb. The menu

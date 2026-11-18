@@ -138,6 +138,7 @@ static NSArray *Configurations(NSDictionary *objects, NSString *listIdentifier)
 
     if (![configuration isKindOfClass:[NSDictionary class]]) continue;
     [entry setObject:([configuration objectForKey:@"name"] ? [configuration objectForKey:@"name"] : @"") forKey:@"Name"];
+    [entry setObject:identifier forKey:@"Identifier"];
     [entry setObject:([settings isKindOfClass:[NSDictionary class]] ? settings : [NSDictionary dictionary]) forKey:@"Settings"];
     if (base) [entry setObject:base forKey:@"Base"];
     [result addObject:entry];
@@ -145,12 +146,13 @@ static NSArray *Configurations(NSDictionary *objects, NSString *listIdentifier)
   return result;
 }
 
-static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
+static NSDictionary *Phase(NSDictionary *objects, NSString *identifier, NSDictionary *paths)
 {
   static NSDictionary *names = nil;
   NSDictionary *phase = [objects objectForKey:identifier];
   NSString *isa = [phase objectForKey:@"isa"];
   NSMutableArray *files = [NSMutableArray array];
+  NSMutableArray *filePaths = [NSMutableArray array];
   NSMutableDictionary *entry = [NSMutableDictionary dictionary];
   NSString *name = [phase objectForKey:@"name"];
 
@@ -169,12 +171,15 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
     NSString *fileName = ObjectName(objects, [file objectForKey:@"fileRef"]);
     if (!fileName) fileName = ObjectName(objects, [file objectForKey:@"productRef"]);
     if (fileName) [files addObject:fileName];
+    if ([paths objectForKey:[file objectForKey:@"fileRef"]])
+      [filePaths addObject:[paths objectForKey:[file objectForKey:@"fileRef"]]];
   }
   if (![name isKindOfClass:[NSString class]] || ![name length])
     name = [names objectForKey:isa] ? [names objectForKey:isa] : isa;
   [entry setObject:name forKey:@"Name"];
   [entry setObject:([names objectForKey:isa] ? [names objectForKey:isa] : (isa ? isa : @"")) forKey:@"Kind"];
   [entry setObject:files forKey:@"Files"];
+  [entry setObject:filePaths forKey:@"Paths"];
   if ([[phase objectForKey:@"shellScript"] isKindOfClass:[NSString class]])
     [entry setObject:[phase objectForKey:@"shellScript"] forKey:@"Script"];
   return entry;
@@ -273,6 +278,7 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
   NSDictionary *plist, *objects, *project;
   NSMutableArray *targets = [NSMutableArray array];
   NSMutableDictionary *overview = [NSMutableDictionary dictionary];
+  NSMutableDictionary *paths = [NSMutableDictionary dictionary];
 
   if (error) *error = nil;
   path = [[path stringByExpandingTildeInPath] stringByStandardizingPath];
@@ -287,6 +293,9 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
     return nil;
   }
   [overview setObject:[[path lastPathComponent] stringByDeletingPathExtension] forKey:@"Name"];
+  [overview setObject:[plist objectForKey:@"rootObject"] forKey:@"Identifier"];
+  ReadGroup([project objectForKey:@"mainGroup"], [path stringByDeletingLastPathComponent],
+            [path stringByDeletingLastPathComponent], objects, paths, [NSMutableSet set]);
   if ([plist objectForKey:@"objectVersion"])
     [overview setObject:[plist objectForKey:@"objectVersion"] forKey:@"Format"];
   if ([project objectForKey:@"developmentRegion"])
@@ -305,6 +314,7 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
 
     if (![target isKindOfClass:[NSDictionary class]]) continue;
     [entry setObject:(ObjectName(objects, identifier) ? ObjectName(objects, identifier) : identifier) forKey:@"Name"];
+    [entry setObject:identifier forKey:@"Identifier"];
     [entry setObject:([isa isEqual:@"PBXNativeTarget"] ? @"Native"
                       : [isa isEqual:@"PBXAggregateTarget"] ? @"Aggregate"
                       : [isa isEqual:@"PBXLegacyTarget"] ? @"External" : (isa ? isa : @""))
@@ -316,7 +326,7 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier)
     [entry setObject:Configurations(objects, [target objectForKey:@"buildConfigurationList"]) forKey:@"Configurations"];
     for (NSString *phase in [target objectForKey:@"buildPhases"])
     {
-      NSDictionary *description = Phase(objects, phase);
+      NSDictionary *description = Phase(objects, phase, paths);
       if (description) [phases addObject:description];
     }
     [entry setObject:phases forKey:@"Phases"];
@@ -362,6 +372,430 @@ static NSString *Quoted(NSString *string)
                                range:NSMakeRange(0, [quoted length])];
   return [NSString stringWithFormat:@"\"%@\"", quoted];
 }
+
+// --- Editing the Xcode project
+
+/* project.pbxproj is edited as text, one entry at a time, so that the rest
+ * of the file stays as Xcode wrote it. */
+
+static NSUInteger SkipQuoted(NSString *text, NSUInteger i, NSUInteger end)
+{
+  for (i++; i < end; i++)
+  {
+    unichar c = [text characterAtIndex:i];
+
+    if (c == '\\') i++;
+    else if (c == '"') return i + 1;
+  }
+  return end;
+}
+
+/* Skips white space and comments. */
+static NSUInteger SkipSpace(NSString *text, NSUInteger i, NSUInteger end)
+{
+  while (i < end)
+  {
+    unichar c = [text characterAtIndex:i];
+    unichar next = i + 1 < end ? [text characterAtIndex:i + 1] : 0;
+
+    if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+    {
+      i++;
+    }
+    else if (c == '/' && (next == '*' || next == '/'))
+    {
+      NSRange close = [text rangeOfString:(next == '*' ? @"*/" : @"\n") options:0
+                                    range:NSMakeRange(i + 2, end - i - 2)];
+
+      i = close.location == NSNotFound ? end : NSMaxRange(close);
+    }
+    else
+    {
+      break;
+    }
+  }
+  return i;
+}
+
+/* The end of the value (or key) that starts at i. */
+static NSUInteger ValueEnd(NSString *text, NSUInteger i, NSUInteger end)
+{
+  NSInteger depth = 0;
+
+  while (i < end)
+  {
+    unichar c = [text characterAtIndex:i];
+
+    if (c == '"')
+    {
+      i = SkipQuoted(text, i, end);
+    }
+    else if (c == '{' || c == '(')
+    {
+      depth++;
+      i++;
+    }
+    else if (c == '}' || c == ')')
+    {
+      if (depth == 0) return i;
+      depth--;
+      i++;
+    }
+    else if (c == '/' && i + 1 < end && ([text characterAtIndex:i + 1] == '*'
+                                         || [text characterAtIndex:i + 1] == '/'))
+    {
+      if (depth == 0) return i;
+      i = SkipSpace(text, i, end);
+    }
+    else if (depth == 0 && (c == ';' || c == '=' || c == ',' || c == ' ' || c == '\t'
+                            || c == '\n'))
+    {
+      return i;
+    }
+    else
+    {
+      i++;
+    }
+  }
+  return end;
+}
+
+/* The entries `key = value;` of the dictionary whose contents run from start
+ * to end: [{Key, Line (the whole line), Value}], as NSValue ranges. */
+static NSArray *Entries(NSString *text, NSUInteger start, NSUInteger end)
+{
+  NSMutableArray *entries = [NSMutableArray array];
+  NSUInteger     i = SkipSpace(text, start, end);
+
+  while (i < end && [text characterAtIndex:i] != '}')
+  {
+    NSUInteger keyEnd = ValueEnd(text, i, end);
+    NSString   *key = [text substringWithRange:NSMakeRange(i, keyEnd - i)];
+    NSUInteger valueStart, valueEnd, lineStart, lineEnd;
+
+    if ([key hasPrefix:@"\""])
+    {
+      @try { key = [key propertyList]; } @catch (NSException *exception) { key = nil; }
+    }
+    valueStart = SkipSpace(text, keyEnd, end);
+    if (valueStart >= end || [text characterAtIndex:valueStart] != '=') break;
+    valueStart = SkipSpace(text, valueStart + 1, end);
+    valueEnd = ValueEnd(text, valueStart, end);
+    lineEnd = SkipSpace(text, valueEnd, end);
+    if (lineEnd >= end || [text characterAtIndex:lineEnd] != ';') break;
+    lineEnd++;
+    lineStart = [text rangeOfString:@"\n" options:NSBackwardsSearch
+                              range:NSMakeRange(0, i)].location;
+    lineStart = lineStart == NSNotFound ? 0 : lineStart + 1;
+    if (lineEnd < end && [text characterAtIndex:lineEnd] == '\n') lineEnd++;
+    [entries addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                        (key ? key : @""), @"Key",
+                        [NSValue valueWithRange:NSMakeRange(lineStart, lineEnd - lineStart)], @"Line",
+                        [NSValue valueWithRange:NSMakeRange(i, keyEnd - i)], @"KeyRange",
+                        [NSValue valueWithRange:NSMakeRange(valueStart, valueEnd - valueStart)], @"Value",
+                        nil]];
+    i = SkipSpace(text, lineEnd, end);
+  }
+  return entries;
+}
+
+static NSDictionary *Entry(NSArray *entries, NSString *key)
+{
+  for (NSDictionary *entry in entries)
+  {
+    if ([[entry objectForKey:@"Key"] isEqual:key]) return entry;
+  }
+  return nil;
+}
+
+/* The contents of the dictionary value of an entry, inside its braces. */
+static NSRange DictionaryContents(NSString *text, NSDictionary *entry)
+{
+  NSRange value = [[entry objectForKey:@"Value"] rangeValue];
+
+  if (value.length < 2 || [text characterAtIndex:value.location] != '{')
+  {
+    return NSMakeRange(NSNotFound, 0);
+  }
+  return NSMakeRange(value.location + 1, value.length - 2);
+}
+
+/* The contents of an object in the objects dictionary. */
+static NSRange ObjectContents(NSString *text, NSString *identifier)
+{
+  NSUInteger   start = SkipSpace(text, 0, [text length]);
+  NSUInteger   end;
+  NSDictionary *objects;
+
+  if (start >= [text length] || [text characterAtIndex:start] != '{')
+  {
+    return NSMakeRange(NSNotFound, 0);
+  }
+  end = ValueEnd(text, start, [text length]);
+  objects = Entry(Entries(text, start + 1, end), @"objects");
+  if (objects == nil) return NSMakeRange(NSNotFound, 0);
+  start = DictionaryContents(text, objects).location;
+  if (start == NSNotFound) return NSMakeRange(NSNotFound, 0);
+  return DictionaryContents(text, Entry(Entries(text, start, NSMaxRange(DictionaryContents(text, objects))),
+                                        identifier));
+}
+
+/* A value as Xcode writes it: bare when it can be, else quoted. */
+static NSString *PBXValue(NSString *value)
+{
+  static NSCharacterSet *bare = nil;
+
+  if (bare == nil)
+  {
+    bare = [[[NSCharacterSet characterSetWithCharactersInString:
+              @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$/:."]
+             invertedSet] retain];
+  }
+  if ([value length] && [value rangeOfCharacterFromSet:bare].location == NSNotFound
+      && [value rangeOfString:@"//"].location == NSNotFound)
+  {
+    return value;
+  }
+  return Quoted(value);
+}
+
+/* Sets (or, with nil, removes) the entry `key` of the dictionary whose
+ * contents are `contents`. New entries go in Xcode's order, sorted by key. */
+static void SetEntry(NSMutableString *text, NSRange contents, NSString *key, NSString *value)
+{
+  NSArray      *entries = Entries(text, contents.location, NSMaxRange(contents));
+  NSDictionary *entry = Entry(entries, key);
+  NSString     *indent;
+  NSUInteger   at;
+
+  if (entry)
+  {
+    if (value)
+      [text replaceCharactersInRange:[[entry objectForKey:@"Value"] rangeValue] withString:PBXValue(value)];
+    else
+      [text deleteCharactersInRange:[[entry objectForKey:@"Line"] rangeValue]];
+    return;
+  }
+  if (value == nil) return;
+  if ([entries count])
+  {
+    NSRange line = [[[entries objectAtIndex:0] objectForKey:@"Line"] rangeValue];
+
+    indent = [text substringWithRange:NSMakeRange(line.location,
+              [[[entries objectAtIndex:0] objectForKey:@"KeyRange"] rangeValue].location - line.location)];
+    at = NSMaxRange([[[entries lastObject] objectForKey:@"Line"] rangeValue]);
+    for (entry in entries)
+    {
+      if ([[entry objectForKey:@"Key"] compare:key] == NSOrderedDescending)
+      {
+        at = [[entry objectForKey:@"Line"] rangeValue].location;
+        break;
+      }
+    }
+  }
+  else
+  {
+    /* An empty dictionary: one level deeper than its closing brace. */
+    at = [text rangeOfString:@"\n" options:NSBackwardsSearch
+                       range:NSMakeRange(0, NSMaxRange(contents))].location;
+    if (at == NSNotFound || at < contents.location)
+    {
+      [text replaceCharactersInRange:contents withString:[NSString stringWithFormat:@" %@ = %@; ",
+                                                          PBXValue(key), PBXValue(value)]];
+      return;
+    }
+    at++;
+    indent = [[text substringWithRange:NSMakeRange(at, NSMaxRange(contents) - at)]
+              stringByAppendingString:@"\t"];
+  }
+  [text insertString:[NSString stringWithFormat:@"%@%@ = %@;\n", indent, PBXValue(key), PBXValue(value)]
+             atIndex:at];
+}
+
+static NSString *PBXProjectFile(NSString *path)
+{
+  path = [[path stringByExpandingTildeInPath] stringByStandardizingPath];
+  if ([[path lastPathComponent] isEqual:@"project.pbxproj"]) return path;
+  return [path stringByAppendingPathComponent:@"project.pbxproj"];
+}
+
+/* Applies `edit` to the text of project.pbxproj and writes it, when the
+ * result is still a property list. */
+static BOOL EditProject(NSString *path, NSString **error, BOOL (^edit)(NSMutableString *))
+{
+  NSString        *file = PBXProjectFile(path);
+  NSMutableString *text = [NSMutableString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding
+                                                              error:NULL];
+  NSString        *original = [[text copy] autorelease];
+  id              plist = nil;
+
+  if (error) *error = nil;
+  if (text == nil)
+  {
+    if (error) *error = [NSString stringWithFormat:@"Cannot read %@.", file];
+    return NO;
+  }
+  if (!edit(text))
+  {
+    if (error) *error = [NSString stringWithFormat:@"%@ does not have the expected entries.", file];
+    return NO;
+  }
+  if ([text isEqual:original]) return YES;
+  @try
+  {
+    plist = [text propertyList];
+  }
+  @catch (NSException *exception)
+  {
+    plist = nil;
+  }
+  if (![plist isKindOfClass:[NSDictionary class]])
+  {
+    if (error) *error = [NSString stringWithFormat:@"Editing %@ failed; it was left unchanged.", file];
+    return NO;
+  }
+  if (![text writeToFile:file atomically:YES encoding:NSUTF8StringEncoding error:NULL])
+  {
+    if (error) *error = [NSString stringWithFormat:@"Cannot write %@.", file];
+    return NO;
+  }
+  return YES;
+}
+
+/* An Info.plist value as XML. */
+static NSString *XMLEscaped(NSString *string)
+{
+  NSMutableString *escaped = [NSMutableString stringWithString:string];
+
+  [escaped replaceOccurrencesOfString:@"&" withString:@"&amp;" options:0
+                                range:NSMakeRange(0, [escaped length])];
+  [escaped replaceOccurrencesOfString:@"<" withString:@"&lt;" options:0
+                                range:NSMakeRange(0, [escaped length])];
+  [escaped replaceOccurrencesOfString:@">" withString:@"&gt;" options:0
+                                range:NSMakeRange(0, [escaped length])];
+  return escaped;
+}
+
+static id PropertyListOfString(NSString *text)
+{
+  NSData *data = [text dataUsingEncoding:NSUTF8StringEncoding];
+
+  return data ? [NSPropertyListSerialization propertyListWithData:data options:NSPropertyListImmutable
+                                                           format:NULL error:NULL] : nil;
+}
+
++ (BOOL)setBuildSetting:(NSString *)key
+                     to:(NSString *)value
+       inConfigurations:(NSArray *)identifiers
+        ofProjectAtPath:(NSString *)path
+                  error:(NSString **)error
+{
+  return EditProject(path, error, ^BOOL (NSMutableString *text) {
+    for (NSString *identifier in identifiers)
+    {
+      NSRange      object = ObjectContents(text, identifier);
+      NSDictionary *settings;
+
+      if (object.location == NSNotFound) return NO;
+      settings = Entry(Entries(text, object.location, NSMaxRange(object)), @"buildSettings");
+      if (settings == nil || DictionaryContents(text, settings).location == NSNotFound) return NO;
+      SetEntry(text, DictionaryContents(text, settings), key, value);
+    }
+    return YES;
+  });
+}
+
++ (BOOL)setAttribute:(NSString *)key
+                  to:(NSString *)value
+            ofObject:(NSString *)identifier
+     ofProjectAtPath:(NSString *)path
+               error:(NSString **)error
+{
+  return EditProject(path, error, ^BOOL (NSMutableString *text) {
+    NSRange object = ObjectContents(text, identifier);
+
+    if (object.location == NSNotFound) return NO;
+    SetEntry(text, object, key, value);
+    return YES;
+  });
+}
+
++ (BOOL)setInfoValue:(NSString *)value
+              forKey:(NSString *)key
+              inFile:(NSString *)file
+               error:(NSString **)error
+{
+  NSString            *text = [NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding
+                                                           error:NULL];
+  NSDictionary        *original = text ? PropertyListOfString(text) : nil;
+  NSMutableDictionary *expected;
+  NSMutableString     *edited = nil;
+  NSData              *data;
+
+  if (error) *error = nil;
+  if (![original isKindOfClass:[NSDictionary class]])
+  {
+    if (error) *error = [NSString stringWithFormat:@"%@ is not a readable property list.", file];
+    return NO;
+  }
+  expected = [NSMutableDictionary dictionaryWithDictionary:original];
+  if (value) [expected setObject:value forKey:key];
+  else [expected removeObjectForKey:key];
+  if ([expected isEqual:original]) return YES;
+
+  if ([text rangeOfString:@"<plist"].location != NSNotFound)
+  {
+    /* Edit the XML in place, so the rest stays as written. */
+    NSString            *pattern = [NSString stringWithFormat:
+                                    @"^([ \\t]*)<key>%@</key>\\s*<string>([^<]*)</string>[ \\t]*\\n?",
+                                    [NSRegularExpression escapedPatternForString:XMLEscaped(key)]];
+    NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:pattern
+                                       options:NSRegularExpressionAnchorsMatchLines error:NULL];
+    NSArray             *matches = [expression matchesInString:text options:0
+                                                         range:NSMakeRange(0, [text length])];
+
+    edited = [NSMutableString stringWithString:text];
+    if ([matches count] == 1)
+    {
+      NSTextCheckingResult *match = [matches objectAtIndex:0];
+
+      if (value) [edited replaceCharactersInRange:[match rangeAtIndex:2] withString:XMLEscaped(value)];
+      else [edited deleteCharactersInRange:[match range]];
+    }
+    else if ([matches count] == 0 && value)
+    {
+      NSRange              close = [edited rangeOfString:@"</dict>" options:NSBackwardsSearch];
+      NSTextCheckingResult *first = [[NSRegularExpression regularExpressionWithPattern:@"^([ \\t]*)<key>"
+                                      options:NSRegularExpressionAnchorsMatchLines error:NULL]
+                                     firstMatchInString:edited options:0
+                                                  range:NSMakeRange(0, [edited length])];
+      NSString             *indent = first ? [edited substringWithRange:[first rangeAtIndex:1]] : @"\t";
+      NSUInteger           at;
+
+      if (close.location != NSNotFound)
+      {
+        at = [edited rangeOfString:@"\n" options:NSBackwardsSearch
+                             range:NSMakeRange(0, close.location)].location;
+        at = at == NSNotFound ? close.location : at + 1;
+        [edited insertString:[NSString stringWithFormat:@"%@<key>%@</key>\n%@<string>%@</string>\n",
+                              indent, XMLEscaped(key), indent, XMLEscaped(value)]
+                     atIndex:at];
+      }
+    }
+    if (![PropertyListOfString(edited) isEqual:expected]) edited = nil;
+  }
+  data = edited ? [edited dataUsingEncoding:NSUTF8StringEncoding]
+    : [NSPropertyListSerialization dataWithPropertyList:expected format:NSPropertyListXMLFormat_v1_0
+                                                options:0 error:NULL];
+  if (data == nil || ![data writeToFile:file atomically:YES])
+  {
+    if (error) *error = [NSString stringWithFormat:@"Cannot write %@.", file];
+    return NO;
+  }
+  return YES;
+}
+
+// --- GNUstep settings
 
 + (NSDictionary *)GNUstepSettingsOfProjectAtPath:(NSString *)path
 {
