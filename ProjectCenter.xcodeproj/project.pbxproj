@@ -65,6 +65,8 @@
 		2D4D240C9551D2BD0CAD45EC /* Info.xib in Resources */ = {isa = PBXBuildFile; fileRef = 44BB41459048B9C6F48FC8F6 /* Info.xib */; };
 		2D7EE2073FB1AC160D6EB53E /* BuilderPanel.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4E74A335671AC7C202789537 /* BuilderPanel.xib */; };
 		2F28C3924A417AE06D6C93EF /* Main.gsmarkup in Resources */ = {isa = PBXBuildFile; fileRef = 1789F8372976C5D29FFFCD31 /* Main.gsmarkup */; };
+		F2E7B3298993E40D72DBAED9 /* PCInterfaceRendering.m in Sources */ = {isa = PBXBuildFile; fileRef = C699198FF1684FF6A13FF24B /* PCInterfaceRendering.m */; };
+		88DA2B476B6E284C94462C61 /* PCInterfaceInspector.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B5BAC294DE92E20C9AAC2A6 /* PCInterfaceInspector.m */; };
 		2FF1505A648317FA8274B2C6 /* PCInterfaceEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = FD843F4074223E8030FEA80A /* PCInterfaceEditor.m */; };
 		300FC0EBA649ED0ED58E6494 /* Info.gnustep in Resources */ = {isa = PBXBuildFile; fileRef = B3A984886A544CCA6E604EB4 /* Info.gnustep */; };
 		303300595368ADAB24E0CD5E /* PCPrefController.m in Sources */ = {isa = PBXBuildFile; fileRef = C64CA23F3863422298734D48 /* PCPrefController.m */; };
@@ -928,6 +930,9 @@
 		FA5D941948C2F9D4BAFAAF6A /* ProjectCenter_documentation.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = ProjectCenter_documentation.tiff; sourceTree = "<group>"; };
 		FAACA7A064C5A572642B0292 /* genericSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = genericSuitcaseH.tiff; sourceTree = "<group>"; };
 		FD59A1ECEC8D04C759A1F7C9 /* PCDebugger.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = PCDebugger.xib; sourceTree = "<group>"; };
+		88938EFF881CC91205388751 /* PCInterfaceRendering.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCInterfaceRendering.h; sourceTree = "<group>"; };
+		C699198FF1684FF6A13FF24B /* PCInterfaceRendering.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCInterfaceRendering.m; sourceTree = "<group>"; };
+		0B5BAC294DE92E20C9AAC2A6 /* PCInterfaceInspector.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCInterfaceInspector.m; sourceTree = "<group>"; };
 		FD843F4074223E8030FEA80A /* PCInterfaceEditor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCInterfaceEditor.m; sourceTree = "<group>"; };
 		FE0B1210CD84FB4E4CF755DE /* GNUmakefile.preamble */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile.preamble; sourceTree = "<group>"; };
 		FE126D15C40C0D6ED083CD36 /* PCBundleProject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCBundleProject.h; sourceTree = "<group>"; };
@@ -1214,6 +1219,9 @@
 				53139B6AC545DCD96BFB4A8E /* PCFileTypeIcon.m */,
 				5DC8082EB118B44BF9CE9B83 /* PCInterfaceEditor.h */,
 				FD843F4074223E8030FEA80A /* PCInterfaceEditor.m */,
+				88938EFF881CC91205388751 /* PCInterfaceRendering.h */,
+				C699198FF1684FF6A13FF24B /* PCInterfaceRendering.m */,
+				0B5BAC294DE92E20C9AAC2A6 /* PCInterfaceInspector.m */,
 				90C8A7D653B0E17310A370F9 /* PCLogController.m */,
 				698BE82A91B1F36C6481F814 /* PCMakefileFactory.m */,
 				EC9EF7FBBF96700F5C9DF120 /* PCNavigators.h */,
@@ -2676,6 +2684,8 @@
 				649E5EAF48A2AE9632D88D41 /* PCBundleManager.m in Sources */,
 				A7625E1FE9AC5841CF7F68D5 /* PCEditorManager.m in Sources */,
 				2FF1505A648317FA8274B2C6 /* PCInterfaceEditor.m in Sources */,
+				F2E7B3298993E40D72DBAED9 /* PCInterfaceRendering.m in Sources */,
+				88DA2B476B6E284C94462C61 /* PCInterfaceInspector.m in Sources */,
 				C706E69EC9BA11B4BB5C8607 /* PCFileTypeIcon.m in Sources */,
 				13FFC0D547CF8F5CF3E17424 /* PCMakefileFactory.m in Sources */,
 				BF44BEA8ABCC348BE3BED4F5 /* PCFileManager.m in Sources */,

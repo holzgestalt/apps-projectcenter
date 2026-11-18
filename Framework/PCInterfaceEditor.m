@@ -6,6 +6,8 @@
 #import "PCInterfaceEditor.h"
 #import "PCGormArchive.h"
 #import "PCGormXIBWriter.h"
+#import "PCInterfaceDocument.h"
+#import "PCInterfaceRendering.h"
 #import <ProjectCenter/PCEditorManager.h>
 #include <math.h>
 
@@ -58,19 +60,28 @@ static NSString *ObjectTitle(NSXMLElement *element)
   NSString *filePath;
   PCInterfaceItem *parent;
   NSMutableArray *children;
+  PCInterfaceDocument *model;  // not retained; names the item
+  BOOL group;                  // the Constraints group of a view
 }
 - (PCInterfaceItem *)itemForObject:(NSXMLElement *)object;
+- (PCInterfaceItem *)itemWithKey:(NSString *)key;
+- (NSString *)key;
 @end
 @implementation PCInterfaceItem
 - (id)init { if ((self = [super init])) children = [NSMutableArray new]; return self; }
 - (void)dealloc { [element release]; [filePath release]; [children release]; [super dealloc]; }
 - (NSString *)title
 {
-  return element ? [NSString stringWithFormat:@"%@ (%@)",ObjectTitle(element),[element name]] : [filePath lastPathComponent];
+  if (group) return @"Constraints";
+  if ([[element name] isEqual:@"constraint"]) return [model descriptionOfConstraint:element];
+  /* As in Xcode's outline: the object's name, without its class. */
+  return element ? [model nameOfObject:element] : [filePath lastPathComponent];
 }
 - (NSString *)symbolicIconName
 {
   if (!element) return @"text-x-generic-symbolic";
+  if (group) return @"folder-symbolic";
+  if ([[element name] isEqual:@"constraint"]) return @"insert-link-symbolic";
   if ([[element name] isEqual:@"window"]) return @"window-new-symbolic";
   if ([[element name] isEqual:@"menu"] || [[element name] isEqual:@"menuItem"]) return @"open-menu-symbolic";
   return [children count] ? @"folder-symbolic" : @"application-x-addon-symbolic";
@@ -83,9 +94,23 @@ static NSString *ObjectTitle(NSXMLElement *element)
 }
 - (PCInterfaceItem *)itemForObject:(NSXMLElement *)object
 {
-  if (object == element) return self;
+  if (object == element && !group) return self;
   for (PCInterfaceItem *child in children)
   { PCInterfaceItem *found = [child itemForObject:object]; if (found) return found; }
+  return nil;
+}
+/* What identifies the item in another version of the document: the id of
+ * its element, or of the view a Constraints group belongs to. */
+- (NSString *)key
+{
+  if (group) return [@"Constraints of " stringByAppendingString:[parent key] ?: @""];
+  return element ? Attribute(element,@"id") : filePath;
+}
+- (PCInterfaceItem *)itemWithKey:(NSString *)key
+{
+  if ([[self key] isEqual:key]) return self;
+  for (PCInterfaceItem *child in children)
+  { PCInterfaceItem *found = [child itemWithKey:key]; if (found) return found; }
   return nil;
 }
 @end
@@ -164,6 +189,66 @@ static NSTableCellView *InterfaceObjectCell(void)
   return cell;
 }
 
+/* What the canvas and the component view ask of the editor. */
+@interface PCInterfaceEditor (PCInterfaceEditing)
+- (BOOL)canEditStructure;
+- (BOOL)canMoveObject:(NSXMLElement *)object;
+- (NSArray *)itemsOfConstraint:(NSXMLElement *)constraint;
+- (void)beginFrameChange;
+- (void)setFrame:(NSRect)frame ofObject:(NSXMLElement *)object;
+- (void)endFrameChangeOfObject:(NSXMLElement *)object;
+- (void)undo:(id)sender;
+- (void)redo:(id)sender;
+@end
+
+/* The editor's view. Undo, Redo and Delete from the Edit menu reach the
+ * editor through it from every view inside. */
+@interface PCInterfaceComponentView : NSView
+{
+  @public
+  PCInterfaceEditor *editor;
+}
+@end
+
+@implementation PCInterfaceComponentView
+- (NSUndoManager *)undoManager
+{
+  return [editor undoManager];
+}
+- (void)undo:(id)sender
+{
+  [editor undo:sender];
+}
+- (void)redo:(id)sender
+{
+  [editor redo:sender];
+}
+- (void)delete:(id)sender
+{
+  [editor deleteObject:sender];
+}
+- (BOOL)validateMenuItem:(NSMenuItem *)item
+{
+  NSUndoManager *undo = [editor undoManager];
+
+  if ([item action] == @selector(undo:))
+  {
+    [item setTitle:[undo undoMenuItemTitle]];
+    return [undo canUndo];
+  }
+  if ([item action] == @selector(redo:))
+  {
+    [item setTitle:[undo redoMenuItemTitle]];
+    return [undo canRedo];
+  }
+  if ([item action] == @selector(delete:))
+  {
+    return [editor canEditStructure];
+  }
+  return YES;
+}
+@end
+
 @interface PCInterfaceCanvas : NSView
 {
   @public
@@ -172,6 +257,7 @@ static NSTableCellView *InterfaceObjectCell(void)
   NSMutableArray *elements, *rects;
 }
 - (void)showObject:(NSXMLElement *)object;
+- (NSXMLElement *)windowOfRoot;
 @end
 
 @implementation PCInterfaceCanvas
@@ -204,75 +290,139 @@ static NSTableCellView *InterfaceObjectCell(void)
       if ([[child name] isEqual:@"menu"]) { root = (id)child; break; }
   }
   NSSize size = ObjectFrame(root).size;
+  if ([self windowOfRoot]) size.height += PCInterfaceTitleBarHeight();
   if ([[root name] isEqual:@"menu"])
   {
     NSArray *containers = [root elementsForName:@"items"];
-    if ([containers count]) size.height = [[[containers objectAtIndex:0] elementsForName:@"menuItem"] count]*26+60;
+    if ([containers count]) size.height = [[[containers objectAtIndex:0] elementsForName:@"menuItem"] count]*22+60;
   }
   NSSize viewport = [[self enclosingScrollView] contentSize];
   [self setFrameSize:NSMakeSize(MAX(viewport.width,MAX(640,size.width+80)),MAX(viewport.height,MAX(480,size.height+80)))];
   [self setNeedsDisplay:YES];
 }
-- (void)drawObject:(NSXMLElement *)object atOrigin:(NSPoint)origin isRoot:(BOOL)isRoot
+/* The window whose content view the canvas shows. */
+- (NSXMLElement *)windowOfRoot
+{
+  NSXMLElement *parent = (NSXMLElement *)[root parent];
+  return [Attribute(root,@"key") isEqual:@"contentView"] && [[parent name] isEqual:@"window"] ? parent : nil;
+}
+/* Draws an object and what is inside it. Views are drawn by the renderer,
+ * with the cells of the active theme, and clipped to their superview. */
+- (void)drawObject:(NSXMLElement *)object inRect:(NSRect)parent flipped:(BOOL)flipped isRoot:(BOOL)isRoot
 {
   NSRect rect = ObjectFrame(object);
   BOOL framed = FrameElement(object) != nil;
+  BOOL inside = YES;
   if (framed)
   {
-    rect.origin = isRoot ? origin : NSMakePoint(origin.x+rect.origin.x,origin.y+rect.origin.y);
     rect.size.width = MAX(1,rect.size.width); rect.size.height = MAX(1,rect.size.height);
+    if (isRoot) rect.origin = parent.origin;
+    else rect.origin = NSMakePoint(NSMinX(parent)+rect.origin.x,
+                                   flipped ? NSMaxY(parent)-rect.origin.y-NSHeight(rect) : NSMinY(parent)+rect.origin.y);
     [elements addObject:object]; [rects addObject:[NSValue valueWithRect:rect]];
-    [(isRoot ? [NSColor windowBackgroundColor] : [NSColor controlBackgroundColor]) set];
-    NSRectFill(rect);
-    [[NSColor grayColor] set]; NSFrameRect(rect);
-    NSString *title = ObjectTitle(object);
-    if ([[object name] isEqual:@"button"])
+    if (isRoot)
     {
-      NSButtonCell *cell = [[[NSButtonCell alloc] initTextCell:title] autorelease];
-      [cell setBezelStyle:NSRoundedBezelStyle];
-      [cell drawWithFrame:rect inView:self];
+      if (![self windowOfRoot]) { [[NSColor windowBackgroundColor] set]; NSRectFill(rect); }
     }
-    else if ([[object name] isEqual:@"textField"])
-    {
-      NSTextFieldCell *cell = [[[NSTextFieldCell alloc] initTextCell:title] autorelease];
-      [cell setBezeled:YES]; [cell drawWithFrame:rect inView:self];
-    }
-    else if (!isRoot && rect.size.height >= 12)
-      [title drawInRect:NSInsetRect(rect,4,2) withAttributes:
-       [NSDictionary dictionaryWithObjectsAndKeys:[NSFont systemFontOfSize:11],NSFontAttributeName,
-        [NSColor controlTextColor],NSForegroundColorAttributeName,nil]];
-    origin = rect.origin;
+    else inside = PCInterfaceDrawObject(object,rect,self);
+    parent = rect;
+    flipped = PCInterfaceIsFlipped(object);
   }
+  if (!inside) return;
+  if (framed) { [NSGraphicsContext saveGraphicsState]; NSRectClip(rect); }
   for (NSXMLNode *child in [object children])
     if ([child kind] == NSXMLElementKind)
-      [self drawObject:(id)child atOrigin:origin isRoot:NO];
+    {
+      [self drawObject:(id)child inRect:parent flipped:flipped isRoot:NO];
+      /* A tab view shows its first tab. */
+      if ([[object name] isEqual:@"tabViewItems"]) break;
+    }
+  if (framed) [NSGraphicsContext restoreGraphicsState];
+}
+/* The handles that resize the selection: corners and edge centers, as in
+ * Xcode. Each is a fraction of the width and height. */
+static const CGFloat Handles[8][2] = {{0,0},{0.5,0},{1,0},{0,0.5},{1,0.5},{0,1},{0.5,1},{1,1}};
+- (NSRect)handle:(NSUInteger)index ofRect:(NSRect)rect
+{
+  return NSMakeRect(floor(NSMinX(rect)+Handles[index][0]*NSWidth(rect))-3.5,
+                    floor(NSMinY(rect)+Handles[index][1]*NSHeight(rect))-3.5,7,7);
 }
 - (void)drawRect:(NSRect)dirty
 {
-  [[NSColor lightGrayColor] set]; NSRectFill(dirty);
+  NSColor *background = [NSColor respondsToSelector:@selector(underPageBackgroundColor)]
+  ? [NSColor performSelector:@selector(underPageBackgroundColor)] : [NSColor lightGrayColor];
+  [background set]; NSRectFill(dirty);
   [elements removeAllObjects]; [rects removeAllObjects];
   if (root && FrameElement(root))
   {
-    [self drawObject:root atOrigin:NSMakePoint(40,40) isRoot:YES];
+    NSXMLElement *window = [self windowOfRoot];
+    NSPoint origin = NSMakePoint(40,40);
+    if (window)
+    {
+      NSRect whole = PCInterfaceDrawWindowFrame(window,NSMakeRect(origin.x,origin.y,NSWidth(ObjectFrame(root)),
+                                                                  NSHeight(ObjectFrame(root))),self);
+      [elements addObject:window]; [rects addObject:[NSValue valueWithRect:whole]];
+    }
+    [self drawObject:root inRect:NSMakeRect(origin.x,origin.y,0,0) flipped:NO isRoot:YES];
+    /* A constraint: the views it relates. */
+    if ([[selection name] isEqual:@"constraint"])
+    {
+      NSArray *items = [editor itemsOfConstraint:selection];
+      for (NSUInteger i=0; i<[elements count]; i++)
+        if ([items indexOfObjectIdenticalTo:[elements objectAtIndex:i]] != NSNotFound)
+        {
+          [[NSColor orangeColor] set]; NSFrameRectWithWidth([[rects objectAtIndex:i] rectValue],2);
+        }
+    }
     for (NSUInteger i=0; i<[elements count]; i++)
       if ([elements objectAtIndex:i] == selection)
-      { [[NSColor selectedControlColor] set]; NSFrameRectWithWidth([[rects objectAtIndex:i] rectValue],3); }
+      {
+        NSRect rect = [[rects objectAtIndex:i] rectValue];
+        [[NSColor alternateSelectedControlColor] set]; NSFrameRectWithWidth(NSInsetRect(rect,-1,-1),1);
+        if (selection != root && [editor canMoveObject:selection])
+          for (NSUInteger h=0; h<8; h++)
+          {
+            NSRect handle = [self handle:h ofRect:rect];
+            [[NSColor whiteColor] set]; NSRectFill(handle);
+            [[NSColor alternateSelectedControlColor] set]; NSFrameRect(handle);
+          }
+      }
   }
   else if ([[root name] isEqual:@"menu"])
   {
     NSArray *items = [[root elementsForName:@"items"] count] ?
     [[[root elementsForName:@"items"] objectAtIndex:0] elementsForName:@"menuItem"] : [NSArray array];
     CGFloat y = [self bounds].size.height-60;
+    NSFont *font = [NSFont menuFontOfSize:0];
     [ObjectTitle(root) drawAtPoint:NSMakePoint(40,y) withAttributes:
      [NSDictionary dictionaryWithObject:[NSFont boldSystemFontOfSize:14] forKey:NSFontAttributeName]];
+    NSRect menu = NSMakeRect(40,y-22*[items count]-4,300,22*[items count]+4);
+    [[NSColor controlBackgroundColor] set]; NSRectFill(menu);
+    [[NSColor gridColor] set]; NSFrameRect(menu);
+    y -= 2;
     for (NSXMLElement *item in items)
     {
-      y -= 26; NSRect row = NSMakeRect(40,y,300,26);
-      [(item == selection ? [NSColor selectedControlColor] : [NSColor controlBackgroundColor]) set]; NSRectFill(row);
+      y -= 22; NSRect row = NSMakeRect(41,y,298,22);
+      BOOL selected = item == selection;
+      NSColor *text = selected ? [NSColor selectedMenuItemTextColor] : [NSColor controlTextColor];
+      if (selected) { [[NSColor selectedMenuItemColor] set]; NSRectFill(row); }
       [elements addObject:item]; [rects addObject:[NSValue valueWithRect:row]];
       if ([Attribute(item,@"isSeparatorItem") isEqual:@"YES"])
-      { [[NSColor grayColor] set]; NSRectFill(NSMakeRect(48,y+12,284,1)); }
-      else [ObjectTitle(item) drawInRect:NSInsetRect(row,8,4) withAttributes:nil];
+      { [[NSColor gridColor] set]; NSRectFill(NSMakeRect(48,y+11,284,1)); continue; }
+      NSDictionary *attributes = [NSDictionary dictionaryWithObjectsAndKeys:font,NSFontAttributeName,
+                                  [Attribute(item,@"enabled") isEqual:@"NO"] ? [NSColor disabledControlTextColor] : text,
+                                  NSForegroundColorAttributeName,nil];
+      if ([Attribute(item,@"state") isEqual:@"on"]) [@"✓" drawAtPoint:NSMakePoint(46,y+3) withAttributes:attributes];
+      [ObjectTitle(item) drawAtPoint:NSMakePoint(62,y+3) withAttributes:attributes];
+      NSString *key = Attribute(item,@"keyEquivalent");
+      if ([key length])
+      {
+        NSString *shortcut = [@"⌘" stringByAppendingString:[key uppercaseString]];
+        [shortcut drawAtPoint:NSMakePoint(NSMaxX(row)-12-[shortcut sizeWithAttributes:attributes].width,y+3)
+               withAttributes:attributes];
+      }
+      if ([[item elementsForName:@"menu"] count])
+        [@"▸" drawAtPoint:NSMakePoint(NSMaxX(row)-16,y+3) withAttributes:attributes];
     }
   }
   else
@@ -284,53 +434,103 @@ static NSTableCellView *InterfaceObjectCell(void)
                                                                    withAttributes:nil];
   }
 }
+/* A click selects; dragging moves the view, or resizes it from a handle
+ * of the selection. */
 - (void)mouseDown:(NSEvent *)event
 {
-  NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-  for (NSInteger i=[elements count]-1; i>=0; i--)
-    if (NSPointInRect(point,[[rects objectAtIndex:i] rectValue]))
-    { [editor selectObject:[elements objectAtIndex:i]]; break; }
+  NSPoint      start = [self convertPoint:[event locationInWindow] fromView:nil];
+  NSXMLElement *object = nil;
+  NSInteger    handle = -1;
+  BOOL         dragged = NO;
+
+  for (NSInteger i=[elements count]-1; i>=0 && object == nil; i--)
+    if ([elements objectAtIndex:i] == selection && selection != root && [editor canMoveObject:selection])
+      for (NSUInteger h=0; h<8; h++)
+        if (NSPointInRect(start,NSInsetRect([self handle:h ofRect:[[rects objectAtIndex:i] rectValue]],-2,-2)))
+        { object = selection; handle = h; break; }
+  if (object == nil)
+    for (NSInteger i=[elements count]-1; i>=0; i--)
+      if (NSPointInRect(start,[[rects objectAtIndex:i] rectValue]))
+      { object = [elements objectAtIndex:i]; break; }
+  if (object == nil) return;
+  if (object != selection) [editor selectObject:object];
+  if (object == root || ![editor canMoveObject:object]) return;
+
+  NSRect frame = ObjectFrame(object);
+  while (YES)
+  {
+    NSEvent *next = [[self window] nextEventMatchingMask:NSLeftMouseDraggedMask|NSLeftMouseUpMask];
+    if ([next type] == NSLeftMouseUp) break;
+    NSPoint point = [self convertPoint:[next locationInWindow] fromView:nil];
+    CGFloat dx = round(point.x-start.x), dy = round(point.y-start.y);
+    if (!dragged)
+    {
+      if (fabs(dx) < 3 && fabs(dy) < 3) continue;
+      [editor beginFrameChange]; dragged = YES;
+    }
+    NSRect changed = frame;
+    if (handle >= 0)
+    {
+      /* Each handle moves the edges it is on. */
+      CGFloat fx = Handles[handle][0], fy = Handles[handle][1];
+      if (fx == 0) { dx = MIN(dx,frame.size.width-1); changed.origin.x += dx; changed.size.width -= dx; }
+      else if (fx == 1) changed.size.width = MAX(1,frame.size.width+dx);
+      if (fy == 0) { dy = MIN(dy,frame.size.height-1); changed.origin.y += dy; changed.size.height -= dy; }
+      else if (fy == 1) changed.size.height = MAX(1,frame.size.height+dy);
+    }
+    else
+    {
+      changed.origin.x += dx; changed.origin.y += dy;
+    }
+    [editor setFrame:changed ofObject:object];
+    [self setNeedsDisplay:YES];
+  }
+  if (dragged) [editor endFrameChangeOfObject:object];
 }
 @end
+
+static NSButton *Button(NSString *title, NSRect frame, id target, SEL action)
+{
+  NSButton *button = [[[NSButton alloc] initWithFrame:frame] autorelease];
+  [button setTitle:title]; [button setBezelStyle:NSRoundedBezelStyle];
+  [button setTarget:target]; [button setAction:action];
+  return button;
+}
 
 @implementation PCInterfaceEditor
 - (void)dealloc
 {
-  [_path release]; [_categoryPath release]; [_document release]; [_objects release];
+  [_path release]; [_categoryPath release]; [_model release];
   [_gorm release];
   [_tree setDelegate:nil]; [_tree setDataSource:nil]; [_rootItem release];
+  [_connectionTable setDataSource:nil]; [_connectionTable setDelegate:nil];
+  [_connectionRows release]; [_inspectorBindings release]; [_inspectedAttributes release];
+  [_inspectedIdentifier release];
+  [_connectionTargets release]; [_frameSnapshot release]; [_constraintItems release];
+  [_undoManager removeAllActionsWithTarget:self]; [_undoManager release];
   [_window setDelegate:nil]; [_window close]; [_window release];
+  ((PCInterfaceComponentView *)_component)->editor = nil;
   [_component release]; [super dealloc];
-}
-- (void)collectObjects:(NSXMLElement *)element
-{
-  /* IDs identify document objects; rects, constraints and connections are metadata. */
-  NSString *name = [element name];
-  if ([element attributeForName:@"id"] && ![@[@"action",@"outlet",@"binding",@"constraint"] containsObject:name])
-    [_objects addObject:element];
-  for (NSXMLNode *child in [element children])
-    if ([child kind] == NSXMLElementKind) [self collectObjects:(id)child];
 }
 - (BOOL)isGorm
 {
   return [[[_path pathExtension] lowercaseString] isEqual:@"gorm"];
 }
+/* Titles and frames of a .gorm are edited in its archive too; everything
+ * else only in a XIB. */
+- (BOOL)canEditStructure
+{
+  return _editable && _gorm == nil;
+}
 /* A .gorm is a GNUstep archive. PCGormArchive reads it as archived and
  * writes it back; the editor works on its XIB (PCGormXIBWriter), and each
  * edit is made in the archive too (-applyEdit...), so saving writes the
  * archive Gorm and GNUstep read, not a conversion of the XIB. */
-- (NSData *)xibDataFromGorm:(NSString **)problem
+- (PCInterfaceDocument *)modelFromGorm:(PCGormArchive *)archive
 {
-  PCGormArchive *archive = [PCGormArchive archiveWithContentsOfFile:
-                            [_path stringByAppendingPathComponent:@"objects.gorm"]
-                                                              error:problem];
+  NSData *data = [[PCGormXIBWriter documentForArchive:archive toolsVersion:nil warnings:NULL] XMLData];
 
-  if (archive == nil)
-  {
-    return nil;
-  }
-  ASSIGN(_gorm, archive);
-  return [[PCGormXIBWriter documentForArchive:archive toolsVersion:nil warnings:NULL] XMLData];
+  return [PCInterfaceDocument documentWithData:data error:NULL];
 }
 /* The archived object an XIB element stands for. */
 - (PCGormObject *)gormObjectForElement:(NSXMLElement *)element
@@ -368,73 +568,193 @@ static NSTableCellView *InterfaceObjectCell(void)
     }
   }
 }
+- (void)rebuildTree
+{
+  [_rootItem release]; _rootItem = [PCInterfaceItem new];
+  _rootItem->filePath = [_path copy];
+  [self addObjectsFromElement:[[_model XMLDocument] rootElement] toItem:_rootItem];
+}
+- (void)setModel:(PCInterfaceDocument *)model
+{
+  ASSIGN(_model, model);
+  [self rebuildTree];
+  _selected = nil;
+}
 - (BOOL)loadDocument
 {
-  NSError *error = nil;
   NSString *problem = nil;
-  NSData *data;
+  PCInterfaceDocument *model;
 
   if ([self isGorm])
   {
-    data = [self xibDataFromGorm:&problem];
-    if (data == nil)
+    PCGormArchive *archive = [PCGormArchive archiveWithContentsOfFile:
+                              [_path stringByAppendingPathComponent:@"objects.gorm"]
+                                                                error:&problem];
+    model = archive ? [self modelFromGorm:archive] : nil;
+    if (model == nil)
     {
       NSRunAlertPanel(@"Interface Editor",@"Cannot open %@. %@",@"OK",nil,nil,
-                      [_path lastPathComponent], problem);
+                      [_path lastPathComponent], problem ?: @"");
       return NO;
     }
+    ASSIGN(_gorm, archive);
   }
   else
   {
-    data = [NSData dataWithContentsOfFile:_path];
+    model = [PCInterfaceDocument documentWithData:[NSData dataWithContentsOfFile:_path] error:&problem];
+    if (model == nil)
+    {
+      NSRunAlertPanel(@"Interface Editor",@"Cannot open %@ as a modern Cocoa XIB. %@",@"OK",nil,nil,
+                      [_path lastPathComponent], problem ?: @"");
+      return NO;
+    }
   }
-  NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:data options:NSXMLNodePreserveAll error:&error];
-  if (!document || ![[[document rootElement] name] isEqual:@"document"]
-      || ![Attribute([document rootElement],@"type") isEqual:@"com.apple.InterfaceBuilder3.Cocoa.XIB"])
-  {
-    [document release];
-    NSRunAlertPanel(@"Interface Editor",@"Cannot open %@ as a modern Cocoa XIB. %@",@"OK",nil,nil,
-                    [_path lastPathComponent],error ? [error localizedDescription] : @"This XIB format is not supported.");
-    return NO;
-  }
-  [_document release]; _document = document;
-  [_objects removeAllObjects]; [self collectObjects:[document rootElement]];
-  [_rootItem release]; _rootItem = [PCInterfaceItem new];
-  _rootItem->filePath = [_path copy];
-  [self addObjectsFromElement:[document rootElement] toItem:_rootItem];
-  _selected = nil;
+  [self setModel:model];
+  [_undoManager removeAllActions];
   return YES;
 }
 - (void)addObjectsFromElement:(NSXMLElement *)element toItem:(PCInterfaceItem *)parent
 {
+  NSArray *objects = [_model objects];
+  NSMutableArray *groups = [NSMutableArray array];
   for (NSXMLNode *child in [element children])
     if ([child kind] == NSXMLElementKind)
     {
       PCInterfaceItem *container = parent;
-      if ([_objects indexOfObjectIdenticalTo:child] != NSNotFound)
+      if ([[child name] isEqual:@"constraints"] && parent->element)
+      {
+        /* As in Xcode, a view's constraints are a group below its subviews. */
+        PCInterfaceItem *constraints = [[[PCInterfaceItem alloc] init] autorelease];
+        constraints->element = [(NSXMLElement *)child retain]; constraints->parent = parent;
+        constraints->group = YES;
+        for (NSXMLElement *constraint in [(NSXMLElement *)child elementsForName:@"constraint"])
+        {
+          PCInterfaceItem *item = [[[PCInterfaceItem alloc] init] autorelease];
+          item->element = [constraint retain]; item->parent = constraints; item->model = _model;
+          [constraints->children addObject:item];
+        }
+        if ([constraints->children count]) [groups addObject:constraints];
+        continue;
+      }
+      if ([objects indexOfObjectIdenticalTo:child] != NSNotFound)
       {
         container = [[[PCInterfaceItem alloc] init] autorelease];
         container->element = [(NSXMLElement *)child retain]; container->parent = parent;
+        container->model = _model;
         [parent->children addObject:container];
       }
       [self addObjectsFromElement:(id)child toItem:container];
     }
+  [parent->children addObjectsFromArray:groups];
+}
+
+// --- Undo: each edit records the document as it was before.
+
+- (NSUndoManager *)undoManager
+{
+  return _undoManager;
+}
+- (NSDictionary *)snapshot
+{
+  NSMutableDictionary *snapshot = [NSMutableDictionary dictionary];
+  [snapshot setObject:[_model data] forKey:@"XIB"];
+  if (_gorm) [snapshot setObject:[(PCGormArchive *)_gorm data] forKey:@"Gorm"];
+  if (Attribute(_selected,@"id")) [snapshot setObject:Attribute(_selected,@"id") forKey:@"Selection"];
+  return snapshot;
+}
+- (void)registerUndo:(NSDictionary *)snapshot named:(NSString *)name
+{
+  NSMutableDictionary *named = [[snapshot mutableCopy] autorelease];
+  [named setObject:name forKey:@"Action"];
+  [[_undoManager prepareWithInvocationTarget:self] restoreSnapshot:named];
+  [_undoManager setActionName:name];
+}
+- (void)restoreSnapshot:(NSDictionary *)snapshot
+{
+  NSString *name = [snapshot objectForKey:@"Action"] ?: @"";
+  PCInterfaceDocument *model;
+
+  [self registerUndo:[self snapshot] named:name];
+  if ([snapshot objectForKey:@"Gorm"])
+  {
+    /* Writing an archive renumbers its objects, so the XIB is made anew. */
+    PCGormArchive *archive = [PCGormArchive archiveWithData:[snapshot objectForKey:@"Gorm"] error:NULL];
+    ASSIGN(_gorm, archive);
+    model = [self modelFromGorm:archive];
+  }
+  else
+  {
+    model = [PCInterfaceDocument documentWithData:[snapshot objectForKey:@"XIB"] error:NULL];
+  }
+  if (model == nil) return;
+  [self setModel:model];
+  /* Constraints aren't objects, but can be selected. */
+  PCInterfaceItem *selection = [_rootItem itemWithKey:[snapshot objectForKey:@"Selection"]];
+  _selected = selection && !selection->group ? selection->element : nil;
+  [self didChangeStructure:YES];
+}
+- (void)undo:(id)sender
+{
+  if ([_undoManager canUndo]) [_undoManager undo];
+}
+- (void)redo:(id)sender
+{
+  if ([_undoManager canRedo]) [_undoManager redo];
+}
+/* After an edit: the outline (rebuilt when objects were added or removed),
+ * the inspector and the canvas show it. */
+- (void)didChangeStructure:(BOOL)structural
+{
+  NSMutableArray *expanded = [NSMutableArray array];
+
+  if (structural)
+  {
+    /* The new items are expanded as the old ones were. */
+    for (NSInteger row = 0; row < [_tree numberOfRows]; row++)
+      if ([_tree isItemExpanded:[_tree itemAtRow:row]] && [[_tree itemAtRow:row] key])
+        [expanded addObject:[[_tree itemAtRow:row] key]];
+    [self rebuildTree];
+  }
+  if (_selected == nil && [[_model objects] count]) _selected = [[_model objects] objectAtIndex:0];
+  [self setIsEdited:YES];
+  _updatingSelection = YES;
+  [_tree reloadData];
+  for (NSString *key in expanded)
+  {
+    PCInterfaceItem *item = [_rootItem itemWithKey:key];
+    if (item) [_tree expandItem:item];
+  }
+  _updatingSelection = NO;
+  [self selectObject:_selected];
+  [[NSNotificationCenter defaultCenter] postNotificationName:PCEditorDidChangeNotification object:self];
+}
+
+// --- Views
+
+/* The owner reads "Superview" when the constraint relates it to a view inside it. */
+- (NSString *)titleOfConstraintItem:(NSXMLElement *)item ofConstraint:(NSXMLElement *)constraint
+{
+  if (item == [_model ownerOfConstraint:constraint] && [_model secondItemOfConstraint:constraint]
+      && !([_model firstItemOfConstraint:constraint] == item && [_model secondItemOfConstraint:constraint] == item))
+    return @"Superview";
+  return [_model nameOfObject:item];
 }
 - (id)openFileAtPath:(NSString *)path editorManager:(id)manager editable:(BOOL)editable
 {
   _manager = manager; [self setPath:path];
   _editable = editable;
-  _objects = [NSMutableArray new];
+  _undoManager = [[NSUndoManager alloc] init];
   if (![self loadDocument]) return nil;
-  _component = [[NSView alloc] initWithFrame:NSMakeRect(0,0,900,600)];
+  PCInterfaceComponentView *component = [[PCInterfaceComponentView alloc] initWithFrame:NSMakeRect(0,0,1000,600)];
+  component->editor = self; _component = component;
   [_component setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-  NSSplitView *split = [[[NSSplitView alloc] initWithFrame:NSMakeRect(0,100,900,500)] autorelease];
+  NSSplitView *split = [[[NSSplitView alloc] initWithFrame:NSMakeRect(0,40,1000,560)] autorelease];
   [split setVertical:YES]; [split setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-  NSScrollView *treeScroll = [[[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,230,500)] autorelease];
+  NSScrollView *treeScroll = [[[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,220,560)] autorelease];
   [treeScroll setHasVerticalScroller:YES];
   _tree = [[[PCInterfaceOutlineView alloc] initWithFrame:[treeScroll bounds]] autorelease];
   NSTableColumn *column = [[[NSTableColumn alloc] initWithIdentifier:@"Object"] autorelease];
-  [[column headerCell] setStringValue:@"Interface Objects"]; [column setWidth:225];
+  [[column headerCell] setStringValue:@"Interface Objects"]; [column setWidth:215];
   [_tree addTableColumn:column]; [_tree setOutlineTableColumn:column];
   [_tree setHeaderView:nil];
 #ifdef GNUSTEP
@@ -446,35 +766,33 @@ static NSTableCellView *InterfaceObjectCell(void)
   [_tree setDataSource:(id)self]; [_tree setDelegate:(id)self];
   [_tree setGridStyleMask:NSTableViewGridNone]; [_tree setRowHeight:20];
   [_tree setAllowsEmptySelection:NO]; [treeScroll setDocumentView:_tree]; [split addSubview:treeScroll];
-  NSScrollView *canvasScroll = [[[NSScrollView alloc] initWithFrame:NSMakeRect(235,0,665,500)] autorelease];
+  NSScrollView *canvasScroll = [[[NSScrollView alloc] initWithFrame:NSMakeRect(225,0,465,560)] autorelease];
   [canvasScroll setHasHorizontalScroller:YES]; [canvasScroll setHasVerticalScroller:YES];
   PCInterfaceCanvas *canvas = [[[PCInterfaceCanvas alloc] initWithFrame:NSMakeRect(0,0,640,480)] autorelease];
   [canvas setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
   canvas->editor = self; _canvas = canvas;
-  [canvasScroll setDocumentView:canvas]; [split addSubview:canvasScroll]; [_component addSubview:split];
-  NSArray *names = @[@"Title",@"X",@"Y",@"Width",@"Height"];
-  CGFloat x = 8;
-  for (NSUInteger i=0; i<5; i++)
-  {
-    CGFloat width = i == 0 ? 160 : 60;
-    NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(x,73,width,20)] autorelease];
-    [label setStringValue:[names objectAtIndex:i]]; [label setEditable:NO]; [label setBezeled:NO]; [label setDrawsBackground:NO];
-    [_component addSubview:label];
-    _fields[i] = [[[NSTextField alloc] initWithFrame:NSMakeRect(x,45,width,25)] autorelease];
-    [_fields[i] setTarget:self]; [_fields[i] setAction:@selector(applyProperties:)];
-    [_component addSubview:_fields[i]]; x += width+8;
-  }
-  NSButton *apply = [[[NSButton alloc] initWithFrame:NSMakeRect(x,45,80,26)] autorelease];
-  [apply setTitle:@"Apply"]; [apply setTarget:self]; [apply setAction:@selector(applyProperties:)];
-  [apply setEnabled:_editable]; [_component addSubview:apply];
-  _status = [[[NSTextField alloc] initWithFrame:NSMakeRect(8,8,880,25)] autorelease];
-  [_status setEditable:NO]; [_status setBezeled:NO]; [_status setDrawsBackground:NO];
+  [canvasScroll setDocumentView:canvas]; [split addSubview:canvasScroll];
+  [split addSubview:[self inspectorWithFrame:NSMakeRect(695,0,305,560)]];
+  [_component addSubview:split];
+
+  /* Below: the object library and the status. */
+  _libraryPopUp = [[[NSPopUpButton alloc] initWithFrame:NSMakeRect(8,8,150,26) pullsDown:NO] autorelease];
+  [_libraryPopUp addItemsWithTitles:[PCInterfaceDocument libraryItems]];
+  [_component addSubview:_libraryPopUp];
+  _addObjectButton = Button(@"Add",NSMakeRect(162,8,60,26),self,@selector(addLibraryObject:));
+  [_component addSubview:_addObjectButton];
+  _deleteObjectButton = Button(@"Delete",NSMakeRect(226,8,70,26),self,@selector(deleteObject:));
+  [_component addSubview:_deleteObjectButton];
+  _status = [[[NSTextField alloc] initWithFrame:NSMakeRect(304,10,688,20)] autorelease];
+  [_status setEditable:NO]; [_status setSelectable:NO]; [_status setBezeled:NO]; [_status setDrawsBackground:NO];
+  [_status setFont:[NSFont systemFontOfSize:11]];
   [_status setAutoresizingMask:NSViewWidthSizable]; [_component addSubview:_status];
   [_tree reloadData];
-  NSXMLElement *initial = [_objects count] ? [_objects objectAtIndex:0] : nil;
-  for (NSXMLElement *object in _objects)
+  NSArray *objects = [_model objects];
+  NSXMLElement *initial = [objects count] ? [objects objectAtIndex:0] : nil;
+  for (NSXMLElement *object in objects)
     if ([[object name] isEqual:@"menu"] || FrameElement(object)) { initial = object; break; }
-  for (NSXMLElement *object in _objects) if ([[object name] isEqual:@"window"]) { initial = object; break; }
+  for (NSXMLElement *object in objects) if ([[object name] isEqual:@"window"]) { initial = object; break; }
   [self selectObject:initial];
   [[NSNotificationCenter defaultCenter] postNotificationName:PCEditorDidOpenNotification object:self];
   return self;
@@ -504,13 +822,47 @@ static NSTableCellView *InterfaceObjectCell(void)
 {
   if (_updatingSelection || [(PCInterfaceOutlineView *)_tree isUpdatingRows]) return;
   PCInterfaceItem *item = [_tree itemAtRow:[_tree selectedRow]];
-  if (item) [self selectObject:item->element];
+  if (item && item->element && !item->group) [self selectObject:item->element];
 }
 - (void)revealItem:(PCInterfaceItem *)item
 {
   if (!item) return;
   [self revealItem:item->parent];
   if (![_tree isItemExpanded:item]) [_tree expandItem:item];
+}
+
+// --- Inspector
+
+/* The connections pane: those of the selection, and what can be connected. */
+- (void)updateConnections
+{
+  ASSIGN(_connectionRows, _selected ? [_model connectionsOfObject:_selected] : [NSArray array]);
+  [_connectionTable reloadData];
+  [_connectionTable deselectAll:nil];
+
+  /* Every object can be the other end of a connection. Items are added to
+   * the menu so that equal titles stay separate items. */
+  NSMutableArray *targets = [NSMutableArray array];
+  NSString *previous = [[_connectionTargetPopUp selectedItem] title];
+  [_connectionTargetPopUp removeAllItems];
+  for (NSXMLElement *object in [_model objects])
+  {
+    if ([[object name] hasSuffix:@"Cell"] || [[object name] isEqual:@"menuItem"]) continue;
+    [targets addObject:object];
+    [[_connectionTargetPopUp menu] addItemWithTitle:[NSString stringWithFormat:@"%@ (%@)",
+                                                     [_model nameOfObject:object],[object name]]
+                                             action:NULL keyEquivalent:@""];
+  }
+  ASSIGN(_connectionTargets, targets);
+  if (previous && [_connectionTargetPopUp indexOfItemWithTitle:previous] >= 0)
+    [_connectionTargetPopUp selectItemWithTitle:previous];
+  /* Connections start at objects, not at constraints. */
+  BOOL structure = [self canEditStructure] && _selected != nil && ![[_selected name] isEqual:@"constraint"];
+  [_connectionKindPopUp setEnabled:structure]; [_connectionNameField setEnabled:structure];
+  [_connectionTargetPopUp setEnabled:structure]; [_addConnectionButton setEnabled:structure];
+  [_removeConnectionButton setEnabled:NO];
+  [_libraryPopUp setEnabled:[self canEditStructure]]; [_addObjectButton setEnabled:[self canEditStructure]];
+  [_deleteObjectButton setEnabled:[self canEditStructure] && [_model canRemoveObject:_selected]];
 }
 - (void)selectObject:(NSXMLElement *)object
 {
@@ -521,48 +873,136 @@ static NSTableCellView *InterfaceObjectCell(void)
   NSInteger row = item ? [_tree rowForItem:item] : -1;
   if (row >= 0 && [_tree selectedRow] != row)
   { [_tree selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO]; [_tree scrollRowToVisible:row]; }
-  NSXMLElement *frame = FrameElement(object);
-  [_fields[0] setStringValue:Attribute(TitleElement(object),@"title") ?: @""];
-  [_fields[0] setEnabled:_editable && [TitleElement(object) attributeForName:@"title"] != nil];
-  NSArray *keys = @[@"x",@"y",@"width",@"height"];
-  for (NSUInteger i=1; i<5; i++)
-  { [_fields[i] setStringValue:Attribute(frame,[keys objectAtIndex:i-1]) ?: @"0"]; [_fields[i] setEnabled:_editable && frame != nil]; }
-  NSString *note = [self isGorm] ? @"Gorm interface: saved as a Gorm archive"
-                                 : @"Frame edits preserve existing Auto Layout constraints";
-  [_status setStringValue:object ? [NSString stringWithFormat:@"%@ · %@ · %@",[object name],Attribute(object,@"id") ?: @"",note] : @"No interface objects"];
+  [self updateInspector];
+  NSString *note = [self isGorm] ? @"Gorm interface: titles and frames can be edited; saved as a Gorm archive"
+                                 : @"Edits change only the XML of what is edited";
+  NSString *what = [[object name] isEqual:@"constraint"] ? [_model descriptionOfConstraint:object] : [object name];
+  [_status setStringValue:object ? [NSString stringWithFormat:@"%@ · %@ · %@",what,Attribute(object,@"id") ?: @"",note] : @"No interface objects"];
   [(PCInterfaceCanvas *)_canvas showObject:object];
   _updatingSelection = NO;
 }
-- (void)applyProperties:(id)sender
+// --- Inspector tables
+
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)table
 {
-  if (!_editable || !_selected) return;
-  NSXMLElement *frame = FrameElement(_selected);
-  double values[4];
-  for (NSUInteger i=0; frame && i<4; i++)
-  {
-    NSScanner *scanner = [NSScanner scannerWithString:[_fields[i+1] stringValue]];
-    if (![scanner scanDouble:&values[i]] || ![scanner isAtEnd] || !isfinite(values[i]) || (i>=2 && values[i]<0))
-    { NSRunAlertPanel(@"Interface Editor",@"Enter valid frame numbers and nonnegative dimensions.",@"OK",nil,nil); return; }
-  }
-  BOOL changed = NO;
-  if ([_fields[0] isEnabled] && ![Attribute(TitleElement(_selected),@"title") isEqual:[_fields[0] stringValue]])
-  {
-    SetAttribute(TitleElement(_selected),@"title",[_fields[0] stringValue]); changed = YES;
-    if (_gorm) [self gormSetTitle:[_fields[0] stringValue] ofElement:TitleElement(_selected)];
-  }
-  NSArray *keys = @[@"x",@"y",@"width",@"height"];
-  BOOL frameChanged = NO;
-  for (NSUInteger i=0; frame && i<4; i++)
-    if ([Attribute(frame,[keys objectAtIndex:i]) doubleValue] != values[i])
-    { SetAttribute(frame,[keys objectAtIndex:i],[NSString stringWithFormat:@"%.15g",values[i]]); changed = frameChanged = YES; }
-  if (_gorm && frameChanged)
-    [self gormSetFrame:NSMakeRect(values[0],values[1],values[2],values[3]) ofElement:_selected];
-  if (changed)
-  {
-    [self setIsEdited:YES]; [_tree reloadData]; [self selectObject:_selected];
-    [[NSNotificationCenter defaultCenter] postNotificationName:PCEditorDidChangeNotification object:self];
-  }
+  if (table == _connectionTable) return [_connectionRows count];
+  return 0;
 }
+- (id)tableView:(NSTableView *)table objectValueForTableColumn:(NSTableColumn *)column row:(NSInteger)row
+{
+  NSString *identifier = [column identifier];
+  if (table == _connectionTable)
+  {
+    NSXMLElement *connection = [_connectionRows objectAtIndex:row];
+    if ([identifier isEqual:@"Kind"]) return [[connection name] capitalizedString];
+    if ([identifier isEqual:@"Name"]) return [_model nameOfConnection:connection];
+    /* The object at the other end: → for connections from the selection. */
+    NSXMLElement *source = [_model sourceOfConnection:connection];
+    NSXMLElement *other = source == _selected ? [_model destinationOfConnection:connection] : source;
+    return [NSString stringWithFormat:@"%@ %@",source == _selected ? @"→" : @"←",
+            other ? [_model nameOfObject:other] : @"?"];
+  }
+  return nil;
+}
+- (BOOL)tableView:(NSTableView *)table shouldEditTableColumn:(NSTableColumn *)column row:(NSInteger)row
+{
+  return NO;
+}
+- (void)tableViewSelectionDidChange:(NSNotification *)notification
+{
+  BOOL structure = [self canEditStructure];
+  [_removeConnectionButton setEnabled:structure && [_connectionTable selectedRow] >= 0];
+}
+
+// --- Editing actions
+
+- (void)addLibraryObject:(id)sender
+{
+  if (![self canEditStructure]) return;
+  NSDictionary *before = [self snapshot];
+  NSString *name = [_libraryPopUp titleOfSelectedItem];
+  NSXMLElement *added = [_model insertLibraryItem:name forObject:_selected];
+  if (added == nil)
+  {
+    NSBeep();
+    [_status setStringValue:[name hasSuffix:@"Menu Item"]
+     ? @"Select a menu or menu item to add a menu item."
+     : @"Select a window or view to add a view to it."];
+    return;
+  }
+  [self registerUndo:before named:[NSString stringWithFormat:@"Add %@",name]];
+  _selected = added;
+  [self didChangeStructure:YES];
+}
+- (void)deleteObject:(id)sender
+{
+  if (![self canEditStructure] || ![_model canRemoveObject:_selected]) { NSBeep(); return; }
+  NSDictionary *before = [self snapshot];
+  NSXMLElement *parent = [_model objectOfElement:(NSXMLElement *)[_selected parent]];
+  [_model removeObject:_selected];
+  [self registerUndo:before named:@"Delete"];
+  _selected = parent;
+  [self didChangeStructure:YES];
+}
+- (void)addConnection:(id)sender
+{
+  NSInteger index = [_connectionTargetPopUp indexOfSelectedItem];
+  NSString *name = [[_connectionNameField stringValue]
+                    stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+  if (![self canEditStructure] || !_selected || index < 0 || index >= (NSInteger)[_connectionTargets count]
+      || [name length] == 0)
+  { NSBeep(); return; }
+  NSDictionary *before = [self snapshot];
+  NSXMLElement *target = [_connectionTargets objectAtIndex:index];
+  BOOL outlet = [_connectionKindPopUp indexOfSelectedItem] == 0;
+  if (!(outlet ? [_model addOutlet:name fromObject:_selected toObject:target]
+        : [_model addAction:name fromObject:_selected toObject:target]))
+  { NSBeep(); return; }
+  [self registerUndo:before named:outlet ? @"Add Outlet" : @"Add Action"];
+  [_connectionNameField setStringValue:@""];
+  [self didChangeStructure:NO];
+}
+- (void)removeConnection:(id)sender
+{
+  NSInteger row = [_connectionTable selectedRow];
+  if (![self canEditStructure] || row < 0) return;
+  NSDictionary *before = [self snapshot];
+  [_model removeConnection:[_connectionRows objectAtIndex:row]];
+  [self registerUndo:before named:@"Remove Connection"];
+  [self didChangeStructure:NO];
+}
+
+// --- Moving and resizing on the canvas
+
+- (NSArray *)itemsOfConstraint:(NSXMLElement *)constraint
+{
+  return [_model itemsOfConstraint:constraint];
+}
+- (BOOL)canMoveObject:(NSXMLElement *)object
+{
+  return _editable && FrameElement(object) != nil && [object attributeForName:@"key"] == nil;
+}
+- (void)beginFrameChange
+{
+  ASSIGN(_frameSnapshot, [self snapshot]);
+}
+- (void)setFrame:(NSRect)frame ofObject:(NSXMLElement *)object
+{
+  NSXMLElement *element = FrameElement(object);
+  SetAttribute(element,@"x",[NSString stringWithFormat:@"%.15g",frame.origin.x]);
+  SetAttribute(element,@"y",[NSString stringWithFormat:@"%.15g",frame.origin.y]);
+  SetAttribute(element,@"width",[NSString stringWithFormat:@"%.15g",frame.size.width]);
+  SetAttribute(element,@"height",[NSString stringWithFormat:@"%.15g",frame.size.height]);
+  [self updateFrameFields];
+}
+- (void)endFrameChangeOfObject:(NSXMLElement *)object
+{
+  if (_gorm) [self gormSetFrame:ObjectFrame(object) ofElement:object];
+  if (_frameSnapshot) [self registerUndo:_frameSnapshot named:@"Change Frame"];
+  DESTROY(_frameSnapshot);
+  [self didChangeStructure:NO];
+}
+
 - (NSView *)componentView { return _component; }
 - (NSView *)editorView { return _canvas; }
 - (NSWindow *)editorWindow { return [_component window]; }
@@ -583,7 +1023,7 @@ static NSTableCellView *InterfaceObjectCell(void)
 - (void)setWindowed:(BOOL)windowed
 {
   if ([_manager respondsToSelector:@selector(project)] || !windowed || _window) return;
-  _window = [[NSWindow alloc] initWithContentRect:NSMakeRect(100,100,900,600)
+  _window = [[NSWindow alloc] initWithContentRect:NSMakeRect(100,100,1000,600)
                                         styleMask:NSTitledWindowMask|NSClosableWindowMask|NSResizableWindowMask|NSMiniaturizableWindowMask
                                           backing:NSBackingStoreBuffered defer:NO];
   [_window setReleasedWhenClosed:NO]; [_window setTitle:[_path lastPathComponent]];
@@ -602,7 +1042,7 @@ static NSTableCellView *InterfaceObjectCell(void)
 {
   if (!_editable) return NO;
   NSError *error = nil;
-  NSData *data = _gorm ? [(PCGormArchive *)_gorm data] : [_document XMLData];
+  NSData *data = _gorm ? [(PCGormArchive *)_gorm data] : [_model data];
   if (_gorm)
   {
     /* objects.gorm inside the .gorm; data.classes and data.info stay. A
@@ -629,7 +1069,8 @@ static NSTableCellView *InterfaceObjectCell(void)
 - (BOOL)revertFileToSaved
 {
   if (![self loadDocument]) return NO;
-  _edited = NO; [_tree reloadData]; [self selectObject:[_objects count] ? [_objects objectAtIndex:0] : nil];
+  _edited = NO; [_tree reloadData];
+  [self selectObject:[[_model objects] count] ? [[_model objects] objectAtIndex:0] : nil];
   return YES;
 }
 - (BOOL)closeFile:(id)sender save:(BOOL)save

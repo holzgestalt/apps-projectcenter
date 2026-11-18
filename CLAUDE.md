@@ -20,7 +20,8 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
      in the user defaults.
    - Interfaces: each `.gorm` has a generated `.xib` next to it, which the Xcode targets compile.
      Embedded unnamed images and GNUstep theme images (`common_ret`) are not converted yet.
-   - Not yet checked on macOS: the editor beyond opening files, the XIB editor and most panels.
+   - Not yet checked on macOS: the editor beyond opening files and most panels. The XIB editor
+     was tried on a copy of `Info.xib` (adding, connecting, editing, undo, saving).
 3. **Stay a GNUstep application.** The GNUmakefile build and the GNUstep CI must keep working.
    Changes for macOS must not break or degrade the GNUstep version.
 
@@ -45,7 +46,11 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 - `*.m`, `Headers/*.h`: the application (menus, preferences, app controller).
 - `Framework/`, `Headers/ProjectCenter/`, `Headers/Protocols/`: ProjectCenter.framework, which holds
   the project model, project window, navigator, builder, launcher and Xcode project reader
-  (`PCXcodeProject`, `PCXcodeProjectEditor`, `PCNavigators`, `PCInterfaceEditor`).
+  (`PCXcodeProject`, `PCXcodeProjectEditor`, `PCNavigators`, `PCInterfaceEditor`). The XIB editor's
+  model is `PCInterfaceDocument` (Foundation only): every edit changes only its own XML, and an
+  unchanged XIB is written back byte for byte (`XcodeProjectTests` checks every `.xib`).
+  `PCInterfaceInspector` is the editor's Xcode-style inspector, and `PCInterfaceRendering` draws
+  the canvas with the cells of the active theme.
 - `Modules/`: bundles loaded at runtime, which are project types (`.project`), the editor
   (`.editor`), the parser (`.parser`), the debugger (`.debugger`) and preference panes
   (`.preferences`).
