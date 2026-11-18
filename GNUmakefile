@@ -143,11 +143,8 @@ ProjectCenter_main.m
 
 -include GNUmakefile.preamble
 include $(GNUSTEP_MAKEFILES)/aggregate.make
-ifneq ($(GNUSTEP_APPLICATION_THEME),)
-GNUSTEP_THEME_ROOT ?= $(abspath ../..)
-include $(GNUSTEP_THEME_ROOT)/native/application-theme.make
-else
+# ProjectCenter uses the installed native GTK provider unless overridden.
+GNUSTEP_APPLICATION_THEME ?= GTK4Native
 include $(GNUSTEP_MAKEFILES)/application.make
-endif
 -include GNUmakefile.postamble
 include $(GNUSTEP_MAKEFILES)/Master/nsis.make

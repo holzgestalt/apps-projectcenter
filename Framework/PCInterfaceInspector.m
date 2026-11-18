@@ -493,7 +493,6 @@ typedef enum
 @interface PCInspectorForm : NSView
 {
   CGFloat        y;
-  NSMutableArray *rules;
 }
 - (void)reset;
 - (void)addHeader:(NSString *)title;
@@ -513,7 +512,6 @@ static const CGFloat LabelWidth = 92;
 {
   if ((self = [super initWithFrame:frame]))
   {
-    rules = [NSMutableArray new];
     [self setAutoresizingMask:NSViewWidthSizable];
   }
   return self;
@@ -521,7 +519,6 @@ static const CGFloat LabelWidth = 92;
 - (void)dealloc
 {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-  [rules release];
   [super dealloc];
 }
 /* The form is as wide as the scroll view it is in. */
@@ -547,7 +544,6 @@ static const CGFloat LabelWidth = 92;
   {
     [[[self subviews] lastObject] removeFromSuperview];
   }
-  [rules removeAllObjects];
   y = 4;
 }
 - (void)addHeader:(NSString *)title
@@ -557,7 +553,10 @@ static const CGFloat LabelWidth = 92;
 
   if (y > 4)
   {
-    [rules addObject:[NSNumber numberWithDouble:y + 2]];
+    NSBox *separator = [[[NSBox alloc] initWithFrame:NSMakeRect(8, y + 2, NSWidth([self frame]) - 16, 1)] autorelease];
+    [separator setBoxType:NSBoxSeparator];
+    [separator setAutoresizingMask:NSViewWidthSizable];
+    [self addSubview:separator];
   }
   [label setStringValue:title];
   [label setEditable:NO];
@@ -659,14 +658,6 @@ static const CGFloat LabelWidth = 92;
 
   [self setFrameSize:NSMakeSize(visible.width, MAX(y + 8, visible.height))];
   [self setNeedsDisplay:YES];
-}
-- (void)drawRect:(NSRect)rect
-{
-  [[NSColor gridColor] set];
-  for (NSNumber *rule in rules)
-  {
-    NSRectFill(NSMakeRect(8, [rule doubleValue], NSWidth([self bounds]) - 16, 1));
-  }
 }
 @end
 
