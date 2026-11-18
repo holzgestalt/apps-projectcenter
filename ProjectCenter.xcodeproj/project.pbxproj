@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		8EE5031E4B998201E781FAB4 /* PCGormXIBWriter.h in Headers */ = {isa = PBXBuildFile; fileRef = 74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */; };
 		1779DF2815ADA3D81CAF6DC3 /* PCGormXIBWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */; };
+		AF68A149658AEB75EB34895C /* PCInterfaceDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = 4F38379DBB3CAAC08BB1EDD9 /* PCInterfaceDocument.h */; };
+		1F6196A53152EDFF0E69150C /* PCInterfaceDocument.m in Sources */ = {isa = PBXBuildFile; fileRef = 800933EA4D5A3DFACE98A071 /* PCInterfaceDocument.m */; };
 		8C17A1EB96BA01FFC87D012D /* PCGormArchive.h in Headers */ = {isa = PBXBuildFile; fileRef = E460E463D3313E158723ECC5 /* PCGormArchive.h */; };
 		535AA5A0F417FB5BD4EC1335 /* PCGormArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = 9056592F7A76D3A5A08DD7BA /* PCGormArchive.m */; };
 		000F96A8C037058E22BE299F /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
@@ -580,6 +582,8 @@
 		2A4DB7D3A577786C1B757843 /* gorm2xib.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = gorm2xib.m; sourceTree = "<group>"; };
 		74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCGormXIBWriter.h; sourceTree = "<group>"; };
 		0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCGormXIBWriter.m; sourceTree = "<group>"; };
+		4F38379DBB3CAAC08BB1EDD9 /* PCInterfaceDocument.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCInterfaceDocument.h; sourceTree = "<group>"; };
+		800933EA4D5A3DFACE98A071 /* PCInterfaceDocument.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCInterfaceDocument.m; sourceTree = "<group>"; };
 		E460E463D3313E158723ECC5 /* PCGormArchive.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCGormArchive.h; sourceTree = "<group>"; };
 		9056592F7A76D3A5A08DD7BA /* PCGormArchive.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCGormArchive.m; sourceTree = "<group>"; };
 		FE1AF7183BC07EA40E254F3B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -1232,6 +1236,8 @@
 				9056592F7A76D3A5A08DD7BA /* PCGormArchive.m */,
 				74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */,
 				0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */,
+				4F38379DBB3CAAC08BB1EDD9 /* PCInterfaceDocument.h */,
+				800933EA4D5A3DFACE98A071 /* PCInterfaceDocument.m */,
 				4FE12E514F550AC7632F3723 /* PCXcodeProject.h */,
 				3DD55CD424FFE8D9EE0E5AA7 /* PCXcodeProject.m */,
 				6ACBC8B0BB394DCEE011E4F2 /* PCXcodeProjectEditor.h */,
@@ -1879,6 +1885,7 @@
 				3143A30953ECD68B268271EF /* PCNavigators.h in Headers */,
 				8C17A1EB96BA01FFC87D012D /* PCGormArchive.h in Headers */,
 				8EE5031E4B998201E781FAB4 /* PCGormXIBWriter.h in Headers */,
+				AF68A149658AEB75EB34895C /* PCInterfaceDocument.h in Headers */,
 				060C81676E30859C93EF0355 /* PCXcodeProject.h in Headers */,
 				6F245A8FB3ABF02C5074DBA0 /* PCXcodeProjectEditor.h in Headers */,
 			);
@@ -2678,6 +2685,7 @@
 				2125AE2F10667DC4C0F3213D /* PCProjectManager.m in Sources */,
 				535AA5A0F417FB5BD4EC1335 /* PCGormArchive.m in Sources */,
 				1779DF2815ADA3D81CAF6DC3 /* PCGormXIBWriter.m in Sources */,
+				1F6196A53152EDFF0E69150C /* PCInterfaceDocument.m in Sources */,
 				BD3559D12C621D9E4000D2FA /* PCXcodeProject.m in Sources */,
 				56D673BF9ED679357366154C /* PCNavigators.m in Sources */,
 				60EE038B12DDFC515D329672 /* PCXcodeProjectEditor.m in Sources */,

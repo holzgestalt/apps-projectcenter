@@ -76,6 +76,7 @@ ProjectCenter_OBJC_FILES = \
   PCProjectManager.m \
   PCGormArchive.m \
   PCGormXIBWriter.m \
+  PCInterfaceDocument.m \
   PCXcodeProject.m \
   PCNavigators.m \
   PCXcodeProjectEditor.m \

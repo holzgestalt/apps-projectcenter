@@ -2,6 +2,7 @@
 #import "PCXcodeProject.h"
 #import "PCGormArchive.h"
 #import "PCGormXIBWriter.h"
+#import "PCInterfaceDocument.h"
 
 static void Check(BOOL condition, NSString *message)
 {
@@ -80,6 +81,307 @@ static void TestGormArchives(void)
                        NSMakeRect(1, 2, 300, 40)), @"edited frame is kept");
     Check([[edited data] isEqualToData:data], @"an edited archive is written back unchanged");
   }
+}
+
+/* The XIB editor's model: edits change only what they are about. */
+static void TestInterfaceDocument(void)
+{
+  NSString *xib =
+  @"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+  @"<document type=\"com.apple.InterfaceBuilder3.Cocoa.XIB\" version=\"3.0\" toolsVersion=\"1\" targetRuntime=\"MacOSX.Cocoa\" useAutolayout=\"YES\">\n"
+  @"<objects>\n"
+  @"<customObject id=\"-2\" userLabel=\"File's Owner\" customClass=\"Controller\">\n"
+  @"<connections><outlet property=\"label\" destination=\"lab-el-001\" id=\"out-le-t01\"/></connections>\n"
+  @"</customObject>\n"
+  @"<window title=\"Main\" id=\"win-do-w01\">\n"
+  @"<view key=\"contentView\" id=\"con-te-nt1\">\n"
+  @"<rect key=\"frame\" x=\"0.0\" y=\"0.0\" width=\"400\" height=\"300\"/>\n"
+  @"<autoresizingMask key=\"autoresizingMask\"/>\n"
+  @"<subviews>\n"
+  @"<textField id=\"lab-el-001\">\n"
+  @"<rect key=\"frame\" x=\"20\" y=\"260\" width=\"100\" height=\"16\"/>\n"
+  @"<textFieldCell key=\"cell\" title=\"Name\" id=\"cel-l0-001\"><font key=\"font\" metaFont=\"system\"/></textFieldCell>\n"
+  @"</textField>\n"
+  @"</subviews>\n"
+  @"<constraints>\n"
+  @"<constraint firstItem=\"lab-el-001\" firstAttribute=\"leading\" secondItem=\"con-te-nt1\" secondAttribute=\"leading\" constant=\"20\" id=\"con-st-001\"/>\n"
+  @"<constraint firstItem=\"lab-el-001\" firstAttribute=\"width\" constant=\"100\" priority=\"750\" id=\"con-st-002\"/>\n"
+  @"</constraints>\n"
+  @"</view>\n"
+  @"</window>\n"
+  @"</objects>\n"
+  @"</document>\n";
+  NSString            *error = nil;
+  PCInterfaceDocument *doc = [PCInterfaceDocument documentWithData:[xib dataUsingEncoding:NSUTF8StringEncoding]
+                                                             error:&error];
+  NSXMLElement        *owner, *window, *label, *button;
+  NSArray             *rows;
+  BOOL                found = NO;
+
+  Check(doc != nil, [NSString stringWithFormat:@"XIB model reads: %@", error]);
+  Check([PCInterfaceDocument documentWithData:[@"<plist/>" dataUsingEncoding:NSUTF8StringEncoding] error:NULL] == nil,
+        @"XIB model refuses other XML");
+  owner = [doc objectWithIdentifier:@"-2"];
+  window = [doc objectWithIdentifier:@"win-do-w01"];
+  label = [doc objectWithIdentifier:@"lab-el-001"];
+  Check([[doc nameOfObject:label] isEqual:@"Name"], @"object name from its cell title");
+  Check([doc objectOfElement:(NSXMLElement *)[[[label elementsForName:@"rect"] objectAtIndex:0] self]] == label,
+        @"object of an element");
+
+  rows = [doc attributesOfObject:label];
+  for (NSDictionary *row in rows)
+  {
+    if ([[row objectForKey:@"Label"] isEqual:@"frame.width"]) found = [[row objectForKey:@"Value"] isEqual:@"100"];
+  }
+  Check(found, @"attribute rows include frame.width");
+  [doc setValue:@"YES" ofAttribute:@"hidden" ofElement:label];
+  Check([[[label attributeForName:@"hidden"] stringValue] isEqual:@"YES"], @"attribute set");
+  [doc setValue:@"" ofAttribute:@"hidden" ofElement:label];
+  Check([label attributeForName:@"hidden"] == nil, @"empty value removes the attribute");
+  {
+    /* The inspector finds keyed children, and makes the ones a change needs. */
+    NSXMLElement *cell = [doc childOfElement:label withKey:@"cell" creatingNamed:nil];
+    NSXMLElement *font = [doc childOfElement:cell withKey:@"font" creatingNamed:@"font"];
+    NSXMLElement *color;
+
+    Check([[cell name] isEqual:@"textFieldCell"] && [[[font attributeForName:@"metaFont"] stringValue]
+                                                     isEqual:@"system"], @"keyed children found");
+    Check([doc childOfElement:cell withKey:@"textColor" creatingNamed:nil] == nil, @"missing child not made");
+    color = [doc childOfElement:cell withKey:@"textColor" creatingNamed:@"color"];
+    Check([[color name] isEqual:@"color"] && [color parent] == cell
+          && [[[color attributeForName:@"key"] stringValue] isEqual:@"textColor"]
+          && [doc childOfElement:cell withKey:@"textColor" creatingNamed:@"color"] == color,
+          @"missing child made once");
+    [color detach];
+  }
+
+  Check([[doc connectionsOfObject:label] count] == 1, @"incoming outlet listed");
+  Check([[doc constraintsOfObject:label] count] == 2, @"constraints of the label");
+  Check([[doc descriptionOfConstraint:[[doc constraintsOfObject:label] objectAtIndex:0]]
+         isEqual:@"Name.leading = leading + 20"], @"constraint description");
+  Check([[doc descriptionOfConstraint:[[doc constraintsOfObject:label] objectAtIndex:1]]
+         isEqual:@"Name.width = 100 @750"], @"constant constraint description");
+  {
+    NSXMLElement *width = [[doc constraintsOfObject:label] objectAtIndex:1];
+    NSData       *before = [doc data];
+
+    Check([[doc itemsOfConstraint:[[doc constraintsOfObject:label] objectAtIndex:0]] count] == 2
+          && [[doc itemsOfConstraint:width] isEqual:@[label]], @"views of constraints");
+    Check([doc canRemoveObject:width], @"constraints can be removed");
+    [doc removeObject:width];
+    Check([[doc constraintsOfObject:label] count] == 1 && [doc objectWithIdentifier:@"lab-el-001"] != nil,
+          @"removing a constraint keeps its view");
+    doc = [PCInterfaceDocument documentWithData:before error:NULL];
+    label = [doc objectWithIdentifier:@"lab-el-001"];
+    window = [doc objectWithIdentifier:@"win-do-w01"];
+    owner = [doc objectWithIdentifier:@"-2"];
+  }
+
+  button = [doc insertLibraryItem:@"Push Button" forObject:window];
+  Check(button != nil && [[[button parent] name] isEqual:@"subviews"]
+        && [[[button parent] parent] isEqual:[doc objectWithIdentifier:@"con-te-nt1"]],
+        @"button added to the window's content view");
+  Check([doc insertLibraryItem:@"Menu Item" forObject:window] == nil, @"no menu item in a window");
+  Check([doc addAction:@"save" fromObject:button toObject:owner] != nil, @"action added");
+  Check([[[[[doc connectionsOfObject:button] objectAtIndex:0] attributeForName:@"selector"] stringValue]
+         isEqual:@"save:"], @"action selector gets its colon");
+  Check([doc addOutlet:@"saveButton" fromObject:owner toObject:button] != nil, @"outlet added");
+  Check([[doc connectionsOfObject:owner] count] == 3, @"owner has its outlets and the action to it");
+
+  Check(![doc canRemoveObject:owner] && ![doc canRemoveObject:[doc objectWithIdentifier:@"con-te-nt1"]],
+        @"placeholders and content views stay");
+  [doc removeObject:label];
+  Check([doc objectWithIdentifier:@"lab-el-001"] == nil && [doc objectWithIdentifier:@"cel-l0-001"] == nil,
+        @"label and its cell removed");
+  Check([[doc connectionsOfObject:owner] count] == 2, @"outlet to the label removed");
+  Check([[[[doc XMLDocument] rootElement] XMLString] rangeOfString:@"con-st-00"].location == NSNotFound,
+        @"constraints of the label removed");
+  Check([PCInterfaceDocument documentWithData:[doc data] error:NULL] != nil, @"edited XIB reads again");
+  {
+    NSMutableSet *ids = [NSMutableSet set];
+    NSUInteger   i;
+
+    for (i = 0; i < 200; i++)
+    {
+      [ids addObject:[doc uniqueIdentifier]];
+    }
+    Check([ids count] > 190 && [[ids anyObject] length] == 10, @"identifiers in Xcode's form");
+  }
+}
+
+/* Every XIB of ProjectCenter is written back as it was read, also after an
+ * object and a connection are added and removed again. */
+/* The constraint names Xcode's document outline showed for this XIB. */
+static void TestConstraintNames(void)
+{
+  NSString *xib =
+  @"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+  @"<document type=\"com.apple.InterfaceBuilder3.Cocoa.XIB\" version=\"3.0\" toolsVersion=\"23504\""
+  @" targetRuntime=\"MacOSX.Cocoa\" useAutolayout=\"YES\">\n"
+  @"<objects>\n"
+  @"<window title=\"Form\" id=\"win\">\n"
+  @"<view key=\"contentView\" id=\"v\">\n"
+  @"<rect key=\"frame\" x=\"0.0\" y=\"0.0\" width=\"320\" height=\"120\"/>\n"
+  @"<subviews>\n"
+  @"<textField id=\"n\"><rect key=\"frame\" x=\"18\" y=\"84\" width=\"104\" height=\"16\"/>\n"
+  @"<constraints>\n"
+  @"<constraint firstAttribute=\"width\" constant=\"100\" priority=\"750\" id=\"c1\"/>\n"
+  @"<constraint firstAttribute=\"height\" relation=\"lessThanOrEqual\" constant=\"40\" id=\"c2\"/>\n"
+  @"</constraints>\n"
+  @"<textFieldCell key=\"cell\" title=\"Name\" id=\"nc\"/>\n"
+  @"</textField>\n"
+  @"<popUpButton id=\"pop\" userLabel=\"GormNSPopUpButton\"><rect key=\"frame\" x=\"110\" y=\"270\" width=\"110\" height=\"24\"/>\n"
+  @"<popUpButtonCell key=\"cell\" type=\"push\" title=\"Item 1\" id=\"popc\"/>\n"
+  @"</popUpButton>\n"
+  @"<button id=\"ok\"><rect key=\"frame\" x=\"130\" y=\"76\" width=\"96\" height=\"32\"/>\n"
+  @"<buttonCell key=\"cell\" type=\"push\" title=\"OK\" id=\"okc\"/>\n"
+  @"</button>\n"
+  @"<customView id=\"box\" userLabel=\"Box\"><rect key=\"frame\" x=\"20\" y=\"20\" width=\"160\" height=\"40\"/></customView>\n"
+  @"</subviews>\n"
+  @"<constraints>\n"
+  @"<constraint firstItem=\"n\" firstAttribute=\"leading\" secondItem=\"v\" secondAttribute=\"leading\" constant=\"20\" id=\"c3\"/>\n"
+  @"<constraint firstItem=\"ok\" firstAttribute=\"leading\" secondItem=\"n\" secondAttribute=\"trailing\" constant=\"8\" id=\"c4\"/>\n"
+  @"<constraint firstItem=\"ok\" firstAttribute=\"centerY\" secondItem=\"n\" secondAttribute=\"centerY\" id=\"c5\"/>\n"
+  @"<constraint firstItem=\"box\" firstAttribute=\"width\" secondItem=\"v\" secondAttribute=\"width\" multiplier=\"0.5\" id=\"c6\"/>\n"
+  @"<constraint firstAttribute=\"bottom\" secondItem=\"box\" secondAttribute=\"bottom\" constant=\"20\" id=\"c7\"/>\n"
+  @"<constraint firstItem=\"ok\" firstAttribute=\"width\" relation=\"greaterThanOrEqual\" secondItem=\"n\""
+  @" secondAttribute=\"width\" priority=\"250\" constant=\"-10\" id=\"c8\"/>\n"
+  @"<constraint firstItem=\"box\" firstAttribute=\"leading\" secondItem=\"v\" secondAttribute=\"leadingMargin\" id=\"c9\"/>\n"
+  @"<constraint firstItem=\"box\" firstAttribute=\"top\" secondItem=\"pop\" secondAttribute=\"bottom\" constant=\"8\" symbolic=\"YES\" id=\"c10\"/>\n"
+  @"<constraint firstAttribute=\"trailing\" secondItem=\"box\" secondAttribute=\"trailing\" constant=\"-2\" id=\"c11\"/>\n"
+  @"</constraints>\n"
+  @"</view>\n"
+  @"</window>\n"
+  @"</objects>\n"
+  @"</document>\n";
+  PCInterfaceDocument *doc = [PCInterfaceDocument documentWithData:[xib dataUsingEncoding:NSUTF8StringEncoding]
+                                                             error:NULL];
+  NSDictionary        *expected = [NSDictionary dictionaryWithObjectsAndKeys:
+                                   @"width = 100 @750", @"c1",
+                                   @"height ≤ 40", @"c2",
+                                   @"Name.leading = leading + 20", @"c3",
+                                   @"OK.leading = Name.trailing + 8", @"c4",
+                                   @"OK.centerY = Name.centerY", @"c5",
+                                   @"Box.width = 0.5 × width", @"c6",
+                                   @"bottom = Box.bottom + 20", @"c7",
+                                   @"OK.width ≥ Name.width - 10 @250", @"c8",
+                                   @"Box.leading = leadingMargin", @"c9",
+                                   @"Box.top = GormNSPopUpButton.bottom", @"c10",
+                                   @"trailing = Box.trailing - 2", @"c11",
+                                   nil];
+  NSMutableDictionary *constraints = [NSMutableDictionary dictionary];
+
+  Check(doc != nil, @"constraint XIB reads");
+  for (NSXMLElement *object in [doc objects])
+  {
+    for (NSXMLElement *constraint in [doc constraintsOfObject:object])
+    {
+      [constraints setObject:constraint forKey:[[constraint attributeForName:@"id"] stringValue]];
+    }
+  }
+  for (NSString *identifier in expected)
+  {
+    NSString *name = [doc descriptionOfConstraint:[constraints objectForKey:identifier]];
+
+    Check([name isEqual:[expected objectForKey:identifier]],
+          [NSString stringWithFormat:@"constraint %@ named as in Xcode: %@", identifier, name]);
+  }
+  Check([[doc nameOfObject:[doc objectWithIdentifier:@"v"]] isEqual:@"View"]
+        && [[doc nameOfObject:[doc objectWithIdentifier:@"box"]] isEqual:@"Box"]
+        && [[doc nameOfObject:[doc objectWithIdentifier:@"pop"]] isEqual:@"GormNSPopUpButton"],
+        @"object names as in Xcode, the label before the title");
+
+  /* The inspector's view of constraints. */
+  {
+    NSXMLElement *c1 = [constraints objectForKey:@"c1"], *c4 = [constraints objectForKey:@"c4"];
+    NSXMLElement *c5 = [constraints objectForKey:@"c5"], *c10 = [constraints objectForKey:@"c10"];
+    NSXMLElement *c11 = [constraints objectForKey:@"c11"];
+    NSXMLElement *view = [doc objectWithIdentifier:@"v"], *box = [doc objectWithIdentifier:@"box"];
+    NSXMLElement *name = [doc objectWithIdentifier:@"n"];
+
+    Check([[doc kindOfConstraint:c11] isEqual:@"Horizontal Space Constraint"]
+          && [[doc kindOfConstraint:c10] isEqual:@"Vertical Space Constraint"]
+          && [[doc kindOfConstraint:c1] isEqual:@"Width Constraint"]
+          && [[doc kindOfConstraint:c5] isEqual:@"Center Y Alignment Constraint"]
+          && [[doc kindOfConstraint:[constraints objectForKey:@"c8"]] isEqual:@"Equal Widths Constraint"],
+          @"constraint kinds");
+    Check([doc ownerOfConstraint:c11] == view && [doc firstItemOfConstraint:c11] == view
+          && [doc ownerOfConstraint:c1] == name, @"constraint owners");
+    Check([[doc candidateItemsForConstraint:c11] count] == 5
+          && [[doc candidateItemsForConstraint:c11] objectAtIndex:0] == view, @"constraint candidates");
+    Check([[PCInterfaceDocument titleOfConstraintAttribute:@"centerX"] isEqual:@"Center X"]
+          && [[PCInterfaceDocument titleOfConstraintAttribute:@"leadingMargin"] isEqual:@"Leading Margin"],
+          @"attribute titles");
+
+    [doc setFirstItem:box attribute:@"trailing" ofConstraint:c11];
+    [doc setSecondItem:view attribute:@"trailing" ofConstraint:c11];
+    Check([[doc descriptionOfConstraint:c11] isEqual:@"Box.trailing = trailing - 2"], @"constraint items swapped");
+    [doc setFirstItem:view attribute:@"trailing" ofConstraint:c11];
+    Check([c11 attributeForName:@"firstItem"] == nil, @"the owner as first item is left out");
+    [doc setSecondItem:nil attribute:nil ofConstraint:c4];
+    Check([c4 attributeForName:@"secondItem"] == nil && [c4 attributeForName:@"secondAttribute"] == nil,
+          @"constraint without second item");
+    [doc setNumber:@"12" ofAttribute:@"constant" ofConstraint:c10];
+    Check([c10 attributeForName:@"symbolic"] == nil
+          && [[doc descriptionOfConstraint:c10] isEqual:@"Box.top = GormNSPopUpButton.bottom + 12"],
+          @"a constant replaces the standard spacing");
+    [doc setValue:@"greaterThanOrEqual" ofAttribute:@"relation" ofElement:c11];
+    [doc setNumber:@"250" ofAttribute:@"priority" ofConstraint:c11];
+    Check([[[c11 XMLString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+           hasPrefix:@"<constraint firstAttribute=\"trailing\" relation=\"greaterThanOrEqual\""
+           @" secondItem=\"v\" secondAttribute=\"trailing\" priority=\"250\" constant=\"-2\" id=\"c11\""],
+          [NSString stringWithFormat:@"constraint attributes in Xcode's order: %@", [c11 XMLString]]);
+    [doc setNumber:@"1000" ofAttribute:@"priority" ofConstraint:c1];
+    [doc setNumber:@"0" ofAttribute:@"constant" ofConstraint:c10];
+    Check([c1 attributeForName:@"priority"] == nil && [c10 attributeForName:@"constant"] == nil,
+          @"default numbers are left out");
+  }
+}
+
+static void TestInterfaceDocumentRoundTrip(void)
+{
+  NSString              *repository = [[[NSString stringWithUTF8String:__FILE__]
+                                        stringByDeletingLastPathComponent]
+                                       stringByDeletingLastPathComponent];
+  NSDirectoryEnumerator *files = [[NSFileManager defaultManager] enumeratorAtPath:repository];
+  NSString              *file;
+  NSUInteger            count = 0;
+
+  while ((file = [files nextObject]))
+  {
+    NSData              *data;
+    PCInterfaceDocument *doc;
+    NSXMLElement        *window = nil, *button, *owner;
+
+    if (![file hasSuffix:@".xib"] || [file hasPrefix:@"build"])
+    {
+      continue;
+    }
+    data = [NSData dataWithContentsOfFile:[repository stringByAppendingPathComponent:file]];
+    doc = [PCInterfaceDocument documentWithData:data error:NULL];
+    Check(doc != nil, [NSString stringWithFormat:@"%@ reads as a XIB", file]);
+    Check([[doc data] isEqualToData:data], [NSString stringWithFormat:@"%@ is written back unchanged", file]);
+    for (NSXMLElement *object in [doc objects])
+    {
+      if ([[object name] isEqual:@"window"]) { window = object; break; }
+    }
+    owner = [doc objectWithIdentifier:@"-2"];
+    if (window && owner)
+    {
+      NSXMLElement *action;
+
+      button = [doc insertLibraryItem:@"Push Button" forObject:window];
+      action = [doc addAction:@"test" fromObject:button toObject:owner];
+      Check(button != nil && action != nil, [NSString stringWithFormat:@"%@: button and action added", file]);
+      Check([PCInterfaceDocument documentWithData:[doc data] error:NULL] != nil,
+            [NSString stringWithFormat:@"%@: edited XIB reads", file]);
+      [doc removeObject:button];
+      Check([[doc data] isEqualToData:data],
+            [NSString stringWithFormat:@"%@ is as before after adding and removing a button", file]);
+    }
+    count++;
+  }
+  Check(count >= 30, @"the .xib files of ProjectCenter are found");
 }
 
 static void Write(NSString *root, NSString *path, NSString *contents)
@@ -307,6 +609,9 @@ int main(int argc, char **argv)
     }
     TestBuildSelection();
     TestGormArchives();
+    TestInterfaceDocument();
+    TestConstraintNames();
+    TestInterfaceDocumentRoundTrip();
     NSLog(@"Xcode project adapter tests passed");
   }
   return 0;
