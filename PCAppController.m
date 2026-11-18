@@ -172,6 +172,7 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
 
 - (void)applicationWillFinishLaunching:(NSNotification *)notification
 {
+  [menuController addConvertMenu];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification

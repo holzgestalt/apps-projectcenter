@@ -66,6 +66,27 @@
 /* The object an XIB id stands for, or nil. */
 + (PCGormObject *)objectForIdentifier:(NSString *)identifier
                             inArchive:(PCGormArchive *)archive;
+
+/* Converting a project's interfaces once, when it moves to XIBs (Edit →
+ * Convert → To XIB..., and Tools/gorm2xib). */
+
+/* The .gorm interfaces below a directory, sorted by path. Hidden folders,
+ * build folders (build, obj, DerivedData) and bundles (an .app, a
+ * framework, ProjectCenter's own module bundles) are skipped, so the copies
+ * of interfaces in build products are not listed. */
++ (NSArray *)gormInterfacesInDirectory:(NSString *)directory;
+/* The XIB that belongs to a .gorm: the same name next to it. */
++ (NSString *)XIBPathForGorm:(NSString *)gormPath;
+/* Writes the XIB of the .gorm at gormPath to xibPath (replacing it).
+ * Returns NO with a reason; warnings are what the XIB leaves out. */
++ (BOOL)writeXIBForGormAtPath:(NSString *)gormPath
+                       toPath:(NSString *)xibPath
+                 toolsVersion:(NSString *)toolsVersion
+                     warnings:(NSArray **)warnings
+                        error:(NSString **)error;
+/* The version of Xcode's Interface Builder (ibtool), which the XIBs name
+ * as their tools version, or nil without Xcode. */
++ (NSString *)interfaceBuilderVersion;
 @end
 
 #endif

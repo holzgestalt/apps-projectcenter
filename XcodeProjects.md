@@ -86,6 +86,15 @@ Gorm and GNUstep applications load the saved interface as before. The other
 inspector edits, the library and Delete work on XIBs only. When Gorm is installed, opening a `.gorm` in its own
 window starts Gorm.
 
+To move a project's interfaces to XIBs, choose **Edit → Convert → To XIB...**,
+as Xcode's Edit → Convert → To String Catalogs... moves strings files to the
+current format. It lists the project's `.gorm` interfaces (not the copies in
+build folders and built bundles) and writes a XIB next to each one you select.
+Interfaces that already have a XIB are listed as "Replaces the XIB" and are not
+selected, as the XIB is the source from then on. The Log Panel lists what a XIB
+leaves out, such as GNUstep theme images and unnamed embedded images. The
+project isn't changed: add the new XIB files to the targets that use them.
+
 The project window has a toolbar with Run, Stop and Build, and toggles for the
 navigator, the bottom area and the inspector panel (Clean, Debug and Find can
 be added by customizing it). Build and Clean switch the navigator to its Issues

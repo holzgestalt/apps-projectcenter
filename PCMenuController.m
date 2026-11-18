@@ -28,6 +28,7 @@
 #import "PCMenuController.h"
 #import "PCInfoController.h"
 #import "PCPrefController.h"
+#import <ProjectCenter/PCConvertController.h>
 
 @implementation PCMenuController
 
@@ -59,6 +60,7 @@
   NSLog(@"PCMenuController: dealloc");
 #endif
   [[NSNotificationCenter defaultCenter] removeObserver:self];
+  RELEASE(convertController);
 
   [super dealloc];
 }
@@ -76,6 +78,52 @@
 //============================================================================
 //==== Menu stuff
 //============================================================================
+
+// Edit
+
+- (void)addConvertMenu
+{
+  NSMenu     *edit = [[[NSApp mainMenu] itemWithTitle:@"Edit"] submenu];
+  NSMenu     *convert;
+  NSMenuItem *item;
+  NSInteger  index;
+
+  if (edit == nil || [edit itemWithTitle:@"Convert"] != nil)
+  {
+    return;
+  }
+  /* As in Xcode, where Edit → Convert → To String Catalogs... moves strings
+   * files to the current format. */
+  convert = [[[NSMenu alloc] initWithTitle:@"Convert"] autorelease];
+  item = [convert addItemWithTitle:@"To XIB..." action:@selector(convertToXIB:) keyEquivalent:@""];
+  [item setTarget:self];
+  item = [[[NSMenuItem alloc] initWithTitle:@"Convert" action:NULL keyEquivalent:@""] autorelease];
+  [item setSubmenu:convert];
+  index = [edit indexOfItemWithTitle:@"Find"];
+  if (index < 0)
+  {
+    [edit addItem:item];
+  }
+  else
+  {
+    [edit insertItem:item atIndex:index];
+  }
+}
+
+- (void)convertToXIB:(id)sender
+{
+  PCProject *project = [projectManager rootActiveProject];
+
+  if (project == nil)
+  {
+    return;
+  }
+  if (convertController == nil)
+  {
+    convertController = [[PCConvertController alloc] init];
+  }
+  [convertController convertInterfacesOfProject:project];
+}
 
 // Info
 - (void)showPrefWindow:(id)sender
@@ -302,6 +350,11 @@
   PCProject        *aProject = [projectManager activeProject];
   PCProjectEditor  *projectEditor = [aProject projectEditor];
   PCProjectBrowser *projectBrowser = [aProject projectBrowser];
+
+  if ([menuItem action] == @selector(convertToXIB:))
+  {
+    return [projectManager rootActiveProject] != nil;
+  }
 
   if ([[aProject projectDict] objectForKey:@"XCODE_PROJECT_PATH"])
   {

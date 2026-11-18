@@ -1,7 +1,12 @@
 #!/bin/sh
-# Regenerate every .xib from its .gorm with gorm2xib (macOS, Xcode's clang).
-# Run from anywhere.
+# Convert ProjectCenter's .gorm interfaces to .xib (macOS, Xcode's clang).
+# The XIBs are the source: this is for moving interfaces to XIBs once, and
+# converts only the interfaces that have no .xib yet. --replace overwrites
+# the existing XIBs too. ProjectCenter's Edit → Convert → To XIB... does the
+# same for any project. Run from anywhere.
 set -e
+replace=no
+[ "$1" = "--replace" ] && replace=yes
 cd "$(dirname "$0")/../.."
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
@@ -13,5 +18,8 @@ clang -fno-objc-arc -IFramework -framework Foundation \
 find . -type d -name '*.gorm' -not -path './Modules/Projects/Application/Resources/Main.gorm' |
   while read -r gorm
   do
-    "$work/gorm2xib" "$gorm"
+    if [ "$replace" = yes ] || [ ! -e "${gorm%.gorm}.xib" ]
+    then
+      "$work/gorm2xib" "$gorm"
+    fi
   done

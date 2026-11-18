@@ -1763,4 +1763,140 @@ static NSInteger TopLevelOrder(PCGormObject *a, PCGormObject *b, void *context)
   return document;
 }
 
+// --- Converting interfaces
+
+static BOOL IsBundle(NSString *path)
+{
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSString      *extension = [[path pathExtension] lowercaseString];
+
+  if ([@[@"app", @"framework", @"bundle", @"plugin", @"xcodeproj", @"xcworkspace",
+         @"build", @"gorm"] containsObject:extension])
+  {
+    return YES;
+  }
+  /* A built bundle of any extension: Cocoa's or GNUstep's layout. */
+  return [fm fileExistsAtPath:[path stringByAppendingPathComponent:@"Contents/Info.plist"]]
+    || [fm fileExistsAtPath:[path stringByAppendingPathComponent:@"Resources/Info-gnustep.plist"]];
+}
+
++ (NSArray *)gormInterfacesInDirectory:(NSString *)directory
+{
+  NSFileManager         *fm = [NSFileManager defaultManager];
+  NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:directory];
+  NSMutableArray        *interfaces = [NSMutableArray array];
+  NSString              *entry;
+
+  while ((entry = [enumerator nextObject]))
+  {
+    NSString *name = [entry lastPathComponent];
+    NSString *path = [directory stringByAppendingPathComponent:entry];
+    BOOL     isDirectory = NO;
+
+    if (![fm fileExistsAtPath:path isDirectory:&isDirectory] || !isDirectory)
+    {
+      continue;
+    }
+    if ([[[name pathExtension] lowercaseString] isEqual:@"gorm"])
+    {
+      if ([fm fileExistsAtPath:[path stringByAppendingPathComponent:@"objects.gorm"]])
+      {
+        [interfaces addObject:path];
+      }
+      [enumerator skipDescendents];
+    }
+    else if ([name hasPrefix:@"."] || [@[@"build", @"obj", @"DerivedData"] containsObject:name]
+             || [[[enumerator fileAttributes] fileType] isEqual:NSFileTypeSymbolicLink]
+             || IsBundle(path))
+    {
+      [enumerator skipDescendents];
+    }
+  }
+  [interfaces sortUsingSelector:@selector(compare:)];
+  return interfaces;
+}
+
++ (NSString *)XIBPathForGorm:(NSString *)gormPath
+{
+  return [[gormPath stringByDeletingPathExtension] stringByAppendingPathExtension:@"xib"];
+}
+
++ (BOOL)writeXIBForGormAtPath:(NSString *)gormPath
+                       toPath:(NSString *)xibPath
+                 toolsVersion:(NSString *)toolsVersion
+                     warnings:(NSArray **)warnings
+                        error:(NSString **)error
+{
+  NSString      *problem = nil;
+  PCGormArchive *archive = [PCGormArchive archiveWithContentsOfFile:
+                            [gormPath stringByAppendingPathComponent:@"objects.gorm"]
+                                                              error:&problem];
+  NSXMLDocument *document;
+  NSData        *xml;
+
+  if (warnings)
+  {
+    *warnings = nil;
+  }
+  if (archive == nil)
+  {
+    if (error) *error = problem;
+    return NO;
+  }
+  document = [self documentForArchive:archive toolsVersion:toolsVersion warnings:warnings];
+  xml = [document XMLDataWithOptions:NSXMLNodePrettyPrint | NSXMLNodeCompactEmptyElement];
+  if (![xml writeToFile:xibPath atomically:YES])
+  {
+    if (error) *error = [NSString stringWithFormat:@"Cannot write %@", xibPath];
+    return NO;
+  }
+  if (error) *error = nil;
+  return YES;
+}
+
++ (NSString *)interfaceBuilderVersion
+{
+#ifdef GNUSTEP
+  return nil;
+#else
+  static NSString *version = nil;
+  static BOOL     asked = NO;
+  NSTask          *task;
+  NSPipe          *pipe;
+  NSData          *data = nil;
+  id              plist;
+
+  if (asked)
+  {
+    return version;
+  }
+  asked = YES;
+  if (![[NSFileManager defaultManager] isExecutableFileAtPath:@"/usr/bin/xcrun"])
+  {
+    return nil;
+  }
+  task = [[[NSTask alloc] init] autorelease];
+  pipe = [NSPipe pipe];
+  [task setLaunchPath:@"/usr/bin/xcrun"];
+  [task setArguments:@[@"ibtool", @"--version", @"--output-format", @"xml1"]];
+  [task setStandardOutput:pipe];
+  [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+  @try
+  {
+    [task launch];
+    data = [[pipe fileHandleForReading] readDataToEndOfFile];
+    [task waitUntilExit];
+  }
+  @catch (NSException *exception)
+  {
+    return nil;
+  }
+  plist = data ? [NSPropertyListSerialization propertyListWithData:data options:0
+                                                             format:NULL error:NULL] : nil;
+  version = [[[plist objectForKey:@"com.apple.ibtool.version"]
+              objectForKey:@"bundle-version"] copy];
+  return version;
+#endif
+}
+
 @end

@@ -18,8 +18,9 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
      needs gdb. The toolbar's scheme, destination and configuration popups (`PCProjectWindow`)
      choose the `xcodebuild` arguments; `PCXcodeProject` reads the schemes and keeps the choice
      in the user defaults.
-   - Interfaces: each `.gorm` has a generated `.xib` next to it, which the Xcode targets compile.
-     Embedded unnamed images and GNUstep theme images (`common_ret`) are not converted yet.
+   - Interfaces: each `.gorm` has a `.xib` next to it, converted once from it, which the Xcode
+     targets compile. Embedded unnamed images and GNUstep theme images (`common_ret`) were not
+     converted.
    - Not yet checked on macOS: the editor beyond opening files and most panels. The XIB editor
      was tried on a copy of `Info.xib` (adding, connecting, editing, undo, saving).
 3. **Stay a GNUstep application.** The GNUmakefile build and the GNUstep CI must keep working.
@@ -59,8 +60,11 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 
 ## Conventions
 
-- **Interfaces:** the `.gorm` is the source. After changing one in Gorm, regenerate the `.xib` files
-  with `Tools/gorm2xib/regenerate.sh` and commit both. Don't edit the generated `.xib` by hand.
+- **Interfaces:** the `.xib` is the source; edit it in Xcode or in ProjectCenter's XIB editor. The
+  `.gorm` files are only converted once, when a project moves to XIBs: with **Edit → Convert →
+  To XIB...** in ProjectCenter, or `Tools/gorm2xib/regenerate.sh`, which converts only the
+  interfaces that have no `.xib` yet (`--replace` overwrites them). The GNUstep build still
+  installs the `.gorm` files (see the GNUmakefiles), so it doesn't get changes made in a `.xib`.
   `PCGormArchive` must keep writing unchanged archives back byte for byte (`XcodeProjectTests`
   checks every `.gorm`). See `Tools/gorm2xib/README.md`.
 - **Keep both build systems in sync.** The GNUmakefiles define what each target contains. When adding

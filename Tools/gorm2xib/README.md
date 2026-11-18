@@ -1,17 +1,22 @@
 # gorm2xib
 
 Writes the Interface Builder document (`.xib`) of a Gorm interface (`.gorm`).
-The macOS build compiles these XIBs; the `.gorm` files stay the source for the
-GNUstep build and are what Gorm edits.
+The XIBs are the source of ProjectCenter's interfaces; gorm2xib is for moving
+interfaces to XIBs once.
 
 ```sh
-Tools/gorm2xib/regenerate.sh      # all interfaces of ProjectCenter (macOS)
+Tools/gorm2xib/regenerate.sh            # interfaces of ProjectCenter without a XIB
+Tools/gorm2xib/regenerate.sh --replace  # all of them, overwriting the XIBs
 ```
 
 `regenerate.sh` builds `gorm2xib.m` with Xcode's clang and runs it on every
-`.gorm` except `Modules/Projects/Application/Resources/Main.gorm` (the template
-copied into new GNUstep application projects). Run it after changing a `.gorm`
-in Gorm, and commit both files.
+`.gorm` that has no `.xib` yet, except
+`Modules/Projects/Application/Resources/Main.gorm` (the template copied into
+new GNUstep application projects). With `--replace` it overwrites the existing
+XIBs, and changes made in them are lost.
+
+For other projects, use ProjectCenter's **Edit → Convert → To XIB...**, which
+converts the same way (`PCGormXIBWriter`).
 
 The work is done by two Foundation-only classes of ProjectCenter.framework,
 which its interface editor uses too:

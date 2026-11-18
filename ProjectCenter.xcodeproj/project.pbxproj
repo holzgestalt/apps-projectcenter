@@ -37,6 +37,7 @@
 		13FFC0D547CF8F5CF3E17424 /* PCMakefileFactory.m in Sources */ = {isa = PBXBuildFile; fileRef = 698BE82A91B1F36C6481F814 /* PCMakefileFactory.m */; };
 		1445D9724DDA45866E18BBB3 /* ProjectCenter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D80BB259CD76EFBB81680E7 /* ProjectCenter.framework */; };
 		1564762208B2FF03C23D1F07 /* PCProjectBuilderOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 2B9E447928555DB53DCF9729 /* PCProjectBuilderOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		A4C123B1612DD272D1371C17 /* PCConvertController.h in Headers */ = {isa = PBXBuildFile; fileRef = 729FAE923D5A4FD12AABFE22 /* PCConvertController.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		15B3CB2F969D80BC2150311C /* LineJumper.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1AB9E1A6694082165AA1A5E7 /* LineJumper.xib */; };
 		16A2994DB4B8F2A0C647D149 /* ProjectCenter_documentation.tiff in Resources */ = {isa = PBXBuildFile; fileRef = FA5D941948C2F9D4BAFAAF6A /* ProjectCenter_documentation.tiff */; };
 		17FE2DE94C8AE452B174A035 /* ProjectDescription.xib in Resources */ = {isa = PBXBuildFile; fileRef = 332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.xib */; };
@@ -267,6 +268,7 @@
 		D8F2A12F09C4D3146A15ED3D /* Plist.syntax in Resources */ = {isa = PBXBuildFile; fileRef = 2BA1EB0193A9B99A2D92EA10 /* Plist.syntax */; };
 		D97FB785A089520D33963404 /* Builder.xib in Resources */ = {isa = PBXBuildFile; fileRef = 3BE5C2A64070316317644258 /* Builder.xib */; };
 		DB198AB824B540AC231EE9C6 /* PCProjectBuilderOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6B847208D27A30C74636F5E7 /* PCProjectBuilderOptions.m */; };
+		149D439536B3216FDAEEB975 /* PCConvertController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8F219E9CB0EB53F16947CCF2 /* PCConvertController.m */; };
 		DBE5B4466D203C4FB020C101 /* PCProjectLauncher.h in Headers */ = {isa = PBXBuildFile; fileRef = 5AE7AC79E71F966838D3847F /* PCProjectLauncher.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DDF3E450F0442B4F55858E41 /* Info.table in Resources */ = {isa = PBXBuildFile; fileRef = 5543B023727DCB45359FC135 /* Info.table */; };
 		DF0315A212059721BF97C12C /* Info-gnustep.plist in Resources */ = {isa = PBXBuildFile; fileRef = E0072987C437C7F194AE4F6F /* Info-gnustep.plist */; };
@@ -650,6 +652,7 @@
 		2AC4D8218018F5593F50DD84 /* FileMH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = FileMH.tiff; sourceTree = "<group>"; };
 		2B6278765420CCF117A569F5 /* cfile.template */ = {isa = PBXFileReference; lastKnownFileType = text; path = cfile.template; sourceTree = "<group>"; };
 		2B9E447928555DB53DCF9729 /* PCProjectBuilderOptions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCProjectBuilderOptions.h; sourceTree = "<group>"; };
+		729FAE923D5A4FD12AABFE22 /* PCConvertController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCConvertController.h; sourceTree = "<group>"; };
 		2BA1EB0193A9B99A2D92EA10 /* Plist.syntax */ = {isa = PBXFileReference; lastKnownFileType = text; path = Plist.syntax; sourceTree = "<group>"; };
 		2BC4F18B89F099A4DAA039A8 /* PCMiscPrefs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCMiscPrefs.h; sourceTree = "<group>"; };
 		2D81709F20B6E60D39EC56C5 /* PCProjectBuilder.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectBuilder.m; sourceTree = "<group>"; };
@@ -745,6 +748,7 @@
 		6B32D882C2814787D6A17F0C /* ProjectWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectWindow.xib; sourceTree = "<group>"; };
 		6B4F9C6B974196F79991E9AD /* GNUmakefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = GNUmakefile; sourceTree = "<group>"; };
 		6B847208D27A30C74636F5E7 /* PCProjectBuilderOptions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCProjectBuilderOptions.m; sourceTree = "<group>"; };
+		8F219E9CB0EB53F16947CCF2 /* PCConvertController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCConvertController.m; sourceTree = "<group>"; };
 		6C97983D6C876183B22F08FA /* CodeDebugger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CodeDebugger.h; sourceTree = "<group>"; };
 		6CC3243B3655D3577939FF53 /* Info.table */ = {isa = PBXFileReference; lastKnownFileType = text; path = Info.table; sourceTree = "<group>"; };
 		6DA9D09F8A99D11816DAC3B2 /* MainMenu-OSX.gsmarkup */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "MainMenu-OSX.gsmarkup"; sourceTree = "<group>"; };
@@ -1230,6 +1234,7 @@
 				245EF09527E869DFE6CE03E7 /* PCProjectBrowser.m */,
 				2D81709F20B6E60D39EC56C5 /* PCProjectBuilder.m */,
 				6B847208D27A30C74636F5E7 /* PCProjectBuilderOptions.m */,
+				8F219E9CB0EB53F16947CCF2 /* PCConvertController.m */,
 				BBE1F1A5862DB7262043EB30 /* PCProjectBuilderPanel.m */,
 				CADE931D95E6A1993B1E4595 /* PCProjectEditor.m */,
 				E689D881AE2403619DFD6E0C /* PCProjectInspector.m */,
@@ -1696,6 +1701,7 @@
 				C79A4E342452F90F61A4E100 /* PCProjectBrowser.h */,
 				A778DA0DC92012A79F245062 /* PCProjectBuilder.h */,
 				2B9E447928555DB53DCF9729 /* PCProjectBuilderOptions.h */,
+				729FAE923D5A4FD12AABFE22 /* PCConvertController.h */,
 				2963D76335C8197C7797E06A /* PCProjectBuilderPanel.h */,
 				4F84FFB71E27BE304EA189AF /* PCProjectEditor.h */,
 				F6205A35633BBA04EBA9415A /* PCProjectInspector.h */,
@@ -1877,6 +1883,7 @@
 				639F809F92BFF757FC2343AF /* PCProjectInspector.h in Headers */,
 				2315EBE7EDFEE8A41ADBA25C /* PCProjectBuilder.h in Headers */,
 				1564762208B2FF03C23D1F07 /* PCProjectBuilderOptions.h in Headers */,
+				A4C123B1612DD272D1371C17 /* PCConvertController.h in Headers */,
 				B5765F0E1AC21E0514CFEF87 /* PCProjectBuilderPanel.h in Headers */,
 				DBE5B4466D203C4FB020C101 /* PCProjectLauncher.h in Headers */,
 				B1EF3E8EA67D03A1FB3A4337 /* PCProjectLauncherPanel.h in Headers */,
@@ -2704,6 +2711,7 @@
 				760781D41297A865430BB746 /* PCProjectInspector.m in Sources */,
 				4DD6C2469836C04E82CE5884 /* PCProjectBuilder.m in Sources */,
 				DB198AB824B540AC231EE9C6 /* PCProjectBuilderOptions.m in Sources */,
+				149D439536B3216FDAEEB975 /* PCConvertController.m in Sources */,
 				045729CFFDBB054DCB115506 /* PCProjectBuilderPanel.m in Sources */,
 				4CD2C42FC148BBCCD6A95C5F /* PCProjectLauncher.m in Sources */,
 				88E5DE2D722ACD2E214E62BE /* PCProjectLauncherPanel.m in Sources */,

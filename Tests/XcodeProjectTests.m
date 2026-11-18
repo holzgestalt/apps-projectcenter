@@ -392,6 +392,60 @@ static void Write(NSString *root, NSString *path, NSString *contents)
   Check([contents writeToFile:file atomically:YES encoding:NSUTF8StringEncoding error:NULL], path);
 }
 
+/* Edit → Convert → To XIB...: the interfaces of a project, without the
+ * copies in build products, and their XIBs as gorm2xib writes them. */
+static void TestConvertToXIB(void)
+{
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSString      *repository = [[[NSString stringWithUTF8String:__FILE__]
+                                stringByDeletingLastPathComponent]
+                               stringByDeletingLastPathComponent];
+  NSString      *gorm = [repository stringByAppendingPathComponent:@"Framework/English.lproj/NewFile.gorm"];
+  NSString      *root = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                         [[NSProcessInfo processInfo] globallyUniqueString]];
+  NSArray       *places = @[@"English.lproj/Main.gorm", @"Sub/Panel.gorm", @"build/Copy.gorm",
+                            @"obj/Copy.gorm", @".hidden/Copy.gorm", @"App.app/Contents/Resources/Copy.gorm",
+                            @"Editor.editor/Resources/Copy.gorm"];
+  NSArray       *found;
+  NSArray       *warnings = nil;
+  NSString      *error = nil;
+  NSString      *xib;
+
+  for (NSString *place in places)
+  {
+    NSString *target = [root stringByAppendingPathComponent:place];
+    [fm createDirectoryAtPath:[target stringByDeletingLastPathComponent]
+  withIntermediateDirectories:YES attributes:nil error:NULL];
+    Check([fm copyItemAtPath:gorm toPath:target error:NULL], place);
+  }
+  Write(root, @"App.app/Contents/Info.plist", @"{}");
+  Write(root, @"Editor.editor/Resources/Info-gnustep.plist", @"{}");
+  [fm createDirectoryAtPath:[root stringByAppendingPathComponent:@"Empty.gorm"]
+withIntermediateDirectories:YES attributes:nil error:NULL];
+
+  found = [PCGormXIBWriter gormInterfacesInDirectory:root];
+  Check([found isEqual:(@[[root stringByAppendingPathComponent:@"English.lproj/Main.gorm"],
+                          [root stringByAppendingPathComponent:@"Sub/Panel.gorm"]])],
+        [NSString stringWithFormat:@"interfaces without build products, bundles and hidden folders: %@", found]);
+  xib = [PCGormXIBWriter XIBPathForGorm:[found objectAtIndex:1]];
+  Check([xib isEqual:[root stringByAppendingPathComponent:@"Sub/Panel.xib"]], @"XIB next to its .gorm");
+  Check([PCGormXIBWriter writeXIBForGormAtPath:[found objectAtIndex:1] toPath:xib
+                                  toolsVersion:[PCGormXIBWriter interfaceBuilderVersion]
+                                      warnings:&warnings error:&error], error);
+  Check([warnings count] == 2, @"theme images that the XIB leaves out");
+  if ([PCGormXIBWriter interfaceBuilderVersion])
+  {
+    Check([[NSData dataWithContentsOfFile:xib] isEqualToData:
+           [NSData dataWithContentsOfFile:[repository stringByAppendingPathComponent:
+                                           @"Framework/English.lproj/NewFile.xib"]]],
+          @"converted as gorm2xib converted ProjectCenter's interfaces");
+  }
+  Check(![PCGormXIBWriter writeXIBForGormAtPath:[root stringByAppendingPathComponent:@"Empty.gorm"]
+                                         toPath:xib toolsVersion:nil warnings:NULL error:&error]
+        && [error length], @"a .gorm without objects.gorm is not converted");
+  [fm removeItemAtPath:root error:NULL];
+}
+
 static NSString *SchemeXML(NSString *target, NSString *run, NSString *archive, BOOL runnable)
 {
   NSString *reference = [NSString stringWithFormat:@"<BuildableReference BuildableIdentifier=\"primary\" "
@@ -608,6 +662,7 @@ int main(int argc, char **argv)
       NSLog(@"EditGlyphData: %lu source files, %lu headers, %lu interfaces", (unsigned long)[[dict objectForKey:@"CLASS_FILES"] count], (unsigned long)[[dict objectForKey:@"HEADER_FILES"] count], (unsigned long)[[dict objectForKey:@"INTERFACES"] count]);
     }
     TestBuildSelection();
+    TestConvertToXIB();
     TestGormArchives();
     TestInterfaceDocument();
     TestConstraintNames();

@@ -35,40 +35,12 @@
 
 /* The installed Interface Builder version, which ibtool expects to find in
  * the document; nil without Xcode. */
-static NSString *ToolsVersion(void)
-{
-  NSTask *task = [[[NSTask alloc] init] autorelease];
-  NSPipe *pipe = [NSPipe pipe];
-  NSData *data;
-  id     plist;
-
-  [task setLaunchPath:@"/usr/bin/xcrun"];
-  [task setArguments:@[@"ibtool", @"--version", @"--output-format", @"xml1"]];
-  [task setStandardOutput:pipe];
-  [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
-  @try
-  {
-    [task launch];
-    data = [[pipe fileHandleForReading] readDataToEndOfFile];
-    [task waitUntilExit];
-  }
-  @catch (NSException *exception)
-  {
-    return nil;
-  }
-  plist = [NSPropertyListSerialization propertyListWithData:data options:0 format:NULL error:NULL];
-  return [[plist objectForKey:@"com.apple.ibtool.version"] objectForKey:@"bundle-version"];
-}
-
 int main(int argc, char **argv)
 {
   @autoreleasepool
   {
-    NSString      *source, *target, *error = nil;
-    PCGormArchive *archive;
-    NSXMLDocument *document;
-    NSArray       *warnings = nil;
-    NSData        *xml;
+    NSString *source, *target, *error = nil;
+    NSArray  *warnings = nil;
 
     if (argc < 2)
     {
@@ -77,20 +49,14 @@ int main(int argc, char **argv)
     }
     source = [[NSString stringWithUTF8String:argv[1]] stringByStandardizingPath];
     target = argc > 2 ? [NSString stringWithUTF8String:argv[2]]
-                      : [[source stringByDeletingPathExtension] stringByAppendingPathExtension:@"xib"];
-    archive = [PCGormArchive archiveWithContentsOfFile:
-               [source stringByAppendingPathComponent:@"objects.gorm"] error:&error];
-    if (archive == nil)
+                      : [PCGormXIBWriter XIBPathForGorm:source];
+    if (![PCGormXIBWriter writeXIBForGormAtPath:source
+                                         toPath:target
+                                   toolsVersion:[PCGormXIBWriter interfaceBuilderVersion]
+                                       warnings:&warnings
+                                          error:&error])
     {
       fprintf(stderr, "%s: %s\n", argv[1], [error UTF8String]);
-      return 1;
-    }
-    document = [PCGormXIBWriter documentForArchive:archive toolsVersion:ToolsVersion()
-                                          warnings:&warnings];
-    xml = [document XMLDataWithOptions:NSXMLNodePrettyPrint | NSXMLNodeCompactEmptyElement];
-    if (![xml writeToFile:target atomically:YES])
-    {
-      fprintf(stderr, "%s: cannot write %s\n", argv[1], [target UTF8String]);
       return 1;
     }
     for (NSString *warning in warnings)

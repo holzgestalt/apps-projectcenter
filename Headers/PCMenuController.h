@@ -33,6 +33,7 @@
 {
   PCProjectManager *projectManager;
   PCAppController  *appController;
+  id               convertController;
 
   BOOL             editorIsActive;
 }
@@ -80,6 +81,12 @@
 - (void)fileOpenQuickly:(id)sender;
 - (void)fileRename:(id)sender;
 - (void)fileNewUntitled:(id)sender;
+
+// Edit
+/* Adds Edit → Convert, which the interface files don't hold, so that the
+ * GNUstep (.gorm) and the macOS (.xib) menus both have it. */
+- (void)addConvertMenu;
+- (void)convertToXIB:(id)sender;
 
 // Tools
 - (void)showInspector:(id)sender;
