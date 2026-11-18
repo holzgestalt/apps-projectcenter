@@ -230,7 +230,8 @@ enum {
 #ifndef GNUSTEP
   /* Built by xcodebuild (see PCProjectBuilder): where Xcode puts it. */
   if ([[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]
-      && ![[project projectDict] objectForKey:@"XCODE_BuildScript"])
+      && ![[project projectDict] objectForKey:@"XCODE_BuildScript"]
+      && ![PCXcodeProject buildsWithGNUstepForProject:[project projectDict]])
   {
     NSString *built = [PCXcodeProject builtExecutableForProject:[project projectDict]];
 
@@ -448,11 +449,13 @@ enum {
 - (void)run:(id)sender
 {
   NSMutableArray  *args = [[NSMutableArray alloc] init];
+  BOOL            gnustep = [PCXcodeProject buildsWithGNUstepForProject:[project projectDict]];
 
-#ifdef GNUSTEP
   /* The project's GNUstep theme (GNUstep/ProjectCenter.plist). */
-  [args addObjectsFromArray:[PCXcodeProject launchArgumentsForProject:[project projectDict]]];
-#endif
+  if (gnustep)
+  {
+    [args addObjectsFromArray:[PCXcodeProject launchArgumentsForProject:[project projectDict]]];
+  }
   NSPipe          *logPipe;
   NSPipe          *errorPipe;
   NSString        *executablePath;
@@ -535,6 +538,13 @@ enum {
     [args insertObject:[@"-" stringByAppendingString:architecture] atIndex:0];
     [args insertObject:executablePath atIndex:1];
     executablePath = @"/usr/bin/arch";
+  }
+#endif
+#ifndef GNUSTEP
+  /* "My Mac (GNUstep)": GNUstep's libraries, as GNUstep.sh finds them. */
+  if (gnustep && [PCXcodeProject GNUstepEnvironment])
+  {
+    [launchTask setEnvironment:[PCXcodeProject GNUstepEnvironment]];
   }
 #endif
   [launchTask setArguments:args];

@@ -18,7 +18,9 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
      the product from DerivedData (`PCXcodeProject`); there is no debugger, as the debugger module
      needs gdb. The toolbar's scheme, destination and configuration popups (`PCProjectWindow`)
      choose the `xcodebuild` arguments; `PCXcodeProject` reads the schemes and keeps the choice
-     in the user defaults.
+     in the user defaults. Where GNUstep is installed, the destination **My Mac (GNUstep)**
+     builds with `make` in the environment of `GNUstep.sh` and runs the GNUstep build, with the
+     theme. No GNUstep is installed on the development Mac, so it was only tried with a stand-in.
    - Interfaces: each `.gorm` has a `.xib` next to it, converted once from it, which the Xcode
      targets compile. Embedded unnamed images and GNUstep theme images (`common_ret`) were not
      converted.

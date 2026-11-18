@@ -229,7 +229,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 }
 
 /* On macOS an Xcode project without a GNUstep build script is built by
- * xcodebuild, as Xcode would; elsewhere by its GNUmakefile or script. */
+ * xcodebuild, as Xcode would, unless "My Mac (GNUstep)" is chosen; elsewhere
+ * by its GNUmakefile or script. */
 - (NSArray *)_xcodebuildArgumentsForAction:(NSString *)action
 {
 #ifdef GNUSTEP
@@ -237,7 +238,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 #else
   NSDictionary *projectDict = [project projectDict];
 
-  if ([projectDict objectForKey:@"XCODE_BuildScript"] != nil)
+  if ([projectDict objectForKey:@"XCODE_BuildScript"] != nil
+      || [PCXcodeProject buildsWithGNUstepForProject:projectDict])
   {
     return nil;
   }
@@ -669,6 +671,16 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   int             ret;
 
   NSDictionary *metadata = [project projectDict];
+#ifndef GNUSTEP
+  if ([PCXcodeProject buildsWithGNUstepForProject:metadata] && [PCXcodeProject GNUstepEnvironment] == nil)
+  {
+    NSRunAlertPanel(@"GNUstep Build",
+                    @"GNUstep's environment could not be set up from %@/GNUstep.sh. "
+                    @"Choose another destination, or check the GNUstep installation.",
+                    @"OK", nil, nil, [PCXcodeProject GNUstepMakefiles]);
+    return NO;
+  }
+#endif
   if ([metadata objectForKey:@"XCODE_PROJECT_PATH"] &&
       ![metadata objectForKey:@"XCODE_BuildScript"] &&
       [self _xcodebuildArgumentsForAction:@"build"] == nil &&
@@ -800,6 +812,13 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
     [makeTask setArguments:arguments];
   }
   else [makeTask setArguments:buildArgs];
+#ifndef GNUSTEP
+  /* GNUstep's make needs the environment of GNUstep.sh. */
+  if (!_usesXcodebuild && [PCXcodeProject GNUstepEnvironment])
+  {
+    [makeTask setEnvironment:[PCXcodeProject GNUstepEnvironment]];
+  }
+#endif
   [makeTask setCurrentDirectoryPath:[project projectPath]];
   [makeTask setLaunchPath:_usesXcodebuild ? [PCXcodeProject xcodebuildPath] : buildTool];
   [makeTask setStandardOutput:stdOutPipe];

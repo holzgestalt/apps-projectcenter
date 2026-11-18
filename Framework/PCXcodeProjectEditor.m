@@ -683,7 +683,8 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
       [popUp selectItem:item];
     }
   }
-  [popUp setToolTip:@"The theme Run starts the application with on GNUstep (-GSTheme). "
+  [popUp setToolTip:@"The theme Run starts the application with on GNUstep (-GSTheme), "
+                    @"also with the destination My Mac (GNUstep) on macOS. "
                     @"Default leaves the user's own theme."];
   return popUp;
 }

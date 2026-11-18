@@ -233,7 +233,9 @@ As in Xcode, the toolbar of an Xcode project chooses what Build and Run do:
   **My Mac (Rosetta)** for x86_64 on Apple silicon with Rosetta installed, and
   **Any Mac (arm64, x86_64)** builds both. Any Mac is for building only, so Run
   is disabled, as in Xcode. With Xcode's usual settings, Debug builds only the
-  destination's architecture and Release builds both.
+  destination's architecture and Release builds both. **My Mac (GNUstep)**,
+  shown where GNUstep is installed, builds and runs with GNUstep instead (see
+  below).
 - **Configuration**: the build configuration for Build and Run (Debug,
   Release, or the project's own). A scheme starts with its Run action's
   configuration, as Xcode's Edit Scheme sets it; a different choice is kept
@@ -256,6 +258,25 @@ configuration is shown. Run starts the run target that was built for the chosen
 configuration and destination (through `arch -x86_64` for My Mac (Rosetta)). It
 does not build first. It runs under the debugger only where gdb is available,
 which macOS doesn't ship.
+
+### My Mac (GNUstep)
+
+Where GNUstep is installed on the Mac, the Destination menu also has **My Mac
+(GNUstep)**. It builds and runs the project as ProjectCenter does on GNUstep:
+
+- **Finding GNUstep:** ProjectCenter looks for `GNUstep.sh` in
+  `GNUSTEP_MAKEFILES` if it is set. Otherwise it asks `gnustep-config`, found on
+  the `PATH` or in `/usr/GNUstep/System/Tools`, `/usr/GNUstep/Local/Tools`,
+  `/usr/local/bin`, `/opt/homebrew/bin` or `/opt/local/bin`. Otherwise it tries
+  the usual makefile folders of a GNUstep, Homebrew or MacPorts install.
+  ProjectCenter looks once, when it starts.
+- **Build** runs the build tool from the Build preferences (`/usr/bin/make`) on
+  the project's GNUmakefile, or its `BuildScript`, with the environment that
+  `GNUstep.sh` sets up. The configuration chooses `debug=yes` or `debug=no`.
+- **Run** starts the GNUstep build (`Executable`, or `<Target>.app` in the
+  project folder) in the same environment, with the project's **Theme**
+  (`-GSTheme`).
+- The choice is kept per project, like the other destinations.
 
 ## GNUstep build and debug integration
 

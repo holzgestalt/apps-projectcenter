@@ -72,11 +72,32 @@
 /* The project's build configuration names ("Debug", "Release"). */
 + (NSArray *)configurationsOfProjectAtPath:(NSString *)path;
 /* The run destinations of this computer: [{Name, Destination,
- * Architecture, BuildOnly}]: "My Mac", "My Mac (Rosetta)" on Apple silicon
- * with Rosetta installed, and "Any Mac". Destination is the value of
+ * Architecture, BuildOnly, GNUstep}]: "My Mac", "My Mac (Rosetta)" on Apple
+ * silicon with Rosetta installed, "My Mac (GNUstep)" where GNUstep is
+ * installed, and "Any Mac". Destination is the value of
  * xcodebuild's -destination; BuildOnly is YES for "Any Mac", which builds
  * every architecture but cannot be run. */
 + (NSArray *)runDestinations;
+
+/* GNUstep on macOS: the "My Mac (GNUstep)" run destination, offered where
+ * GNUstep is installed, builds with GNUstep's make in the environment of
+ * GNUstep.sh, and Run starts the GNUstep build. */
+
+/* The folder of GNUstep.sh: GNUSTEP_MAKEFILES, else what gnustep-config
+ * says (found on the PATH or in the tool folders), else the first of the
+ * makefile folders that has it; nil without GNUstep. */
++ (NSString *)GNUstepMakefilesWithEnvironment:(NSDictionary *)environment
+                                  toolFolders:(NSArray *)toolFolders
+                              makefileFolders:(NSArray *)makefileFolders;
+/* The same for this process, with GNUstep's usual places, Homebrew and
+ * MacPorts. Looked up once. */
++ (NSString *)GNUstepMakefiles;
+/* The environment after sourcing GNUstep.sh, or nil. */
++ (NSDictionary *)GNUstepEnvironmentForMakefiles:(NSString *)makefiles;
++ (NSDictionary *)GNUstepEnvironment;
+/* Whether Build and Run go through GNUstep: always on GNUstep, and on macOS
+ * when "My Mac (GNUstep)" is chosen. */
++ (BOOL)buildsWithGNUstepForProject:(NSDictionary *)projectDict;
 
 /* The scheme, configuration and destination chosen for a project read by
  * +projectAtPath:error:, as {Scheme, Configuration, Destination} with the

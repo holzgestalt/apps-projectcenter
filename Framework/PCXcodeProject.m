@@ -1243,6 +1243,12 @@ static NSString *NativeArchitecture(void)
     [destinations addObject:@{@"Name": @"My Mac (Rosetta)", @"Architecture": @"x86_64",
                               @"BuildOnly": no, @"Destination": @"platform=macOS,arch=x86_64"}];
   }
+  /* GNUstep's make and libraries, where GNUstep is installed. */
+  if ([self GNUstepMakefiles])
+  {
+    [destinations addObject:@{@"Name": @"My Mac (GNUstep)", @"Architecture": native,
+                              @"BuildOnly": no, @"GNUstep": [NSNumber numberWithBool:YES]}];
+  }
   [destinations addObject:@{@"Name": @"Any Mac (arm64, x86_64)",
                             @"BuildOnly": [NSNumber numberWithBool:YES],
                             @"Destination": @"generic/platform=macOS"}];
@@ -1604,6 +1610,121 @@ static id JSONFromTool(NSString *tool, NSArray *arguments)
     }
   }
   return executable;
+}
+
+// --- GNUstep on macOS
+
+static BOOL IsGNUstepMakefiles(NSString *path)
+{
+  return [path length] && [[NSFileManager defaultManager] fileExistsAtPath:
+                           [path stringByAppendingPathComponent:@"GNUstep.sh"]];
+}
+
++ (NSString *)GNUstepMakefilesWithEnvironment:(NSDictionary *)environment
+                                  toolFolders:(NSArray *)toolFolders
+                              makefileFolders:(NSArray *)makefileFolders
+{
+  NSMutableArray *folders = [NSMutableArray array];
+  NSString       *path = [environment objectForKey:@"GNUSTEP_MAKEFILES"];
+
+  if (IsGNUstepMakefiles(path)) return path;
+  [folders addObjectsFromArray:[[environment objectForKey:@"PATH"] componentsSeparatedByString:@":"]];
+  [folders addObjectsFromArray:toolFolders];
+  for (NSString *folder in folders)
+  {
+    NSString *config = [folder stringByAppendingPathComponent:@"gnustep-config"];
+    NSData   *output;
+
+    if (![folder length] || ![[NSFileManager defaultManager] isExecutableFileAtPath:config]) continue;
+    output = RunTool(config, @[@"--variable=GNUSTEP_MAKEFILES"]);
+    path = output ? [[[[NSString alloc] initWithData:output encoding:NSUTF8StringEncoding] autorelease]
+                     stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] : nil;
+    if (IsGNUstepMakefiles(path)) return path;
+  }
+  for (path in makefileFolders)
+  {
+    if (IsGNUstepMakefiles(path)) return path;
+  }
+  return nil;
+}
+
++ (NSString *)GNUstepMakefiles
+{
+  static id makefiles = nil;
+
+  if (makefiles == nil)
+  {
+    /* A GUI application has a short PATH, so the usual places are tried too:
+     * GNUstep's own layout, Homebrew and MacPorts. */
+    makefiles = [self GNUstepMakefilesWithEnvironment:[[NSProcessInfo processInfo] environment]
+                                          toolFolders:@[@"/usr/GNUstep/System/Tools",
+                                                        @"/usr/GNUstep/Local/Tools", @"/usr/local/bin",
+                                                        @"/opt/homebrew/bin", @"/opt/local/bin"]
+                                      makefileFolders:@[@"/usr/GNUstep/System/Library/Makefiles",
+                                                        @"/usr/local/share/GNUstep/Makefiles",
+                                                        @"/opt/homebrew/share/GNUstep/Makefiles",
+                                                        @"/opt/local/GNUstep/System/Library/Makefiles",
+                                                        @"/opt/local/share/GNUstep/Makefiles"]];
+    makefiles = makefiles ? [makefiles retain] : [[NSNull null] retain];
+  }
+  return makefiles == [NSNull null] ? nil : makefiles;
+}
+
++ (NSDictionary *)GNUstepEnvironmentForMakefiles:(NSString *)makefiles
+{
+  NSData              *output;
+  NSString            *text;
+  NSMutableDictionary *environment = [NSMutableDictionary dictionary];
+  NSString            *last = nil;
+
+  if (!IsGNUstepMakefiles(makefiles)) return nil;
+  /* The environment GNUstep.sh sets up, as a shell that sources it has. */
+  output = RunTool(@"/bin/sh", @[@"-c", @". \"$1/GNUstep.sh\" >/dev/null 2>&1; exec /usr/bin/env",
+                                 @"sh", makefiles]);
+  text = output ? [[[NSString alloc] initWithData:output encoding:NSUTF8StringEncoding] autorelease] : nil;
+  for (NSString *line in [text componentsSeparatedByString:@"\n"])
+  {
+    NSRange equals = [line rangeOfString:@"="];
+    NSString *name = equals.location == NSNotFound ? nil : [line substringToIndex:equals.location];
+
+    if ([name length] && [name rangeOfCharacterFromSet:[[NSCharacterSet characterSetWithCharactersInString:
+          @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"] invertedSet]].location
+        == NSNotFound)
+    {
+      [environment setObject:[line substringFromIndex:equals.location + 1] forKey:name];
+      last = name;
+    }
+    else if (last && [line length])
+    {
+      /* A value with a line break. */
+      [environment setObject:[NSString stringWithFormat:@"%@\n%@", [environment objectForKey:last], line]
+                      forKey:last];
+    }
+  }
+  return [environment objectForKey:@"GNUSTEP_MAKEFILES"] ? environment : nil;
+}
+
++ (NSDictionary *)GNUstepEnvironment
+{
+  static id environment = nil;
+
+  if (environment == nil)
+  {
+    environment = [self GNUstepEnvironmentForMakefiles:[self GNUstepMakefiles]];
+    environment = environment ? [environment retain] : [[NSNull null] retain];
+  }
+  return environment == [NSNull null] ? nil : environment;
+}
+
++ (BOOL)buildsWithGNUstepForProject:(NSDictionary *)projectDict
+{
+#ifdef GNUSTEP
+  return YES;
+#else
+  if ([projectDict objectForKey:PCXcodeProjectMarker] == nil) return NO;
+  return [[[[self buildSelectionForProject:projectDict] objectForKey:@"Destination"]
+           objectForKey:@"GNUstep"] boolValue];
+#endif
 }
 
 @end

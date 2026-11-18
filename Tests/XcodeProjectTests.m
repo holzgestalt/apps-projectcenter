@@ -449,6 +449,53 @@ static void TestGNUstepSettings(void)
   [fm removeItemAtPath:root error:NULL];
 }
 
+/* "My Mac (GNUstep)": finding GNUstep and the environment of GNUstep.sh. */
+static void TestGNUstepOnMac(void)
+{
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSString      *root = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                         [[NSProcessInfo processInfo] globallyUniqueString]];
+  NSString      *makefiles = [root stringByAppendingPathComponent:@"GNUstep/Makefiles"];
+  NSString      *tools = [root stringByAppendingPathComponent:@"Tools"];
+  NSString      *missing = [root stringByAppendingPathComponent:@"Missing"];
+  NSDictionary  *environment;
+
+  Write(root, @"GNUstep/Makefiles/GNUstep.sh",
+        [NSString stringWithFormat:@"GNUSTEP_MAKEFILES='%@'\nexport GNUSTEP_MAKEFILES\n"
+         @"PC_TEST_LINES='first\nsecond'\nexport PC_TEST_LINES\necho noise\n", makefiles]);
+  Write(root, @"Tools/gnustep-config", [NSString stringWithFormat:
+        @"#!/bin/sh\n[ \"$1\" = --variable=GNUSTEP_MAKEFILES ] && echo '%@'\n", makefiles]);
+  [fm setAttributes:@{NSFilePosixPermissions: @0755}
+       ofItemAtPath:[tools stringByAppendingPathComponent:@"gnustep-config"] error:NULL];
+
+  Check([[PCXcodeProject GNUstepMakefilesWithEnvironment:@{@"GNUSTEP_MAKEFILES": makefiles}
+                                             toolFolders:@[] makefileFolders:@[]] isEqual:makefiles],
+        @"GNUSTEP_MAKEFILES of the environment");
+  Check([[PCXcodeProject GNUstepMakefilesWithEnvironment:@{@"PATH": [NSString stringWithFormat:@"%@:%@", missing, tools]}
+                                             toolFolders:@[] makefileFolders:@[]] isEqual:makefiles],
+        @"gnustep-config on the PATH");
+  Check([[PCXcodeProject GNUstepMakefilesWithEnvironment:@{@"GNUSTEP_MAKEFILES": missing}
+                                             toolFolders:@[missing, tools] makefileFolders:@[]] isEqual:makefiles],
+        @"gnustep-config in the usual tool folders, past a wrong GNUSTEP_MAKEFILES");
+  Check([[PCXcodeProject GNUstepMakefilesWithEnvironment:@{} toolFolders:@[]
+                                         makefileFolders:@[missing, makefiles]] isEqual:makefiles],
+        @"a usual makefile folder");
+  Check([PCXcodeProject GNUstepMakefilesWithEnvironment:@{} toolFolders:@[missing]
+                                         makefileFolders:@[missing]] == nil, @"no GNUstep");
+
+  environment = [PCXcodeProject GNUstepEnvironmentForMakefiles:makefiles];
+  Check([[environment objectForKey:@"GNUSTEP_MAKEFILES"] isEqual:makefiles]
+        && [[environment objectForKey:@"PC_TEST_LINES"] isEqual:@"first\nsecond"]
+        && [environment objectForKey:@"HOME"] != nil,
+        [NSString stringWithFormat:@"the environment GNUstep.sh sets up: %@", environment]);
+  Check([PCXcodeProject GNUstepEnvironmentForMakefiles:missing] == nil, @"no environment without GNUstep.sh");
+#ifndef GNUSTEP
+  Check(![PCXcodeProject buildsWithGNUstepForProject:@{@"PROJECT_NAME": @"Plain"}],
+        @"a ProjectCenter project on macOS has no destination");
+#endif
+  [fm removeItemAtPath:root error:NULL];
+}
+
 /* The General pane's edits: one entry of project.pbxproj or the Info.plist
  * at a time, the rest of the file unchanged. */
 static void TestProjectEditing(void)
@@ -801,6 +848,7 @@ int main(int argc, char **argv)
     TestConvertToXIB();
     TestGNUstepSettings();
     TestProjectEditing();
+    TestGNUstepOnMac();
     TestGormArchives();
     TestInterfaceDocument();
     TestConstraintNames();
