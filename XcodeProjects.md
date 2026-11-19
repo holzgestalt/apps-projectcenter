@@ -156,7 +156,10 @@ General is laid out in sections, as in Xcode. For a target:
   path is saved when you press Return or leave the field.
 
 What Xcode's General pane has only for the App Store or for Xcode itself (App
-Category, Supported Destinations, Development Assets) is left out.
+Category, Supported Destinations, Development Assets) is left out. Every
+field is always shown, empty when the project has no value for it; a field
+that can't be edited here, such as an Info.plist key of a target without an
+Info.plist, is shown as plain text or as a disabled popup.
 
 Values that Xcode's General pane edits can be edited here too, and are saved
 where Xcode saves them:

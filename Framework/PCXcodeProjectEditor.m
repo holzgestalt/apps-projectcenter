@@ -18,7 +18,8 @@
 
 #import <ProjectCenter/PCProject.h>
 
-/* The General pane's form, laid out from the top. */
+/* The document of the General pane's scroll view, which holds the form at
+ * its top. */
 @interface PCFormView : NSView
 @end
 
@@ -132,106 +133,107 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
 
 @implementation PCXcodeProjectEditor
 
-static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView *container)
-{
-  NSScrollView *scroll = [[[NSScrollView alloc] initWithFrame:[container bounds]] autorelease];
-  NSTableView *table = [[[NSTableView alloc] initWithFrame:[[scroll contentView] bounds]] autorelease];
-  NSUInteger i;
-
-  [scroll setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [scroll setHasVerticalScroller:YES];
-  [scroll setHasHorizontalScroller:YES];
-  [scroll setAutohidesScrollers:YES];
-  [scroll setBorderType:NSNoBorder];
-  for (i = 0; i < [titles count]; i++)
-  {
-    NSTableColumn *column = [[[NSTableColumn alloc] initWithIdentifier:
-                              [NSString stringWithFormat:@"%lu", (unsigned long)i]] autorelease];
-    [[column headerCell] setStringValue:[titles objectAtIndex:i]];
-    [column setWidth:i == 0 ? firstWidth : 260];
-    [column setEditable:NO];
-    [table addTableColumn:column];
-  }
-  [table setColumnAutoresizingStyle:NSTableViewNoColumnAutoresizing];
-  [table setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [table setDataSource:owner];
-  [table setDelegate:owner];
-  [scroll setDocumentView:table];
-  [container addSubview:scroll];
-  return table;
-}
-
 - (id)initWithProject:(PCProject *)aProject
 {
   if ((self = [super init]))
   {
-    NSRect frame = NSMakeRect(0, 0, 800, 500);
     NSView *list;
-    NSArray *titles = [NSArray arrayWithObjects:@"General", @"Build Settings", @"Build Phases", nil];
-    NSUInteger i;
 
     project = aProject;
-    view = [[NSView alloc] initWithFrame:frame];
-    [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    if ([NSBundle loadNibNamed:@"ProjectEditor" owner:self] == NO || view == nil)
+    {
+      NSLog(@"PCXcodeProjectEditor: error loading ProjectEditor");
+      [self release];
+      return nil;
+    }
 
     targetList = [[PCTargetList alloc] initWithProject:aProject];
     targetList->editor = self;
     list = [targetList view];
-    [list setFrame:NSMakeRect(0, 0, 200, NSHeight(frame))];
-    [list setAutoresizingMask:NSViewHeightSizable | NSViewMaxXMargin];
-    [view addSubview:list];
+    [list setFrame:[targetListArea bounds]];
+    [list setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [targetListArea addSubview:list];
 
-    /* Like Xcode: a segmented control selects the pane. */
-    sections = [[[NSSegmentedControl alloc] initWithFrame:
-                 NSMakeRect(208 + (NSWidth(frame) - 208 - 330) / 2, NSHeight(frame) - 32, 330, 24)] autorelease];
-    [sections setSegmentCount:[titles count]];
-    for (i = 0; i < [titles count]; i++)
-    {
-      [sections setLabel:[titles objectAtIndex:i] forSegment:i];
-      [sections setWidth:110 forSegment:i];
-    }
-    [[sections cell] setTrackingMode:NSSegmentSwitchTrackingSelectOne];
     [sections setSelectedSegment:0];
-    [sections setTarget:self];
-    [sections setAction:@selector(sectionChanged:)];
-    [sections setAutoresizingMask:NSViewMinXMargin | NSViewMaxXMargin | NSViewMinYMargin];
-    [view addSubview:sections];
+    [tabs selectTabViewItemAtIndex:0];
 
-    tabs = [[[NSTabView alloc] initWithFrame:NSMakeRect(208, 0, NSWidth(frame) - 208, NSHeight(frame) - 40)] autorelease];
-    [tabs setTabViewType:NSNoTabsNoBorder];
-    [tabs setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    for (i = 0; i < [titles count]; i++)
-    {
-      NSTabViewItem *item = [[[NSTabViewItem alloc] initWithIdentifier:[titles objectAtIndex:i]] autorelease];
-      NSView *content = [[[NSView alloc] initWithFrame:[tabs contentRect]] autorelease];
-      [content setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-      [item setLabel:[titles objectAtIndex:i]];
-      [item setView:content];
-      [tabs addTabViewItem:item];
-    }
-    [view addSubview:tabs];
-    generalScroll = [[[NSScrollView alloc] initWithFrame:[[[tabs tabViewItemAtIndex:0] view] bounds]]
-                     autorelease];
-    [generalScroll setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [generalScroll setHasVerticalScroller:YES];
-    [generalScroll setAutohidesScrollers:YES];
-    [generalScroll setBorderType:NSNoBorder];
-    [generalScroll setDrawsBackground:NO];
-    [[[tabs tabViewItemAtIndex:0] view] addSubview:generalScroll];
-    settingsTable = Table([NSArray arrayWithObject:@"Setting"], 300, self,
-                          [[tabs tabViewItemAtIndex:1] view]);
-    phasesTable = Table([NSArray arrayWithObjects:@"Phase", @"Contents", nil], 240, self,
-                        [[tabs tabViewItemAtIndex:2] view]);
+    /* The fields of the forms, by the name of their row in -generalRows. */
+    projectControls = [[NSDictionary alloc] initWithObjectsAndKeys:
+                       projectNameField, @"Project",
+                       projectLocationField, @"Location",
+                       projectFormatField, @"Project Format",
+                       developmentRegionPopUp, @"Development Region",
+                       localizationsField, @"Localizations",
+                       projectConfigurationsField, @"Configurations",
+                       targetsField, @"Targets", nil];
+    targetControls = [[NSDictionary alloc] initWithObjectsAndKeys:
+                      targetNameField, @"Target",
+                      typeField, @"Type",
+                      productNameField, @"Product Name",
+                      displayNameField, @"Display Name",
+                      bundleIdentifierField, @"Bundle Identifier",
+                      versionField, @"Version",
+                      buildField, @"Build",
+                      minimumMacOSPopUp, @"Minimum macOS",
+                      mainInterfacePopUp, @"Main Interface",
+                      infoPlistField, @"Info.plist",
+                      appIconPopUp, @"App Icon",
+                      targetConfigurationsField, @"Configurations",
+                      dependenciesField, @"Dependencies",
+                      buildToolField, @"Build Tool",
+                      buildScriptField, @"Build Script",
+                      executableField, @"Executable",
+                      themePopUp, @"Theme", nil];
+    targetFormHeight = NSHeight([targetForm frame]);
+
+    formContainer = [[PCFormView alloc] initWithFrame:NSMakeRect(0, 0, [generalScroll contentSize].width, 100)];
+    [formContainer setAutoresizingMask:NSViewWidthSizable];
+    [generalScroll setDocumentView:formContainer];
+    /* The form is as wide as the scroll view. */
+    [[generalScroll contentView] setPostsFrameChangedNotifications:YES];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(_sizeGeneralForm)
+                                                 name:NSViewFrameDidChangeNotification
+                                               object:[generalScroll contentView]];
+    /* The split view resizes its panes in proportion until it is in a
+     * window; then the target list gets its width once. */
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(_placeDivider:)
+                                                 name:NSViewFrameDidChangeNotification
+                                               object:splitView];
   }
   return self;
+}
+
+- (void)_placeDivider:(NSNotification *)notification
+{
+  if ([splitView window] == nil || NSWidth([splitView frame]) < 400) return;
+  [splitView setPosition:200 ofDividerAtIndex:0];
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:NSViewFrameDidChangeNotification
+                                                object:splitView];
 }
 
 - (void)dealloc
 {
   [settingsTable setDataSource:nil]; [settingsTable setDelegate:nil];
   [phasesTable setDataSource:nil]; [phasesTable setDelegate:nil];
+  [frameworksTable setDataSource:nil]; [frameworksTable setDelegate:nil];
+  for (NSTextField *field in [[projectControls allValues] arrayByAddingObjectsFromArray:[targetControls allValues]])
+  {
+    if ([field isKindOfClass:[NSTextField class]]) [field setDelegate:nil];
+  }
+  [NSObject cancelPreviousPerformRequestsWithTarget:self];
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
   [targetList release];
+  /* The nib's top-level objects. */
   [view release];
+  [projectForm release];
+  [targetForm release];
+  [formContainer release];
+  [projectControls release];
+  [targetControls release];
+  [frameworkRows release];
   [overview release];
   [selection release];
   [generalRows release];
@@ -259,6 +261,7 @@ static NSTableView *Table(NSArray *titles, CGFloat firstWidth, id owner, NSView 
 - (NSArray *)generalRows { return generalRows; }
 - (NSArray *)settingRows { return settingRows; }
 - (NSArray *)phaseRows { return phaseRows; }
+- (NSArray *)frameworkRows { return frameworkRows; }
 - (NSArray *)configurationNames { return configurationNames; }
 - (NSOutlineView *)targetOutlineView { return [targetList outlineView]; }
 
@@ -640,27 +643,12 @@ static NSArray *NamesWithExtensions(NSArray *files, NSArray *extensions)
 
 // --- The General form
 
-static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
+/* The themes, Default passing none: the user's own GSTheme default applies. */
+- (void)_fillThemePopUp:(NSPopUpButton *)popUp selected:(NSString *)theme
 {
-  NSTextField *field = [[[NSTextField alloc] initWithFrame:frame] autorelease];
+  NSArray    *installed = [PCXcodeProject installedThemes];
+  NSMenuItem *item;
 
-  [field setStringValue:text];
-  [field setEditable:editable];
-  [field setSelectable:YES];
-  [field setBezeled:editable];
-  [field setDrawsBackground:editable];
-  [[field cell] setScrollable:YES];
-  [[field cell] setLineBreakMode:NSLineBreakByTruncatingMiddle];
-  return field;
-}
-
-- (NSPopUpButton *)_themePopUp:(NSRect)frame selected:(NSString *)theme
-{
-  NSPopUpButton *popUp = [[[NSPopUpButton alloc] initWithFrame:frame pullsDown:NO] autorelease];
-  NSArray       *installed = [PCXcodeProject installedThemes];
-  NSMenuItem    *item;
-
-  /* Default passes no theme: the user's own GSTheme default applies. */
   [popUp addItemWithTitle:@"Default"];
   [[popUp menu] addItem:[NSMenuItem separatorItem]];
   [popUp addItemWithTitle:@"GNUstep"];
@@ -683,19 +671,14 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
       [popUp selectItem:item];
     }
   }
-  [popUp setToolTip:@"The theme Run starts the application with on GNUstep (-GSTheme), "
-                    @"also with the destination My Mac (GNUstep) on macOS. "
-                    @"Default leaves the user's own theme."];
-  return popUp;
 }
 
-/* A popup of [Title, Value] choices; a current value that is not among them
- * is added, so it is shown as it is. */
-- (NSPopUpButton *)_popUp:(NSRect)frame choices:(NSArray *)list selected:(NSString *)current
+/* [Title, Value] choices; a current value that is not among them is added,
+ * so it is shown as it is. */
+- (void)_fillPopUp:(NSPopUpButton *)popUp choices:(NSArray *)list selected:(NSString *)current
 {
-  NSPopUpButton *popUp = [[[NSPopUpButton alloc] initWithFrame:frame pullsDown:NO] autorelease];
-  NSMenuItem    *selected = nil;
-  NSMenuItem    *item;
+  NSMenuItem *selected = nil;
+  NSMenuItem *item;
 
   if (![current length]) current = nil;
   for (NSArray *choice in list)
@@ -712,93 +695,127 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
     [selected setRepresentedObject:current];
   }
   if (selected) [popUp selectItem:selected];
-  return popUp;
 }
 
-- (void)_layoutGeneralForm
+/* The row of -generalRows that a field of the forms shows, or NSNotFound. */
+- (NSUInteger)_generalRowNamed:(NSString *)name
 {
-  CGFloat    width = MAX(400, [generalScroll contentSize].width);
-  CGFloat    labelWidth = 180;
-  CGFloat    x = labelWidth + 32;
-  CGFloat    y = 16;
-  NSPoint    scrolled = [[generalScroll contentView] bounds].origin;
-  PCFormView *form = [[[PCFormView alloc] initWithFrame:NSMakeRect(0, 0, width, 100)] autorelease];
-  NSFont     *bold = [NSFont boldSystemFontOfSize:0];
   NSUInteger index;
 
-  [form setAutoresizingMask:NSViewWidthSizable];
-  for (index = 0; index < [generalRows count]; index++)
+  for (index = 0; name && index < [generalRows count]; index++)
   {
     NSArray *row = [generalRows objectAtIndex:index];
 
-    if ([row count] == 1)
-    {
-      /* A section: its title over a line, as in Xcode. */
-      NSTextField *title = FormField(NSMakeRect(20, y + 8, width - 40, 18), [row objectAtIndex:0], NO);
-      NSBox       *line = [[[NSBox alloc] initWithFrame:NSMakeRect(20, y + 30, width - 40, 1)] autorelease];
+    if ([row count] > 1 && [[row objectAtIndex:0] isEqual:name]) return index;
+  }
+  return NSNotFound;
+}
 
-      [title setFont:bold];
-      [title setSelectable:NO];
-      [title setAutoresizingMask:NSViewWidthSizable];
-      [line setBoxType:NSBoxSeparator];
-      [line setAutoresizingMask:NSViewWidthSizable];
-      [form addSubview:title];
-      [form addSubview:line];
-      y += 40;
-      continue;
-    }
+- (NSUInteger)_generalRowOfControl:(id)control
+{
+  NSDictionary *controls = selection == overview ? projectControls : targetControls;
 
-    NSString     *text = [row objectAtIndex:1];
+  return [self _generalRowNamed:[[controls allKeysForObject:control] lastObject]];
+}
+
+/* The form shown, at the top of the scroll view and as wide as it; the
+ * target form without its GNUstep section when that is hidden. */
+- (void)_sizeGeneralForm
+{
+  NSView  *form = [[formContainer subviews] lastObject];
+  CGFloat width = [generalScroll contentSize].width;
+  CGFloat height = NSHeight([form frame]);
+
+  if (form == nil) return;
+  if (form == targetForm)
+  {
+    height = targetFormHeight - ([gnustepSection isHidden] ? NSHeight([gnustepSection frame]) : 0);
+  }
+  [formContainer setFrameSize:NSMakeSize(width, MAX(height, [generalScroll contentSize].height))];
+  [form setFrame:NSMakeRect(0, 0, width, height)];
+}
+
+/* Fills the fields of the form from -generalRows. A field whose row has an
+ * edit can be changed; the others show their value, or nothing. */
+- (void)_showGeneralForm
+{
+  BOOL         projectShown = (selection == overview);
+  NSView       *form = projectShown ? projectForm : targetForm;
+  NSDictionary *controls = projectShown ? projectControls : targetControls;
+  NSPoint      scrolled = [[generalScroll contentView] bounds].origin;
+  NSString     *projectPath = [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
+
+  for (NSString *name in controls)
+  {
+    id           control = [controls objectForKey:name];
+    NSUInteger   index = [self _generalRowNamed:name];
+    NSArray      *row = index == NSNotFound ? nil : [generalRows objectAtIndex:index];
+    NSString     *text = row ? [row objectAtIndex:1] : @"";
     NSDictionary *how = [row count] > 2 ? [row objectAtIndex:2] : nil;
-    NSTextField  *name = FormField(NSMakeRect(20, y + 3, labelWidth, 18), [row objectAtIndex:0], NO);
-    NSView       *control;
 
-    [name setAlignment:NSRightTextAlignment];
-    [name setSelectable:NO];
-    [form addSubview:name];
-    if ([[how objectForKey:@"Control"] isEqual:@"Theme"] || [how objectForKey:@"Choices"])
+    if ([control isKindOfClass:[NSPopUpButton class]])
     {
-      NSRect        frame = NSMakeRect(x, y, MIN(260, width - x - 20), 24);
-      NSPopUpButton *popUp = ([how objectForKey:@"Choices"]
-                              ? [self _popUp:frame choices:[how objectForKey:@"Choices"] selected:text]
-                              : [self _themePopUp:frame selected:
-                                 [[PCXcodeProject GNUstepSettingsOfProjectAtPath:
-                                   [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]]
-                                  objectForKey:@"Theme"]]);
-
-      [popUp setTag:index];
-      [popUp setTarget:self];
-      [popUp setAction:@selector(generalChoiceChanged:)];
-      control = popUp;
-    }
-    else if (how)
-    {
-      NSTextField *field = FormField(NSMakeRect(x, y + 1, width - x - 20, 22), text, YES);
-
-      if ([how objectForKey:@"Placeholder"])
+      [control removeAllItems];
+      if ([[how objectForKey:@"Control"] isEqual:@"Theme"])
       {
-        [[field cell] setPlaceholderString:[how objectForKey:@"Placeholder"]];
+        [self _fillThemePopUp:control
+                     selected:[[PCXcodeProject GNUstepSettingsOfProjectAtPath:projectPath] objectForKey:@"Theme"]];
       }
-      [field setTag:index];
-      [field setTarget:self];
-      [field setAction:@selector(generalFieldChanged:)];
-      [field setDelegate:(id)self];
-      [field setAutoresizingMask:NSViewWidthSizable];
-      control = field;
+      else if ([how objectForKey:@"Choices"])
+      {
+        [self _fillPopUp:control choices:[how objectForKey:@"Choices"] selected:text];
+      }
+      else
+      {
+        [control addItemWithTitle:([text length] ? text : @"None")];
+      }
+      [control setEnabled:(how != nil)];
     }
     else
     {
-      control = FormField(NSMakeRect(x, y + 3, width - x - 20, 18), text, NO);
-      [control setAutoresizingMask:NSViewWidthSizable];
+      /* A field being edited keeps what is typed. */
+      if ([control currentEditor] == nil) [control setStringValue:text];
+      [control setEditable:(how != nil)];
+      [control setBezeled:(how != nil)];
+      [control setDrawsBackground:(how != nil)];
+      [[control cell] setPlaceholderString:[how objectForKey:@"Placeholder"]];
     }
-    [control setToolTip:([how objectForKey:@"ToolTip"] ? [how objectForKey:@"ToolTip"]
-                         : how ? [self _whereSaved:how] : text)];
-    [form addSubview:control];
-    y += 28;
+    [control setToolTip:([[how objectForKey:@"Control"] isEqual:@"Theme"]
+                         ? @"The theme Run starts the application with on GNUstep (-GSTheme), "
+                           @"also with the destination My Mac (GNUstep) on macOS. "
+                           @"Default leaves the user's own theme."
+                         : [how objectForKey:@"ToolTip"] ? [how objectForKey:@"ToolTip"]
+                         : how ? [self _whereSaved:how] : ([text length] ? text : nil))];
   }
-  [form setFrameSize:NSMakeSize(width, MAX(y + 16, [generalScroll contentSize].height))];
-  [generalScroll setDocumentView:form];
-  /* Rebuilt after an edit: keep the place. */
+
+  if (!projectShown)
+  {
+    NSMutableArray *frameworks = [NSMutableArray array];
+    BOOL           gnustep = [self _generalRowNamed:@"Build Script"] != NSNotFound;
+
+    /* The rows without a name are the Frameworks and Libraries. */
+    for (NSArray *row in generalRows)
+    {
+      if ([row count] > 1 && [[row objectAtIndex:0] isEqual:@""])
+      {
+        [frameworks addObject:[row subarrayWithRange:NSMakeRange(1, 1)]];
+      }
+    }
+    ASSIGN(frameworkRows, frameworks);
+    [frameworksTable reloadData];
+    /* The GNUstep section, last in the form, only for the target
+     * ProjectCenter builds. */
+    [gnustepSection setHidden:!gnustep];
+  }
+
+  if ([form superview] != formContainer)
+  {
+    [projectForm removeFromSuperview];
+    [targetForm removeFromSuperview];
+    [formContainer addSubview:form];
+  }
+  [self _sizeGeneralForm];
+  /* Filled again after an edit: keep the place. */
   [[generalScroll contentView] scrollToPoint:scrolled];
   [generalScroll reflectScrolledClipView:[generalScroll contentView]];
 }
@@ -915,7 +932,9 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
 
 - (void)generalFieldChanged:(id)sender
 {
-  [self setGeneralValue:[sender stringValue] atRow:[sender tag]];
+  NSUInteger index = [self _generalRowOfControl:sender];
+
+  if (index != NSNotFound) [self setGeneralValue:[sender stringValue] atRow:index];
 }
 
 - (void)controlTextDidEndEditing:(NSNotification *)notification
@@ -925,7 +944,9 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
 
 - (void)generalChoiceChanged:(id)sender
 {
-  [self setGeneralValue:[[sender selectedItem] representedObject] atRow:[sender tag]];
+  NSUInteger index = [self _generalRowOfControl:sender];
+
+  if (index != NSNotFound) [self setGeneralValue:[[sender selectedItem] representedObject] atRow:index];
 }
 
 - (void)_buildSettingRows
@@ -1006,8 +1027,7 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
   [self _buildGeneralRows];
   [self _buildSettingRows];
   [self _buildPhaseRows];
-  /* The project has no build phases of its own. */
-  [self _layoutGeneralForm];
+  [self _showGeneralForm];
   [settingsTable reloadData];
   [phasesTable reloadData];
 }
@@ -1015,6 +1035,7 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
 - (NSArray *)_rowsForTable:(NSTableView *)table
 {
   if (table == settingsTable) return settingRows;
+  if (table == frameworksTable) return frameworkRows;
   return phaseRows;
 }
 

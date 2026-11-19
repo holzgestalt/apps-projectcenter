@@ -1,9 +1,9 @@
 /*
  PCXcodeProjectEditor.h
 
- Read-only project editor for Xcode projects: the project and its targets,
- with general information, build settings and build phases, as shown by
- Xcode when the project is selected in the navigator.
+ Project editor for Xcode projects: the project and its targets, with
+ general information, build settings and build phases, as shown by Xcode
+ when the project is selected in the navigator.
 
  This file is part of GNUstep ProjectCenter.
 
@@ -18,22 +18,62 @@
 @class PCProject;
 @class PCTargetList;
 
+/* The views are in ProjectEditor.xib; the General pane has a form for the
+ * project and one for a target, whose fields are filled from -generalRows. */
 @interface PCXcodeProjectEditor : NSObject
 {
   PCProject     *project;          // not retained
   NSDictionary  *overview;
   NSDictionary  *selection;        // the project or one target
-  NSView        *view;
   PCTargetList  *targetList;
-  NSSegmentedControl *sections;
-  NSTabView     *tabs;
-  NSScrollView  *generalScroll;    // the General form
-  NSTableView   *settingsTable;
-  NSTableView   *phasesTable;
   NSArray       *generalRows;      // [Section] or [Property, Value(, Edit)]
   NSArray       *settingRows;      // [Setting, value per configuration...]
   NSArray       *phaseRows;        // [Phase, Item]
+  NSArray       *frameworkRows;    // [Framework]
   NSArray       *configurationNames;
+  NSDictionary  *projectControls;  // row name -> field of projectForm
+  NSDictionary  *targetControls;   // row name -> field of targetForm
+  NSView        *formContainer;    // the General scroll view's document
+  CGFloat       targetFormHeight;  // with the GNUstep section
+
+  IBOutlet NSView             *view;
+  IBOutlet NSSplitView        *splitView;
+  IBOutlet NSView             *targetListArea;
+  IBOutlet NSSegmentedControl *sections;
+  IBOutlet NSTabView          *tabs;
+  IBOutlet NSScrollView       *generalScroll;
+  IBOutlet NSTableView        *settingsTable;
+  IBOutlet NSTableView        *phasesTable;
+
+  IBOutlet NSView             *projectForm;
+  IBOutlet NSTextField        *projectNameField;
+  IBOutlet NSTextField        *projectLocationField;
+  IBOutlet NSTextField        *projectFormatField;
+  IBOutlet NSPopUpButton      *developmentRegionPopUp;
+  IBOutlet NSTextField        *localizationsField;
+  IBOutlet NSTextField        *projectConfigurationsField;
+  IBOutlet NSTextField        *targetsField;
+
+  IBOutlet NSView             *targetForm;
+  IBOutlet NSTextField        *targetNameField;
+  IBOutlet NSTextField        *typeField;
+  IBOutlet NSTextField        *productNameField;
+  IBOutlet NSTextField        *displayNameField;
+  IBOutlet NSTextField        *bundleIdentifierField;
+  IBOutlet NSTextField        *versionField;
+  IBOutlet NSTextField        *buildField;
+  IBOutlet NSPopUpButton      *minimumMacOSPopUp;
+  IBOutlet NSPopUpButton      *mainInterfacePopUp;
+  IBOutlet NSTextField        *infoPlistField;
+  IBOutlet NSPopUpButton      *appIconPopUp;
+  IBOutlet NSTableView        *frameworksTable;
+  IBOutlet NSTextField        *targetConfigurationsField;
+  IBOutlet NSTextField        *dependenciesField;
+  IBOutlet NSTextField        *buildToolField;
+  IBOutlet NSView             *gnustepSection;
+  IBOutlet NSTextField        *buildScriptField;
+  IBOutlet NSTextField        *executableField;
+  IBOutlet NSPopUpButton      *themePopUp;
 }
 
 - (id)initWithProject:(PCProject *)aProject;
@@ -62,6 +102,8 @@
 - (BOOL)setGNUstepSetting:(NSString *)value forKey:(NSString *)key;
 - (NSArray *)settingRows;
 - (NSArray *)phaseRows;
+/* The target's Frameworks and Libraries. */
+- (NSArray *)frameworkRows;
 - (NSArray *)configurationNames;
 - (NSOutlineView *)targetOutlineView;
 

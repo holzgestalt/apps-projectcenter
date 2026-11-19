@@ -1,0 +1,1098 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="25503" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="25503"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="PCXcodeProjectEditor">
+            <connections>
+                <outlet property="appIconPopUp" destination="e313" id="o463"/>
+                <outlet property="buildField" destination="e247" id="o459"/>
+                <outlet property="buildScriptField" destination="e396" id="o468"/>
+                <outlet property="buildToolField" destination="e377" id="o467"/>
+                <outlet property="bundleIdentifierField" destination="e223" id="o457"/>
+                <outlet property="dependenciesField" destination="e367" id="o466"/>
+                <outlet property="developmentRegionPopUp" destination="e109" id="o448"/>
+                <outlet property="displayNameField" destination="e211" id="o456"/>
+                <outlet property="executableField" destination="e408" id="o469"/>
+                <outlet property="frameworksTable" destination="e335" id="o464"/>
+                <outlet property="generalScroll" destination="e5" id="o440"/>
+                <outlet property="gnustepSection" destination="v432" id="o471"/>
+                <outlet property="infoPlistField" destination="e292" id="o462"/>
+                <outlet property="localizationsField" destination="e121" id="o449"/>
+                <outlet property="mainInterfacePopUp" destination="e280" id="o461"/>
+                <outlet property="minimumMacOSPopUp" destination="e268" id="o460"/>
+                <outlet property="phasesTable" destination="e20" id="o442"/>
+                <outlet property="productNameField" destination="e190" id="o455"/>
+                <outlet property="projectConfigurationsField" destination="e140" id="o450"/>
+                <outlet property="projectForm" destination="v160" id="o452"/>
+                <outlet property="projectFormatField" destination="e90" id="o447"/>
+                <outlet property="projectLocationField" destination="e80" id="o446"/>
+                <outlet property="projectNameField" destination="e70" id="o445"/>
+                <outlet property="sections" destination="e2" id="o439"/>
+                <outlet property="settingsTable" destination="e10" id="o441"/>
+                <outlet property="splitView" destination="split1" id="oSplit"/>
+                <outlet property="tabs" destination="tabs31" id="o443"/>
+                <outlet property="targetConfigurationsField" destination="e357" id="o465"/>
+                <outlet property="targetForm" destination="v437" id="o472"/>
+                <outlet property="targetListArea" destination="v1" id="o438"/>
+                <outlet property="targetNameField" destination="e170" id="o453"/>
+                <outlet property="targetsField" destination="e150" id="o451"/>
+                <outlet property="themePopUp" destination="e420" id="o470"/>
+                <outlet property="typeField" destination="e180" id="o454"/>
+                <outlet property="versionField" destination="e235" id="o458"/>
+                <outlet property="view" destination="v60" id="o444"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView id="v60" userLabel="Project Editor">
+            <rect key="frame" x="0.0" y="0.0" width="800" height="500"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <splitView dividerStyle="thin" vertical="YES" translatesAutoresizingMaskIntoConstraints="NO" id="split1">
+                    <rect key="frame" x="0.0" y="0.0" width="800" height="500"/>
+                    <subviews>
+                        <customView id="v1" userLabel="Targets">
+                            <rect key="frame" x="0.0" y="0.0" width="200" height="500"/>
+                            <autoresizingMask key="autoresizingMask" heightSizable="YES"/>
+                            <constraints>
+                                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="150" id="kt1"/>
+                            </constraints>
+                        </customView>
+                        <customView id="pane1" userLabel="Sections">
+                            <rect key="frame" x="201" y="0.0" width="599" height="500"/>
+                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            <subviews>
+                                <segmentedControl verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e2">
+                                    <rect key="frame" x="134.5" y="468" width="330" height="24"/>
+                                    <segmentedCell key="cell" borderStyle="border" alignment="left" style="rounded" trackingMode="selectOne" id="e3">
+                                        <font key="font" metaFont="system"/>
+                                        <segments>
+                                            <segment label="General" width="110" selected="YES"/>
+                                            <segment label="Build Settings" width="110"/>
+                                            <segment label="Build Phases" width="110"/>
+                                        </segments>
+                                    </segmentedCell>
+                                    <connections>
+                                        <action selector="sectionChanged:" target="-2" id="c4"/>
+                                    </connections>
+                                </segmentedControl>
+                                <tabView type="noTabsNoBorder" translatesAutoresizingMaskIntoConstraints="NO" id="tabs31">
+                                    <rect key="frame" x="0.0" y="0.0" width="599" height="460"/>
+                                    <font key="font" metaFont="system"/>
+                                    <tabViewItems>
+                                        <tabViewItem label="General" identifier="General" id="e37">
+                                            <view key="view" id="v36">
+                                                <rect key="frame" x="0.0" y="0.0" width="599" height="460"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <subviews>
+                                                    <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="e5">
+                                                        <rect key="frame" x="0.0" y="0.0" width="599" height="460"/>
+                                                        <clipView key="contentView" drawsBackground="NO" id="e6">
+                                                            <rect key="frame" x="0.0" y="0.0" width="599" height="460"/>
+                                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                        </clipView>
+                                                        <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="e7">
+                                                            <rect key="frame" x="0.0" y="444" width="592" height="16"/>
+                                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                                                        </scroller>
+                                                        <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="e8">
+                                                            <rect key="frame" x="576" y="0.0" width="16" height="460"/>
+                                                            <autoresizingMask key="autoresizingMask" flexibleMinX="YES" heightSizable="YES"/>
+                                                        </scroller>
+                                                    </scrollView>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="e5" firstAttribute="leading" secondItem="v36" secondAttribute="leading" id="k32"/>
+                                                    <constraint firstAttribute="trailing" secondItem="e5" secondAttribute="trailing" id="k33"/>
+                                                    <constraint firstItem="e5" firstAttribute="top" secondItem="v36" secondAttribute="top" id="k34"/>
+                                                    <constraint firstAttribute="bottom" secondItem="e5" secondAttribute="bottom" id="k35"/>
+                                                </constraints>
+                                            </view>
+                                        </tabViewItem>
+                                        <tabViewItem label="Build Settings" identifier="Build Settings" id="e43">
+                                            <view key="view" id="v42">
+                                                <rect key="frame" x="0.0" y="0.0" width="592" height="460"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <subviews>
+                                                    <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="e9">
+                                                        <rect key="frame" x="0.0" y="0.0" width="592" height="460"/>
+                                                        <clipView key="contentView" id="e14">
+                                                            <rect key="frame" x="0.0" y="0.0" width="592" height="460"/>
+                                                            <autoresizingMask key="autoresizingMask"/>
+                                                            <subviews>
+                                                                <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" multipleSelection="NO" autosaveColumns="NO" headerView="e11" id="e10">
+                                                                    <rect key="frame" x="0.0" y="0.0" width="592" height="432"/>
+                                                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                                    <size key="intercellSpacing" width="3" height="2"/>
+                                                                    <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                    <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
+                                                                    <tableColumns>
+                                                                        <tableColumn identifier="0" editable="NO" width="300" minWidth="20" maxWidth="1000" id="e12">
+                                                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" title="Setting">
+                                                                                <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
+                                                                                <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
+                                                                            </tableHeaderCell>
+                                                                            <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" title="Text Cell" id="e13">
+                                                                                <font key="font" metaFont="system"/>
+                                                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                                                <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                            </textFieldCell>
+                                                                            <tableColumnResizingMask key="resizingMask" userResizable="YES"/>
+                                                                        </tableColumn>
+                                                                    </tableColumns>
+                                                                    <connections>
+                                                                        <outlet property="dataSource" destination="-2" id="c15"/>
+                                                                        <outlet property="delegate" destination="-2" id="c16"/>
+                                                                    </connections>
+                                                                </tableView>
+                                                            </subviews>
+                                                        </clipView>
+                                                        <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="e17">
+                                                            <rect key="frame" x="0.0" y="444" width="592" height="16"/>
+                                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                                                        </scroller>
+                                                        <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="e18">
+                                                            <rect key="frame" x="576" y="0.0" width="16" height="460"/>
+                                                            <autoresizingMask key="autoresizingMask" flexibleMinX="YES" heightSizable="YES"/>
+                                                        </scroller>
+                                                        <tableHeaderView key="headerView" wantsLayer="YES" id="e11">
+                                                            <rect key="frame" x="0.0" y="0.0" width="592" height="28"/>
+                                                            <autoresizingMask key="autoresizingMask"/>
+                                                        </tableHeaderView>
+                                                    </scrollView>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="e9" firstAttribute="leading" secondItem="v42" secondAttribute="leading" id="k38"/>
+                                                    <constraint firstAttribute="trailing" secondItem="e9" secondAttribute="trailing" id="k39"/>
+                                                    <constraint firstItem="e9" firstAttribute="top" secondItem="v42" secondAttribute="top" id="k40"/>
+                                                    <constraint firstAttribute="bottom" secondItem="e9" secondAttribute="bottom" id="k41"/>
+                                                </constraints>
+                                            </view>
+                                        </tabViewItem>
+                                        <tabViewItem label="Build Phases" identifier="Build Phases" id="e49">
+                                            <view key="view" id="v48">
+                                                <rect key="frame" x="0.0" y="0.0" width="592" height="460"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <subviews>
+                                                    <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="e19">
+                                                        <rect key="frame" x="0.0" y="0.0" width="592" height="460"/>
+                                                        <clipView key="contentView" id="e26">
+                                                            <rect key="frame" x="0.0" y="0.0" width="592" height="460"/>
+                                                            <autoresizingMask key="autoresizingMask"/>
+                                                            <subviews>
+                                                                <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="none" multipleSelection="NO" autosaveColumns="NO" headerView="e21" id="e20">
+                                                                    <rect key="frame" x="0.0" y="0.0" width="592" height="432"/>
+                                                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                                    <size key="intercellSpacing" width="3" height="2"/>
+                                                                    <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                    <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
+                                                                    <tableColumns>
+                                                                        <tableColumn identifier="0" editable="NO" width="240" minWidth="20" maxWidth="1000" id="e22">
+                                                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" title="Phase">
+                                                                                <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
+                                                                                <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
+                                                                            </tableHeaderCell>
+                                                                            <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" title="Text Cell" id="e23">
+                                                                                <font key="font" metaFont="system"/>
+                                                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                                                <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                            </textFieldCell>
+                                                                            <tableColumnResizingMask key="resizingMask" userResizable="YES"/>
+                                                                        </tableColumn>
+                                                                        <tableColumn identifier="1" editable="NO" width="260" minWidth="20" maxWidth="1000" id="e24">
+                                                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" title="Contents">
+                                                                                <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
+                                                                                <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
+                                                                            </tableHeaderCell>
+                                                                            <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" title="Text Cell" id="e25">
+                                                                                <font key="font" metaFont="system"/>
+                                                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                                                <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                            </textFieldCell>
+                                                                            <tableColumnResizingMask key="resizingMask" userResizable="YES"/>
+                                                                        </tableColumn>
+                                                                    </tableColumns>
+                                                                    <connections>
+                                                                        <outlet property="dataSource" destination="-2" id="c27"/>
+                                                                        <outlet property="delegate" destination="-2" id="c28"/>
+                                                                    </connections>
+                                                                </tableView>
+                                                            </subviews>
+                                                        </clipView>
+                                                        <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="e29">
+                                                            <rect key="frame" x="0.0" y="444" width="592" height="16"/>
+                                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                                                        </scroller>
+                                                        <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="e30">
+                                                            <rect key="frame" x="576" y="0.0" width="16" height="460"/>
+                                                            <autoresizingMask key="autoresizingMask" flexibleMinX="YES" heightSizable="YES"/>
+                                                        </scroller>
+                                                        <tableHeaderView key="headerView" wantsLayer="YES" id="e21">
+                                                            <rect key="frame" x="0.0" y="0.0" width="592" height="28"/>
+                                                            <autoresizingMask key="autoresizingMask"/>
+                                                        </tableHeaderView>
+                                                    </scrollView>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="e19" firstAttribute="leading" secondItem="v48" secondAttribute="leading" id="k44"/>
+                                                    <constraint firstAttribute="trailing" secondItem="e19" secondAttribute="trailing" id="k45"/>
+                                                    <constraint firstItem="e19" firstAttribute="top" secondItem="v48" secondAttribute="top" id="k46"/>
+                                                    <constraint firstAttribute="bottom" secondItem="e19" secondAttribute="bottom" id="k47"/>
+                                                </constraints>
+                                            </view>
+                                        </tabViewItem>
+                                    </tabViewItems>
+                                </tabView>
+                            </subviews>
+                            <constraints>
+                                <constraint firstItem="e2" firstAttribute="top" secondItem="pane1" secondAttribute="top" constant="8" id="kp1"/>
+                                <constraint firstItem="e2" firstAttribute="centerX" secondItem="tabs31" secondAttribute="centerX" id="kp2"/>
+                                <constraint firstItem="tabs31" firstAttribute="leading" secondItem="pane1" secondAttribute="leading" id="kp3"/>
+                                <constraint firstAttribute="trailing" secondItem="tabs31" secondAttribute="trailing" id="kp4"/>
+                                <constraint firstItem="tabs31" firstAttribute="top" secondItem="e2" secondAttribute="bottom" constant="8" id="kp5"/>
+                                <constraint firstAttribute="bottom" secondItem="tabs31" secondAttribute="bottom" id="kp6"/>
+                            </constraints>
+                        </customView>
+                    </subviews>
+                    <holdingPriorities>
+                        <real value="260"/>
+                        <real value="250"/>
+                    </holdingPriorities>
+                </splitView>
+            </subviews>
+            <constraints>
+                <constraint firstItem="split1" firstAttribute="leading" secondItem="v60" secondAttribute="leading" id="ks1"/>
+                <constraint firstAttribute="trailing" secondItem="split1" secondAttribute="trailing" id="ks2"/>
+                <constraint firstItem="split1" firstAttribute="top" secondItem="v60" secondAttribute="top" id="ks3"/>
+                <constraint firstAttribute="bottom" secondItem="split1" secondAttribute="bottom" id="ks4"/>
+            </constraints>
+            <point key="canvasLocation" x="139" y="154"/>
+        </customView>
+        <customView id="v160" userLabel="Project Form">
+            <rect key="frame" x="0.0" y="0.0" width="592" height="348"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
+            <subviews>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e61">
+                    <rect key="frame" x="18" y="308" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Project Document" id="e62">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e66">
+                    <rect key="frame" x="20" y="302" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e72">
+                    <rect key="frame" x="18" y="277" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Project" id="e73">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e70">
+                    <rect key="frame" x="210" y="277" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e71">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e82">
+                    <rect key="frame" x="18" y="250" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Location" id="e83">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e80">
+                    <rect key="frame" x="210" y="250" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e81">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e92">
+                    <rect key="frame" x="18" y="223" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Project Format" id="e93">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e90">
+                    <rect key="frame" x="210" y="223" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e91">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e100">
+                    <rect key="frame" x="18" y="192" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Localizations" id="e101">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e105">
+                    <rect key="frame" x="20" y="186" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e113">
+                    <rect key="frame" x="18" y="161" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Development Region" id="e114">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e109">
+                    <rect key="frame" x="209" y="157" width="266" height="24"/>
+                    <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="e112">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="message"/>
+                        <menu key="menu" id="e110"/>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="generalChoiceChanged:" target="-2" id="c111"/>
+                    </connections>
+                </popUpButton>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e123">
+                    <rect key="frame" x="18" y="134" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Localizations" id="e124">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e121">
+                    <rect key="frame" x="210" y="134" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e122">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e131">
+                    <rect key="frame" x="18" y="103" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Build" id="e132">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e136">
+                    <rect key="frame" x="20" y="97" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e142">
+                    <rect key="frame" x="18" y="72" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Configurations" id="e143">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e140">
+                    <rect key="frame" x="210" y="72" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e141">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e152">
+                    <rect key="frame" x="18" y="45" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Targets" id="e153">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e150">
+                    <rect key="frame" x="210" y="45" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e151">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+            </subviews>
+            <constraints>
+                <constraint firstItem="e100" firstAttribute="top" secondItem="e90" secondAttribute="bottom" constant="15" id="k102"/>
+                <constraint firstItem="e100" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k103"/>
+                <constraint firstAttribute="trailing" secondItem="e100" secondAttribute="trailing" constant="20" id="k104"/>
+                <constraint firstItem="e105" firstAttribute="top" secondItem="e100" secondAttribute="bottom" constant="3" id="k106"/>
+                <constraint firstItem="e105" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k107"/>
+                <constraint firstAttribute="trailing" secondItem="e105" secondAttribute="trailing" constant="20" id="k108"/>
+                <constraint firstItem="e113" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k115"/>
+                <constraint firstItem="e113" firstAttribute="width" constant="180" id="k116"/>
+                <constraint firstItem="e113" firstAttribute="centerY" secondItem="e109" secondAttribute="centerY" id="k117"/>
+                <constraint firstItem="e109" firstAttribute="top" secondItem="e105" secondAttribute="bottom" constant="7" id="k118"/>
+                <constraint firstItem="e109" firstAttribute="leading" secondItem="e113" secondAttribute="trailing" constant="9" id="k119"/>
+                <constraint firstItem="e109" firstAttribute="width" constant="266" id="k120"/>
+                <constraint firstItem="e123" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k125"/>
+                <constraint firstItem="e123" firstAttribute="width" constant="180" id="k126"/>
+                <constraint firstItem="e123" firstAttribute="centerY" secondItem="e121" secondAttribute="centerY" id="k127"/>
+                <constraint firstItem="e121" firstAttribute="top" secondItem="e109" secondAttribute="bottom" constant="7" id="k128"/>
+                <constraint firstItem="e121" firstAttribute="leading" secondItem="e123" secondAttribute="trailing" constant="12" id="k129"/>
+                <constraint firstAttribute="trailing" secondItem="e121" secondAttribute="trailing" constant="20" id="k130"/>
+                <constraint firstItem="e131" firstAttribute="top" secondItem="e121" secondAttribute="bottom" constant="15" id="k133"/>
+                <constraint firstItem="e131" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k134"/>
+                <constraint firstAttribute="trailing" secondItem="e131" secondAttribute="trailing" constant="20" id="k135"/>
+                <constraint firstItem="e136" firstAttribute="top" secondItem="e131" secondAttribute="bottom" constant="3" id="k137"/>
+                <constraint firstItem="e136" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k138"/>
+                <constraint firstAttribute="trailing" secondItem="e136" secondAttribute="trailing" constant="20" id="k139"/>
+                <constraint firstItem="e142" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k144"/>
+                <constraint firstItem="e142" firstAttribute="width" constant="180" id="k145"/>
+                <constraint firstItem="e142" firstAttribute="centerY" secondItem="e140" secondAttribute="centerY" id="k146"/>
+                <constraint firstItem="e140" firstAttribute="top" secondItem="e136" secondAttribute="bottom" constant="11" id="k147"/>
+                <constraint firstItem="e140" firstAttribute="leading" secondItem="e142" secondAttribute="trailing" constant="12" id="k148"/>
+                <constraint firstAttribute="trailing" secondItem="e140" secondAttribute="trailing" constant="20" id="k149"/>
+                <constraint firstItem="e152" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k154"/>
+                <constraint firstItem="e152" firstAttribute="width" constant="180" id="k155"/>
+                <constraint firstItem="e152" firstAttribute="centerY" secondItem="e150" secondAttribute="centerY" id="k156"/>
+                <constraint firstItem="e150" firstAttribute="top" secondItem="e140" secondAttribute="bottom" constant="11" id="k157"/>
+                <constraint firstItem="e150" firstAttribute="leading" secondItem="e152" secondAttribute="trailing" constant="12" id="k158"/>
+                <constraint firstAttribute="trailing" secondItem="e150" secondAttribute="trailing" constant="20" id="k159"/>
+                <constraint firstItem="e61" firstAttribute="top" secondItem="v160" secondAttribute="top" constant="24" id="k63"/>
+                <constraint firstItem="e61" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k64"/>
+                <constraint firstAttribute="trailing" secondItem="e61" secondAttribute="trailing" constant="20" id="k65"/>
+                <constraint firstItem="e66" firstAttribute="top" secondItem="e61" secondAttribute="bottom" constant="3" id="k67"/>
+                <constraint firstItem="e66" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k68"/>
+                <constraint firstAttribute="trailing" secondItem="e66" secondAttribute="trailing" constant="20" id="k69"/>
+                <constraint firstItem="e72" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k74"/>
+                <constraint firstItem="e72" firstAttribute="width" constant="180" id="k75"/>
+                <constraint firstItem="e72" firstAttribute="centerY" secondItem="e70" secondAttribute="centerY" id="k76"/>
+                <constraint firstItem="e70" firstAttribute="top" secondItem="e66" secondAttribute="bottom" constant="11" id="k77"/>
+                <constraint firstItem="e70" firstAttribute="leading" secondItem="e72" secondAttribute="trailing" constant="12" id="k78"/>
+                <constraint firstAttribute="trailing" secondItem="e70" secondAttribute="trailing" constant="20" id="k79"/>
+                <constraint firstItem="e82" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k84"/>
+                <constraint firstItem="e82" firstAttribute="width" constant="180" id="k85"/>
+                <constraint firstItem="e82" firstAttribute="centerY" secondItem="e80" secondAttribute="centerY" id="k86"/>
+                <constraint firstItem="e80" firstAttribute="top" secondItem="e70" secondAttribute="bottom" constant="11" id="k87"/>
+                <constraint firstItem="e80" firstAttribute="leading" secondItem="e82" secondAttribute="trailing" constant="12" id="k88"/>
+                <constraint firstAttribute="trailing" secondItem="e80" secondAttribute="trailing" constant="20" id="k89"/>
+                <constraint firstItem="e92" firstAttribute="leading" secondItem="v160" secondAttribute="leading" constant="20" id="k94"/>
+                <constraint firstItem="e92" firstAttribute="width" constant="180" id="k95"/>
+                <constraint firstItem="e92" firstAttribute="centerY" secondItem="e90" secondAttribute="centerY" id="k96"/>
+                <constraint firstItem="e90" firstAttribute="top" secondItem="e80" secondAttribute="bottom" constant="11" id="k97"/>
+                <constraint firstItem="e90" firstAttribute="leading" secondItem="e92" secondAttribute="trailing" constant="12" id="k98"/>
+                <constraint firstAttribute="trailing" secondItem="e90" secondAttribute="trailing" constant="20" id="k99"/>
+            </constraints>
+        </customView>
+        <customView id="v437" userLabel="Target Form">
+            <rect key="frame" x="0.0" y="0.0" width="592" height="896"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
+            <subviews>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e161">
+                    <rect key="frame" x="18" y="856" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Target" id="e162">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e166">
+                    <rect key="frame" x="20" y="850" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e172">
+                    <rect key="frame" x="18" y="825" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Target" id="e173">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e170">
+                    <rect key="frame" x="210" y="825" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e171">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e182">
+                    <rect key="frame" x="18" y="798" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Type" id="e183">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e180">
+                    <rect key="frame" x="210" y="798" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e181">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e194">
+                    <rect key="frame" x="18" y="770" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Product Name" id="e195">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e190">
+                    <rect key="frame" x="212" y="766" width="360" height="24"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e193">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <action selector="generalFieldChanged:" target="-2" id="c191"/>
+                        <outlet property="delegate" destination="-2" id="c192"/>
+                    </connections>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e202">
+                    <rect key="frame" x="18" y="737" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Identity" id="e203">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e207">
+                    <rect key="frame" x="20" y="731" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e215">
+                    <rect key="frame" x="18" y="705" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Display Name" id="e216">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e211">
+                    <rect key="frame" x="212" y="701" width="360" height="24"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e214">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <action selector="generalFieldChanged:" target="-2" id="c212"/>
+                        <outlet property="delegate" destination="-2" id="c213"/>
+                    </connections>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e227">
+                    <rect key="frame" x="18" y="675" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Bundle Identifier" id="e228">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e223">
+                    <rect key="frame" x="212" y="671" width="360" height="24"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e226">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <action selector="generalFieldChanged:" target="-2" id="c224"/>
+                        <outlet property="delegate" destination="-2" id="c225"/>
+                    </connections>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e239">
+                    <rect key="frame" x="18" y="645" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Version" id="e240">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e235">
+                    <rect key="frame" x="212" y="641" width="360" height="24"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e238">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <action selector="generalFieldChanged:" target="-2" id="c236"/>
+                        <outlet property="delegate" destination="-2" id="c237"/>
+                    </connections>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e251">
+                    <rect key="frame" x="18" y="615" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Build" id="e252">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e247">
+                    <rect key="frame" x="212" y="611" width="360" height="24"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e250">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <action selector="generalFieldChanged:" target="-2" id="c248"/>
+                        <outlet property="delegate" destination="-2" id="c249"/>
+                    </connections>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e259">
+                    <rect key="frame" x="18" y="582" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Deployment" id="e260">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e264">
+                    <rect key="frame" x="20" y="576" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e272">
+                    <rect key="frame" x="18" y="551" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Minimum macOS" id="e273">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e268">
+                    <rect key="frame" x="209" y="547" width="266" height="24"/>
+                    <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="e271">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="message"/>
+                        <menu key="menu" id="e269"/>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="generalChoiceChanged:" target="-2" id="c270"/>
+                    </connections>
+                </popUpButton>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e284">
+                    <rect key="frame" x="18" y="524" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Main Interface" id="e285">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e280">
+                    <rect key="frame" x="209" y="520" width="266" height="24"/>
+                    <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="e283">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="message"/>
+                        <menu key="menu" id="e281"/>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="generalChoiceChanged:" target="-2" id="c282"/>
+                    </connections>
+                </popUpButton>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e296">
+                    <rect key="frame" x="18" y="496" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Info.plist" id="e297">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e292">
+                    <rect key="frame" x="212" y="492" width="360" height="24"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e295">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                    <connections>
+                        <action selector="generalFieldChanged:" target="-2" id="c293"/>
+                        <outlet property="delegate" destination="-2" id="c294"/>
+                    </connections>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e304">
+                    <rect key="frame" x="18" y="463" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="App Icon" id="e305">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e309">
+                    <rect key="frame" x="20" y="457" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e317">
+                    <rect key="frame" x="18" y="432" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="App Icon" id="e318">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e313">
+                    <rect key="frame" x="209" y="428" width="266" height="24"/>
+                    <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="e316">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="message"/>
+                        <menu key="menu" id="e314"/>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="generalChoiceChanged:" target="-2" id="c315"/>
+                    </connections>
+                </popUpButton>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e325">
+                    <rect key="frame" x="18" y="401" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Frameworks and Libraries" id="e326">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e330">
+                    <rect key="frame" x="20" y="395" width="552" height="5"/>
+                </box>
+                <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="e334">
+                    <rect key="frame" x="212" y="294" width="360" height="96"/>
+                    <clipView key="contentView" id="e339">
+                        <rect key="frame" x="1" y="1" width="358" height="94"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <subviews>
+                            <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" multipleSelection="NO" autosaveColumns="NO" headerView="e336" id="e335">
+                                <rect key="frame" x="0.0" y="0.0" width="368" height="66"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                <size key="intercellSpacing" width="3" height="2"/>
+                                <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
+                                <tableColumns>
+                                    <tableColumn identifier="0" editable="NO" width="356" minWidth="20" maxWidth="1000" id="e337">
+                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" title="Name">
+                                            <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
+                                            <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
+                                        </tableHeaderCell>
+                                        <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" title="Text Cell" id="e338">
+                                            <font key="font" metaFont="system"/>
+                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                            <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                        </textFieldCell>
+                                        <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
+                                    </tableColumn>
+                                </tableColumns>
+                                <connections>
+                                    <outlet property="dataSource" destination="-2" id="c340"/>
+                                    <outlet property="delegate" destination="-2" id="c341"/>
+                                </connections>
+                            </tableView>
+                        </subviews>
+                    </clipView>
+                    <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="e342">
+                        <rect key="frame" x="0.0" y="78" width="358" height="16"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                    </scroller>
+                    <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="e343">
+                        <rect key="frame" x="342" y="0.0" width="16" height="94"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" heightSizable="YES"/>
+                    </scroller>
+                    <tableHeaderView key="headerView" wantsLayer="YES" id="e336">
+                        <rect key="frame" x="0.0" y="0.0" width="368" height="28"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </tableHeaderView>
+                </scrollView>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e348">
+                    <rect key="frame" x="18" y="258" width="556" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="Build" id="e349">
+                        <font key="font" metaFont="systemBold"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e353">
+                    <rect key="frame" x="20" y="252" width="552" height="5"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e359">
+                    <rect key="frame" x="18" y="227" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Configurations" id="e360">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e357">
+                    <rect key="frame" x="210" y="227" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e358">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e369">
+                    <rect key="frame" x="18" y="200" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Dependencies" id="e370">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e367">
+                    <rect key="frame" x="210" y="200" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e368">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e379">
+                    <rect key="frame" x="18" y="173" width="184" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Build Tool" id="e380">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e377">
+                    <rect key="frame" x="210" y="173" width="364" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" id="e378">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <customView translatesAutoresizingMaskIntoConstraints="NO" id="v432" userLabel="GNUstep Section">
+                    <rect key="frame" x="0.0" y="42" width="592" height="124"/>
+                    <subviews>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e387">
+                            <rect key="frame" x="18" y="100" width="556" height="16"/>
+                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" title="GNUstep" id="e388">
+                                <font key="font" metaFont="systemBold"/>
+                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="e392">
+                            <rect key="frame" x="20" y="94" width="552" height="5"/>
+                        </box>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e400">
+                            <rect key="frame" x="18" y="68" width="184" height="16"/>
+                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Build Script" id="e401">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e396">
+                            <rect key="frame" x="212" y="64" width="360" height="24"/>
+                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e399">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                            <connections>
+                                <action selector="generalFieldChanged:" target="-2" id="c397"/>
+                                <outlet property="delegate" destination="-2" id="c398"/>
+                            </connections>
+                        </textField>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e412">
+                            <rect key="frame" x="18" y="38" width="184" height="16"/>
+                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Executable" id="e413">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e408">
+                            <rect key="frame" x="212" y="34" width="360" height="24"/>
+                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="YES" borderStyle="bezel" drawsBackground="YES" id="e411">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                            <connections>
+                                <action selector="generalFieldChanged:" target="-2" id="c409"/>
+                                <outlet property="delegate" destination="-2" id="c410"/>
+                            </connections>
+                        </textField>
+                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e424">
+                            <rect key="frame" x="18" y="9" width="184" height="16"/>
+                            <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="right" title="Theme" id="e425">
+                                <font key="font" metaFont="system"/>
+                                <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <popUpButton verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="e420">
+                            <rect key="frame" x="209" y="5" width="266" height="24"/>
+                            <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="e423">
+                                <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                <font key="font" metaFont="message"/>
+                                <menu key="menu" id="e421"/>
+                            </popUpButtonCell>
+                            <connections>
+                                <action selector="generalChoiceChanged:" target="-2" id="c422"/>
+                            </connections>
+                        </popUpButton>
+                    </subviews>
+                    <constraints>
+                        <constraint firstItem="e387" firstAttribute="top" secondItem="v432" secondAttribute="top" constant="8" id="k389"/>
+                        <constraint firstItem="e387" firstAttribute="leading" secondItem="v432" secondAttribute="leading" constant="20" id="k390"/>
+                        <constraint firstAttribute="trailing" secondItem="e387" secondAttribute="trailing" constant="20" id="k391"/>
+                        <constraint firstItem="e392" firstAttribute="top" secondItem="e387" secondAttribute="bottom" constant="3" id="k393"/>
+                        <constraint firstItem="e392" firstAttribute="leading" secondItem="v432" secondAttribute="leading" constant="20" id="k394"/>
+                        <constraint firstAttribute="trailing" secondItem="e392" secondAttribute="trailing" constant="20" id="k395"/>
+                        <constraint firstItem="e400" firstAttribute="leading" secondItem="v432" secondAttribute="leading" constant="20" id="k402"/>
+                        <constraint firstItem="e400" firstAttribute="width" constant="180" id="k403"/>
+                        <constraint firstItem="e400" firstAttribute="centerY" secondItem="e396" secondAttribute="centerY" id="k404"/>
+                        <constraint firstItem="e396" firstAttribute="top" secondItem="e392" secondAttribute="bottom" constant="8" id="k405"/>
+                        <constraint firstItem="e396" firstAttribute="leading" secondItem="e400" secondAttribute="trailing" constant="12" id="k406"/>
+                        <constraint firstAttribute="trailing" secondItem="e396" secondAttribute="trailing" constant="20" id="k407"/>
+                        <constraint firstItem="e412" firstAttribute="leading" secondItem="v432" secondAttribute="leading" constant="20" id="k414"/>
+                        <constraint firstItem="e412" firstAttribute="width" constant="180" id="k415"/>
+                        <constraint firstItem="e412" firstAttribute="centerY" secondItem="e408" secondAttribute="centerY" id="k416"/>
+                        <constraint firstItem="e408" firstAttribute="top" secondItem="e396" secondAttribute="bottom" constant="6" id="k417"/>
+                        <constraint firstItem="e408" firstAttribute="leading" secondItem="e412" secondAttribute="trailing" constant="12" id="k418"/>
+                        <constraint firstAttribute="trailing" secondItem="e408" secondAttribute="trailing" constant="20" id="k419"/>
+                        <constraint firstItem="e424" firstAttribute="leading" secondItem="v432" secondAttribute="leading" constant="20" id="k426"/>
+                        <constraint firstItem="e424" firstAttribute="width" constant="180" id="k427"/>
+                        <constraint firstItem="e424" firstAttribute="centerY" secondItem="e420" secondAttribute="centerY" id="k428"/>
+                        <constraint firstItem="e420" firstAttribute="top" secondItem="e408" secondAttribute="bottom" constant="5" id="k429"/>
+                        <constraint firstItem="e420" firstAttribute="leading" secondItem="e424" secondAttribute="trailing" constant="9" id="k430"/>
+                        <constraint firstItem="e420" firstAttribute="width" constant="266" id="k431"/>
+                    </constraints>
+                </customView>
+            </subviews>
+            <constraints>
+                <constraint firstItem="e161" firstAttribute="top" secondItem="v437" secondAttribute="top" constant="24" id="k163"/>
+                <constraint firstItem="e161" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k164"/>
+                <constraint firstAttribute="trailing" secondItem="e161" secondAttribute="trailing" constant="20" id="k165"/>
+                <constraint firstItem="e166" firstAttribute="top" secondItem="e161" secondAttribute="bottom" constant="3" id="k167"/>
+                <constraint firstItem="e166" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k168"/>
+                <constraint firstAttribute="trailing" secondItem="e166" secondAttribute="trailing" constant="20" id="k169"/>
+                <constraint firstItem="e172" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k174"/>
+                <constraint firstItem="e172" firstAttribute="width" constant="180" id="k175"/>
+                <constraint firstItem="e172" firstAttribute="centerY" secondItem="e170" secondAttribute="centerY" id="k176"/>
+                <constraint firstItem="e170" firstAttribute="top" secondItem="e166" secondAttribute="bottom" constant="11" id="k177"/>
+                <constraint firstItem="e170" firstAttribute="leading" secondItem="e172" secondAttribute="trailing" constant="12" id="k178"/>
+                <constraint firstAttribute="trailing" secondItem="e170" secondAttribute="trailing" constant="20" id="k179"/>
+                <constraint firstItem="e182" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k184"/>
+                <constraint firstItem="e182" firstAttribute="width" constant="180" id="k185"/>
+                <constraint firstItem="e182" firstAttribute="centerY" secondItem="e180" secondAttribute="centerY" id="k186"/>
+                <constraint firstItem="e180" firstAttribute="top" secondItem="e170" secondAttribute="bottom" constant="11" id="k187"/>
+                <constraint firstItem="e180" firstAttribute="leading" secondItem="e182" secondAttribute="trailing" constant="12" id="k188"/>
+                <constraint firstAttribute="trailing" secondItem="e180" secondAttribute="trailing" constant="20" id="k189"/>
+                <constraint firstItem="e194" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k196"/>
+                <constraint firstItem="e194" firstAttribute="width" constant="180" id="k197"/>
+                <constraint firstItem="e194" firstAttribute="centerY" secondItem="e190" secondAttribute="centerY" id="k198"/>
+                <constraint firstItem="e190" firstAttribute="top" secondItem="e180" secondAttribute="bottom" constant="8" id="k199"/>
+                <constraint firstItem="e190" firstAttribute="leading" secondItem="e194" secondAttribute="trailing" constant="12" id="k200"/>
+                <constraint firstAttribute="trailing" secondItem="e190" secondAttribute="trailing" constant="20" id="k201"/>
+                <constraint firstItem="e202" firstAttribute="top" secondItem="e190" secondAttribute="bottom" constant="13" id="k204"/>
+                <constraint firstItem="e202" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k205"/>
+                <constraint firstAttribute="trailing" secondItem="e202" secondAttribute="trailing" constant="20" id="k206"/>
+                <constraint firstItem="e207" firstAttribute="top" secondItem="e202" secondAttribute="bottom" constant="3" id="k208"/>
+                <constraint firstItem="e207" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k209"/>
+                <constraint firstAttribute="trailing" secondItem="e207" secondAttribute="trailing" constant="20" id="k210"/>
+                <constraint firstItem="e215" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k217"/>
+                <constraint firstItem="e215" firstAttribute="width" constant="180" id="k218"/>
+                <constraint firstItem="e215" firstAttribute="centerY" secondItem="e211" secondAttribute="centerY" id="k219"/>
+                <constraint firstItem="e211" firstAttribute="top" secondItem="e207" secondAttribute="bottom" constant="8" id="k220"/>
+                <constraint firstItem="e211" firstAttribute="leading" secondItem="e215" secondAttribute="trailing" constant="12" id="k221"/>
+                <constraint firstAttribute="trailing" secondItem="e211" secondAttribute="trailing" constant="20" id="k222"/>
+                <constraint firstItem="e227" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k229"/>
+                <constraint firstItem="e227" firstAttribute="width" constant="180" id="k230"/>
+                <constraint firstItem="e227" firstAttribute="centerY" secondItem="e223" secondAttribute="centerY" id="k231"/>
+                <constraint firstItem="e223" firstAttribute="top" secondItem="e211" secondAttribute="bottom" constant="6" id="k232"/>
+                <constraint firstItem="e223" firstAttribute="leading" secondItem="e227" secondAttribute="trailing" constant="12" id="k233"/>
+                <constraint firstAttribute="trailing" secondItem="e223" secondAttribute="trailing" constant="20" id="k234"/>
+                <constraint firstItem="e239" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k241"/>
+                <constraint firstItem="e239" firstAttribute="width" constant="180" id="k242"/>
+                <constraint firstItem="e239" firstAttribute="centerY" secondItem="e235" secondAttribute="centerY" id="k243"/>
+                <constraint firstItem="e235" firstAttribute="top" secondItem="e223" secondAttribute="bottom" constant="6" id="k244"/>
+                <constraint firstItem="e235" firstAttribute="leading" secondItem="e239" secondAttribute="trailing" constant="12" id="k245"/>
+                <constraint firstAttribute="trailing" secondItem="e235" secondAttribute="trailing" constant="20" id="k246"/>
+                <constraint firstItem="e251" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k253"/>
+                <constraint firstItem="e251" firstAttribute="width" constant="180" id="k254"/>
+                <constraint firstItem="e251" firstAttribute="centerY" secondItem="e247" secondAttribute="centerY" id="k255"/>
+                <constraint firstItem="e247" firstAttribute="top" secondItem="e235" secondAttribute="bottom" constant="6" id="k256"/>
+                <constraint firstItem="e247" firstAttribute="leading" secondItem="e251" secondAttribute="trailing" constant="12" id="k257"/>
+                <constraint firstAttribute="trailing" secondItem="e247" secondAttribute="trailing" constant="20" id="k258"/>
+                <constraint firstItem="e259" firstAttribute="top" secondItem="e247" secondAttribute="bottom" constant="13" id="k261"/>
+                <constraint firstItem="e259" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k262"/>
+                <constraint firstAttribute="trailing" secondItem="e259" secondAttribute="trailing" constant="20" id="k263"/>
+                <constraint firstItem="e264" firstAttribute="top" secondItem="e259" secondAttribute="bottom" constant="3" id="k265"/>
+                <constraint firstItem="e264" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k266"/>
+                <constraint firstAttribute="trailing" secondItem="e264" secondAttribute="trailing" constant="20" id="k267"/>
+                <constraint firstItem="e272" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k274"/>
+                <constraint firstItem="e272" firstAttribute="width" constant="180" id="k275"/>
+                <constraint firstItem="e272" firstAttribute="centerY" secondItem="e268" secondAttribute="centerY" id="k276"/>
+                <constraint firstItem="e268" firstAttribute="top" secondItem="e264" secondAttribute="bottom" constant="7" id="k277"/>
+                <constraint firstItem="e268" firstAttribute="leading" secondItem="e272" secondAttribute="trailing" constant="9" id="k278"/>
+                <constraint firstItem="e268" firstAttribute="width" constant="266" id="k279"/>
+                <constraint firstItem="e284" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k286"/>
+                <constraint firstItem="e284" firstAttribute="width" constant="180" id="k287"/>
+                <constraint firstItem="e284" firstAttribute="centerY" secondItem="e280" secondAttribute="centerY" id="k288"/>
+                <constraint firstItem="e280" firstAttribute="top" secondItem="e268" secondAttribute="bottom" constant="3" id="k289"/>
+                <constraint firstItem="e280" firstAttribute="leading" secondItem="e284" secondAttribute="trailing" constant="9" id="k290"/>
+                <constraint firstItem="e280" firstAttribute="width" constant="266" id="k291"/>
+                <constraint firstItem="e296" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k298"/>
+                <constraint firstItem="e296" firstAttribute="width" constant="180" id="k299"/>
+                <constraint firstItem="e296" firstAttribute="centerY" secondItem="e292" secondAttribute="centerY" id="k300"/>
+                <constraint firstItem="e292" firstAttribute="top" secondItem="e280" secondAttribute="bottom" constant="4" id="k301"/>
+                <constraint firstItem="e292" firstAttribute="leading" secondItem="e296" secondAttribute="trailing" constant="12" id="k302"/>
+                <constraint firstAttribute="trailing" secondItem="e292" secondAttribute="trailing" constant="20" id="k303"/>
+                <constraint firstItem="e304" firstAttribute="top" secondItem="e292" secondAttribute="bottom" constant="13" id="k306"/>
+                <constraint firstItem="e304" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k307"/>
+                <constraint firstAttribute="trailing" secondItem="e304" secondAttribute="trailing" constant="20" id="k308"/>
+                <constraint firstItem="e309" firstAttribute="top" secondItem="e304" secondAttribute="bottom" constant="3" id="k310"/>
+                <constraint firstItem="e309" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k311"/>
+                <constraint firstAttribute="trailing" secondItem="e309" secondAttribute="trailing" constant="20" id="k312"/>
+                <constraint firstItem="e317" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k319"/>
+                <constraint firstItem="e317" firstAttribute="width" constant="180" id="k320"/>
+                <constraint firstItem="e317" firstAttribute="centerY" secondItem="e313" secondAttribute="centerY" id="k321"/>
+                <constraint firstItem="e313" firstAttribute="top" secondItem="e309" secondAttribute="bottom" constant="7" id="k322"/>
+                <constraint firstItem="e313" firstAttribute="leading" secondItem="e317" secondAttribute="trailing" constant="9" id="k323"/>
+                <constraint firstItem="e313" firstAttribute="width" constant="266" id="k324"/>
+                <constraint firstItem="e325" firstAttribute="top" secondItem="e313" secondAttribute="bottom" constant="11" id="k327"/>
+                <constraint firstItem="e325" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k328"/>
+                <constraint firstAttribute="trailing" secondItem="e325" secondAttribute="trailing" constant="20" id="k329"/>
+                <constraint firstItem="e330" firstAttribute="top" secondItem="e325" secondAttribute="bottom" constant="3" id="k331"/>
+                <constraint firstItem="e330" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k332"/>
+                <constraint firstAttribute="trailing" secondItem="e330" secondAttribute="trailing" constant="20" id="k333"/>
+                <constraint firstItem="e334" firstAttribute="top" secondItem="e330" secondAttribute="bottom" constant="7" id="k344"/>
+                <constraint firstItem="e334" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="212" id="k345"/>
+                <constraint firstAttribute="trailing" secondItem="e334" secondAttribute="trailing" constant="20" id="k346"/>
+                <constraint firstItem="e334" firstAttribute="height" constant="96" id="k347"/>
+                <constraint firstItem="e348" firstAttribute="top" secondItem="e334" secondAttribute="bottom" constant="20" id="k350"/>
+                <constraint firstItem="e348" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k351"/>
+                <constraint firstAttribute="trailing" secondItem="e348" secondAttribute="trailing" constant="20" id="k352"/>
+                <constraint firstItem="e353" firstAttribute="top" secondItem="e348" secondAttribute="bottom" constant="3" id="k354"/>
+                <constraint firstItem="e353" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k355"/>
+                <constraint firstAttribute="trailing" secondItem="e353" secondAttribute="trailing" constant="20" id="k356"/>
+                <constraint firstItem="e359" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k361"/>
+                <constraint firstItem="e359" firstAttribute="width" constant="180" id="k362"/>
+                <constraint firstItem="e359" firstAttribute="centerY" secondItem="e357" secondAttribute="centerY" id="k363"/>
+                <constraint firstItem="e357" firstAttribute="top" secondItem="e353" secondAttribute="bottom" constant="11" id="k364"/>
+                <constraint firstItem="e357" firstAttribute="leading" secondItem="e359" secondAttribute="trailing" constant="12" id="k365"/>
+                <constraint firstAttribute="trailing" secondItem="e357" secondAttribute="trailing" constant="20" id="k366"/>
+                <constraint firstItem="e369" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k371"/>
+                <constraint firstItem="e369" firstAttribute="width" constant="180" id="k372"/>
+                <constraint firstItem="e369" firstAttribute="centerY" secondItem="e367" secondAttribute="centerY" id="k373"/>
+                <constraint firstItem="e367" firstAttribute="top" secondItem="e357" secondAttribute="bottom" constant="11" id="k374"/>
+                <constraint firstItem="e367" firstAttribute="leading" secondItem="e369" secondAttribute="trailing" constant="12" id="k375"/>
+                <constraint firstAttribute="trailing" secondItem="e367" secondAttribute="trailing" constant="20" id="k376"/>
+                <constraint firstItem="e379" firstAttribute="leading" secondItem="v437" secondAttribute="leading" constant="20" id="k381"/>
+                <constraint firstItem="e379" firstAttribute="width" constant="180" id="k382"/>
+                <constraint firstItem="e379" firstAttribute="centerY" secondItem="e377" secondAttribute="centerY" id="k383"/>
+                <constraint firstItem="e377" firstAttribute="top" secondItem="e367" secondAttribute="bottom" constant="11" id="k384"/>
+                <constraint firstItem="e377" firstAttribute="leading" secondItem="e379" secondAttribute="trailing" constant="12" id="k385"/>
+                <constraint firstAttribute="trailing" secondItem="e377" secondAttribute="trailing" constant="20" id="k386"/>
+                <constraint firstItem="v432" firstAttribute="top" secondItem="e377" secondAttribute="bottom" constant="7" id="k433"/>
+                <constraint firstItem="v432" firstAttribute="leading" secondItem="v437" secondAttribute="leading" id="k434"/>
+                <constraint firstAttribute="trailing" secondItem="v432" secondAttribute="trailing" id="k435"/>
+                <constraint firstItem="v432" firstAttribute="height" constant="124" id="k436"/>
+            </constraints>
+        </customView>
+    </objects>
+</document>

@@ -70,6 +70,17 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
   installs the `.gorm` files (see the GNUmakefiles), so it doesn't get changes made in a `.xib`.
   `PCGormArchive` must keep writing unchanged archives back byte for byte (`XcodeProjectTests`
   checks every `.gorm`). See `Tools/gorm2xib/README.md`.
+  New interfaces are XIBs only, with no `.gorm`, and both builds install the `.xib`. They use
+  Auto Layout constraints; views inside scroll views (tables, forms, the canvas) and the split
+  view's panes keep autoresizing masks. They were only tried on macOS:
+  - `Framework/English.lproj/ProjectEditor.xib`, the Xcode project editor
+    (`PCXcodeProjectEditor`). Its General pane has fixed forms for the project and a target,
+    which the code fills from `-generalRows`. The target list's starting width is set in code
+    (`-_placeDivider:`): a width constraint on a split view pane pulls the divider back after a drag.
+  - `Framework/English.lproj/InterfaceEditor.xib`, the XIB editor (`PCInterfaceEditor`): the
+    object outline, canvas, inspector panes, Connections controls and object library. The
+    inspector's Identity, Attributes and Size forms are built for the selection from the
+    property tables in `PCInterfaceInspector.m`, and the outline's row view in code.
 - **Keep both build systems in sync.** The GNUmakefiles define what each target contains. When adding
   or removing a source or resource, update the GNUmakefile and `ProjectCenter.xcodeproj` together.
 - **Portability:**

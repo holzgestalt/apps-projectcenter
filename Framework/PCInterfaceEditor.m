@@ -489,14 +489,6 @@ static const CGFloat Handles[8][2] = {{0,0},{0.5,0},{1,0},{0,0.5},{1,0.5},{0,1},
 }
 @end
 
-static NSButton *Button(NSString *title, NSRect frame, id target, SEL action)
-{
-  NSButton *button = [[[NSButton alloc] initWithFrame:frame] autorelease];
-  [button setTitle:title]; [button setBezelStyle:NSRoundedBezelStyle];
-  [button setTarget:target]; [button setAction:action];
-  return button;
-}
-
 @implementation PCInterfaceEditor
 - (void)dealloc
 {
@@ -510,6 +502,8 @@ static NSButton *Button(NSString *title, NSRect frame, id target, SEL action)
   [_undoManager removeAllActionsWithTarget:self]; [_undoManager release];
   [_window setDelegate:nil]; [_window close]; [_window release];
   ((PCInterfaceComponentView *)_component)->editor = nil;
+  ((PCInterfaceCanvas *)_canvas)->editor = nil;
+  /* The nib's top-level object. */
   [_component release]; [super dealloc];
 }
 - (BOOL)isGorm
@@ -745,48 +739,19 @@ static NSButton *Button(NSString *title, NSRect frame, id target, SEL action)
   _editable = editable;
   _undoManager = [[NSUndoManager alloc] init];
   if (![self loadDocument]) return nil;
-  PCInterfaceComponentView *component = [[PCInterfaceComponentView alloc] initWithFrame:NSMakeRect(0,0,1000,600)];
-  component->editor = self; _component = component;
-  [_component setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-  NSSplitView *split = [[[NSSplitView alloc] initWithFrame:NSMakeRect(0,40,1000,560)] autorelease];
-  [split setVertical:YES]; [split setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-  NSScrollView *treeScroll = [[[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,220,560)] autorelease];
-  [treeScroll setHasVerticalScroller:YES];
-  _tree = [[[PCInterfaceOutlineView alloc] initWithFrame:[treeScroll bounds]] autorelease];
-  NSTableColumn *column = [[[NSTableColumn alloc] initWithIdentifier:@"Object"] autorelease];
-  [[column headerCell] setStringValue:@"Interface Objects"]; [column setWidth:215];
-  [_tree addTableColumn:column]; [_tree setOutlineTableColumn:column];
-  [_tree setHeaderView:nil];
+  if (![NSBundle loadNibNamed:@"InterfaceEditor" owner:self] || _component == nil)
+  {
+    NSLog(@"PCInterfaceEditor: error loading InterfaceEditor");
+    return nil;
+  }
+  ((PCInterfaceComponentView *)_component)->editor = self;
+  ((PCInterfaceCanvas *)_canvas)->editor = self;
+  [_tree setOutlineTableColumn:[[_tree tableColumns] objectAtIndex:0]];
 #ifdef GNUSTEP
   [_tree _registerPrototypeViews:@[InterfaceObjectCell()]];
 #endif
-  [_tree setIndentationPerLevel:14];
-  [_tree setColumnAutoresizingStyle:NSTableViewFirstColumnOnlyAutoresizingStyle];
-  [_tree setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-  [_tree setDataSource:(id)self]; [_tree setDelegate:(id)self];
-  [_tree setGridStyleMask:NSTableViewGridNone]; [_tree setRowHeight:20];
-  [_tree setAllowsEmptySelection:NO]; [treeScroll setDocumentView:_tree]; [split addSubview:treeScroll];
-  NSScrollView *canvasScroll = [[[NSScrollView alloc] initWithFrame:NSMakeRect(225,0,465,560)] autorelease];
-  [canvasScroll setHasHorizontalScroller:YES]; [canvasScroll setHasVerticalScroller:YES];
-  PCInterfaceCanvas *canvas = [[[PCInterfaceCanvas alloc] initWithFrame:NSMakeRect(0,0,640,480)] autorelease];
-  [canvas setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
-  canvas->editor = self; _canvas = canvas;
-  [canvasScroll setDocumentView:canvas]; [split addSubview:canvasScroll];
-  [split addSubview:[self inspectorWithFrame:NSMakeRect(695,0,305,560)]];
-  [_component addSubview:split];
-
-  /* Below: the object library and the status. */
-  _libraryPopUp = [[[NSPopUpButton alloc] initWithFrame:NSMakeRect(8,8,150,26) pullsDown:NO] autorelease];
+  [self setUpInspector];
   [_libraryPopUp addItemsWithTitles:[PCInterfaceDocument libraryItems]];
-  [_component addSubview:_libraryPopUp];
-  _addObjectButton = Button(@"Add",NSMakeRect(162,8,60,26),self,@selector(addLibraryObject:));
-  [_component addSubview:_addObjectButton];
-  _deleteObjectButton = Button(@"Delete",NSMakeRect(226,8,70,26),self,@selector(deleteObject:));
-  [_component addSubview:_deleteObjectButton];
-  _status = [[[NSTextField alloc] initWithFrame:NSMakeRect(304,10,688,20)] autorelease];
-  [_status setEditable:NO]; [_status setSelectable:NO]; [_status setBezeled:NO]; [_status setDrawsBackground:NO];
-  [_status setFont:[NSFont systemFontOfSize:11]];
-  [_status setAutoresizingMask:NSViewWidthSizable]; [_component addSubview:_status];
   [_tree reloadData];
   NSArray *objects = [_model objects];
   NSXMLElement *initial = [objects count] ? [objects objectAtIndex:0] : nil;

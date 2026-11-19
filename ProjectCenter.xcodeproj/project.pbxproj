@@ -307,7 +307,9 @@
 		FA7D0BCFA048D213C90BE3FF /* ProjectCenter.h in Headers */ = {isa = PBXBuildFile; fileRef = AA4CED67ABEE5125E88E4612 /* ProjectCenter.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FA8446272EBC695CB54392FE /* nibSuitcaseH.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 11C67444DCDD7AC5B9960738 /* nibSuitcaseH.tiff */; };
 		FBC476F07038E737612BEB35 /* EditorFSCPrefs.xib in Resources */ = {isa = PBXBuildFile; fileRef = E35C27677BE2FBF869920E67 /* EditorFSCPrefs.xib */; };
+		5B4C12682708F495CAA77EEB /* InterfaceEditor.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0BF0ED059538B994B6DADECE /* InterfaceEditor.xib */; };
 		FCE3960961AE1929DE7D7FCC /* ProjectLanguages.xib in Resources */ = {isa = PBXBuildFile; fileRef = DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.xib */; };
+		8EC3266E98D5E7D20B687388 /* ProjectEditor.xib in Resources */ = {isa = PBXBuildFile; fileRef = D898C07258B1F74B760F1417 /* ProjectEditor.xib */; };
 		FD0B376C183236902B1A994F /* C.syntax in Resources */ = {isa = PBXBuildFile; fileRef = E9833F03E975FBBE86952645 /* C.syntax */; };
 		FDA4BA239ACE5358D2A471B7 /* PCEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = 2E45CCDAEC86E6594BBC996F /* PCEditor.m */; };
 		FE23BB09701022E4A6C86F59 /* PCProjectLoadedFiles.h in Headers */ = {isa = PBXBuildFile; fileRef = EF9651C4504ED507BBD78577 /* PCProjectLoadedFiles.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -883,7 +885,9 @@
 		DC27B2B1678CD49A56C870E0 /* subprojectSuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = subprojectSuitcaseH.tiff; sourceTree = "<group>"; };
 		DC3EC9AD0974707D0445508D /* librarySuitcaseH.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = librarySuitcaseH.tiff; sourceTree = "<group>"; };
 		DD24D36C935AC6A2E0D850B7 /* PCButton.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCButton.m; sourceTree = "<group>"; };
+		0BF0ED059538B994B6DADECE /* InterfaceEditor.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = InterfaceEditor.xib; sourceTree = "<group>"; };
 		DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectLanguages.xib; sourceTree = "<group>"; };
+		D898C07258B1F74B760F1417 /* ProjectEditor.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ProjectEditor.xib; sourceTree = "<group>"; };
 		DE2F059A50B73E1D6752BE58 /* PC.project */ = {isa = PBXFileReference; lastKnownFileType = text; path = PC.project; sourceTree = "<group>"; };
 		DFEEB839AAB5384D6FA16A3E /* SCHEME */ = {isa = PBXFileReference; lastKnownFileType = text; path = SCHEME; sourceTree = "<group>"; };
 		E0072987C437C7F194AE4F6F /* Info-gnustep.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Info-gnustep.plist"; sourceTree = "<group>"; };
@@ -1188,11 +1192,13 @@
 				F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.xib */,
 				4E74A335671AC7C202789537 /* BuilderPanel.xib */,
 				2173B398EF1FF28750F7BE64 /* FileAttributes.xib */,
+				0BF0ED059538B994B6DADECE /* InterfaceEditor.xib */,
 				4035D9062EE744DA66982868 /* LogPanel.xib */,
 				571B107A319F23C70D39303C /* NewFile.xib */,
 				7D204EE0552B74D41BF12A51 /* NewSubproject.xib */,
 				45E4EE2D5887C54433CB9904 /* ProjectAttributes.xib */,
 				332E1EB989F3E5D2BBFF0CA8 /* ProjectDescription.xib */,
+				D898C07258B1F74B760F1417 /* ProjectEditor.xib */,
 				99A4A9392947F4C7F31C47A1 /* ProjectInspector.xib */,
 				DDC1BEF350C13C35B3A887D5 /* ProjectLanguages.xib */,
 				6B32D882C2814787D6A17F0C /* ProjectWindow.xib */,
@@ -2292,7 +2298,9 @@
 				E660AC4982D7C30A33DA03B9 /* ProjectAttributes.xib in Resources */,
 				17FE2DE94C8AE452B174A035 /* ProjectDescription.xib in Resources */,
 				FCE3960961AE1929DE7D7FCC /* ProjectLanguages.xib in Resources */,
+				8EC3266E98D5E7D20B687388 /* ProjectEditor.xib in Resources */,
 				85F6E2EEC1C4A43E18047335 /* FileAttributes.xib in Resources */,
+				5B4C12682708F495CAA77EEB /* InterfaceEditor.xib in Resources */,
 				F566B71836713CE816FA069B /* LogPanel.xib in Resources */,
 				7A01FDFAD89257C11ECFBC1E /* SaveModified.xib in Resources */,
 				86E7B7BAAE726D00DEA80DC4 /* cfile.template in Resources */,
