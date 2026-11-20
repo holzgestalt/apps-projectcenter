@@ -660,32 +660,28 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
   NSArray       *installed = [PCXcodeProject installedThemes];
   NSMenuItem    *item;
 
-  /* Default passes no theme: the user's own GSTheme default applies. */
-  [popUp addItemWithTitle:@"Default"];
+  /* An unset choice uses the application's own build default. */
+  [popUp addItemWithTitle:@"Application Default"];
   [[popUp menu] addItem:[NSMenuItem separatorItem]];
-  [popUp addItemWithTitle:@"GNUstep"];
-  [[popUp lastItem] setRepresentedObject:@"GNUstep"];
   for (NSString *name in installed)
   {
-    if ([name isEqual:@"GNUstep"]) continue;
     [popUp addItemWithTitle:name];
     [[popUp lastItem] setRepresentedObject:name];
   }
-  if ([theme length] && ![theme isEqual:@"GNUstep"] && ![installed containsObject:theme])
+  if ([theme length] && ![installed containsObject:theme])
   {
     [popUp addItemWithTitle:[NSString stringWithFormat:@"%@ (not installed)", theme]];
     [[popUp lastItem] setRepresentedObject:theme];
   }
   for (item in [popUp itemArray])
   {
-    if ([theme length] ? [[item representedObject] isEqual:theme] : [[item title] isEqual:@"Default"])
+    if ([theme length] ? [[item representedObject] isEqual:theme] : [[item title] isEqual:@"Application Default"])
     {
       [popUp selectItem:item];
     }
   }
-  [popUp setToolTip:@"The theme Run starts the application with on GNUstep (-GSTheme), "
-                    @"also with the destination My Mac (GNUstep) on macOS. "
-                    @"Default leaves the user's own theme."];
+  [popUp setToolTip:@"The theme used when building and running with GNUstep. Rebuild after changing it. "
+                    @"Application Default uses the application's own default."];
   return popUp;
 }
 

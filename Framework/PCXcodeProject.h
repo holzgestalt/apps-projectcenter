@@ -48,10 +48,10 @@
          ofProjectAtPath:(NSString *)path
                     error:(NSString **)error;
 
-/* GNUstep themes, found as GSTheme finds them: <Name>.theme bundles in the
- * Themes folder of each Library directory. Sorted names without the
- * extension; GNUstep's built-in theme is not a bundle and not listed. */
+/* Installed application appearance providers, registered through the same
+ * pkg-config profiles used by GNUstep Make. Sorted names. */
 + (NSArray *)installedThemes;
+/* Legacy bundle discovery, retained for older project metadata/tools. */
 + (NSArray *)themesInLibraries:(NSArray *)libraries;
 /* Arguments for running the application with the project's Theme on
  * GNUstep (-GSTheme Name), or an empty array. */
@@ -95,6 +95,11 @@
 /* The environment after sourcing GNUstep.sh, or nil. */
 + (NSDictionary *)GNUstepEnvironmentForMakefiles:(NSString *)makefiles;
 + (NSDictionary *)GNUstepEnvironment;
+/* Build environment including the project's application-linked Theme. An
+ * unset Theme removes an inherited override so the application's default wins. */
++ (NSDictionary *)buildEnvironmentForProject:(NSDictionary *)projectDict;
++ (NSDictionary *)buildEnvironmentForProject:(NSDictionary *)projectDict
+                            baseEnvironment:(NSDictionary *)environment;
 /* Whether Build and Run go through GNUstep: always on GNUstep, and on macOS
  * when "My Mac (GNUstep)" is chosen. */
 + (BOOL)buildsWithGNUstepForProject:(NSDictionary *)projectDict;

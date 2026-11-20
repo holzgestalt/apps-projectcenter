@@ -424,6 +424,14 @@ static void TestGNUstepSettings(void)
         @"the project reads the theme, and the build script's path is resolved");
   Check([[PCXcodeProject launchArgumentsForProject:dict] isEqual:(@[@"-GSTheme", @"GTK4 \"Native\""])],
         @"Run passes the theme");
+  NSDictionary *baseEnvironment = @{@"PATH": @"/example/tools", @"GNUSTEP_APPLICATION_THEME": @"ParentTheme"};
+  NSDictionary *buildEnvironment = [PCXcodeProject buildEnvironmentForProject:dict baseEnvironment:baseEnvironment];
+  Check([[buildEnvironment objectForKey:@"GNUSTEP_APPLICATION_THEME"] isEqual:@"GTK4 \"Native\""]
+        && [[buildEnvironment objectForKey:@"PATH"] isEqual:@"/example/tools"]
+        && [[baseEnvironment objectForKey:@"GNUSTEP_APPLICATION_THEME"] isEqual:@"ParentTheme"],
+        @"Build passes the selected provider to scripts/make without mutating its base environment");
+  Check([[PCXcodeProject buildEnvironmentForProject:@{} baseEnvironment:baseEnvironment]
+         objectForKey:@"GNUSTEP_APPLICATION_THEME"] == nil, @"Default clears an inherited theme override");
   Check([PCXcodeProject setGNUstepSetting:@"" forKey:@"Theme" ofProjectAtPath:bundle error:&error]
         && [[PCXcodeProject GNUstepSettingsOfProjectAtPath:bundle] objectForKey:@"Theme"] == nil
         && [[PCXcodeProject launchArgumentsForProject:[PCXcodeProject projectAtPath:bundle error:NULL]] count] == 0,
@@ -757,6 +765,12 @@ int main(int argc, char **argv)
 {
   @autoreleasepool
   {
+    if (argc == 2 && strcmp(argv[1], "--theme-settings") == 0)
+    {
+      TestGNUstepSettings();
+      NSLog(@"Project theme settings/build environment tests passed");
+      return 0;
+    }
     NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
     NSString *bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
     NSString *fixture = @"// !$*UTF8*$!\n{objectVersion=77; rootObject=PROJ; objects={"

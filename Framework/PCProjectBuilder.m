@@ -812,13 +812,10 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
     [makeTask setArguments:arguments];
   }
   else [makeTask setArguments:buildArgs];
-#ifndef GNUSTEP
-  /* GNUstep's make needs the environment of GNUstep.sh. */
-  if (!_usesXcodebuild && [PCXcodeProject GNUstepEnvironment])
+  if (!_usesXcodebuild)
   {
-    [makeTask setEnvironment:[PCXcodeProject GNUstepEnvironment]];
+    [makeTask setEnvironment:[PCXcodeProject buildEnvironmentForProject:[project projectDict]]];
   }
-#endif
   [makeTask setCurrentDirectoryPath:[project projectPath]];
   [makeTask setLaunchPath:_usesXcodebuild ? [PCXcodeProject xcodebuildPath] : buildTool];
   [makeTask setStandardOutput:stdOutPipe];

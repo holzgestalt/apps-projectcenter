@@ -4,6 +4,8 @@
 #include <sys/sysctl.h>
 #endif
 
+static NSData *RunTool(NSString *tool, NSArray *arguments);
+
 static NSString * const PCXcodeProjectMarker = @"XCODE_PROJECT_PATH";
 
 static NSMutableDictionary *Group(NSString *name)
@@ -887,8 +889,34 @@ withIntermediateDirectories:YES attributes:nil error:NULL];
 
 + (NSArray *)installedThemes
 {
-  return [self themesInLibraries:NSSearchPathForDirectoriesInDomains(NSAllLibrariesDirectory,
-                                                                     NSAllDomainsMask, YES)];
+  NSMutableSet *names = [NSMutableSet set];
+  NSMutableArray *folders = [NSMutableArray array];
+  NSDictionary *environment = [[NSProcessInfo processInfo] environment];
+
+  /* Installed application providers register the same pkg-config profiles
+   * that GNUstep Make uses when linking the selected appearance. */
+  for (NSString *key in @[@"PKG_CONFIG_PATH", @"PKG_CONFIG_LIBDIR"])
+    if ([[environment objectForKey:key] length])
+      [folders addObjectsFromArray:[[environment objectForKey:key] componentsSeparatedByString:@":"]];
+  for (NSString *variable in @[@"GNUSTEP_SYSTEM_LIBRARIES", @"GNUSTEP_LOCAL_LIBRARIES", @"GNUSTEP_USER_LIBRARIES"])
+  {
+    NSData *data = RunTool(@"/usr/bin/env", @[@"gnustep-config", [@"--variable=" stringByAppendingString:variable]]);
+    NSString *path = data ? [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease] : nil;
+    path = [path stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if ([path length]) [folders addObject:[path stringByAppendingPathComponent:@"pkgconfig"]];
+  }
+  NSData *data = RunTool(@"/usr/bin/env", @[@"pkg-config", @"--variable=pc_path", @"pkg-config"]);
+  NSString *path = data ? [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease] : nil;
+  if ([path length]) [folders addObjectsFromArray:[[path stringByTrimmingCharactersInSet:
+    [NSCharacterSet whitespaceAndNewlineCharacterSet]] componentsSeparatedByString:@":"]];
+  for (NSString *folder in folders)
+    for (NSString *file in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:folder error:NULL])
+      if ([file hasPrefix:@"gnustep-theme-"] && [file hasSuffix:@".pc"])
+      {
+        NSString *name = [[file stringByDeletingPathExtension] substringFromIndex:[@"gnustep-theme-" length]];
+        if ([name length]) [names addObject:name];
+      }
+  return [[names allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 }
 
 + (NSArray *)launchArgumentsForProject:(NSDictionary *)projectDict
@@ -1714,6 +1742,25 @@ static BOOL IsGNUstepMakefiles(NSString *path)
     environment = environment ? [environment retain] : [[NSNull null] retain];
   }
   return environment == [NSNull null] ? nil : environment;
+}
+
++ (NSDictionary *)buildEnvironmentForProject:(NSDictionary *)projectDict
+                            baseEnvironment:(NSDictionary *)environment
+{
+  NSMutableDictionary *result = [NSMutableDictionary dictionaryWithDictionary:environment];
+  NSString *theme = [projectDict objectForKey:@"XCODE_Theme"];
+
+  if ([theme length]) [result setObject:theme forKey:@"GNUSTEP_APPLICATION_THEME"];
+  else [result removeObjectForKey:@"GNUSTEP_APPLICATION_THEME"];
+  return result;
+}
+
++ (NSDictionary *)buildEnvironmentForProject:(NSDictionary *)projectDict
+{
+  NSDictionary *environment = [self GNUstepEnvironment];
+
+  return [self buildEnvironmentForProject:projectDict
+                          baseEnvironment:environment ?: [[NSProcessInfo processInfo] environment]];
 }
 
 + (BOOL)buildsWithGNUstepForProject:(NSDictionary *)projectDict
