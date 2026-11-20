@@ -1,6 +1,12 @@
 # Plan: cross compiling, and building with the Deployment settings
 
-Status: proposal, nothing of it is built yet. It extends the Deployment tab
+Status: proposal, nothing of it is built yet. Since it was written, the
+Deployment settings moved into the targets' build settings: a Mac target
+(only `ARCHS`) and a Linux target (`SDKROOT = linux`) with its distributions;
+see `XcodeProjects.md`, "Deployment and Archive". A platform below is a
+target's macOS entry or one of a Linux target's distributions.
+
+It extends the Deployment tab
 (`PCDeployment`, `PCDeploymentEditor`) and Archive (`PCProjectBuilder`), see
 `XcodeProjects.md`, "Deployment and Archive".
 
@@ -54,7 +60,7 @@ turned on.
      built in a Container replaces it on a Mac.
 2. **The toolbar edits the chosen platform.** Scheme (macOS) and Configuration
    are settings of the platform, so the toolbar popups show and change them
-   (saved in `GNUstep/ProjectCenter.plist`, like the Deployment tab does).
+   (saved as build settings of the target, like the Deployment tab does).
    Everything else stays in the Deployment tab.
 3. **Build** runs the build half of the platform's Archive script (everything
    up to "Built $APP", no packaging), into `build/Deployment/<platform>`:

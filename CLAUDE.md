@@ -54,8 +54,10 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 - `Framework/`, `Headers/ProjectCenter/`, `Headers/Protocols/`: ProjectCenter.framework, which holds
   the project model, project window, navigator, builder, launcher and Xcode project reader
   (`PCXcodeProject`, `PCXcodeProjectEditor`, `PCNavigators`, `PCInterfaceEditor`).
-  `PCDeployment` (Foundation only) holds the Deployment platforms kept in
-  `GNUstep/ProjectCenter.plist` and writes the shell scripts that Archive (`PCProjectBuilder`) runs:
+  `PCDeployment` (Foundation only) holds the Deployment, kept as build settings of the targets
+  (a Mac target's `ARCHS`; a Linux target, `SDKROOT = linux`, has `GNUSTEP_DISTRIBUTIONS` and
+  `GNUSTEP_<DISTRIBUTION>_<SETTING>`, see `PCDeployment.h`), and writes the shell scripts that
+  Archive (`PCProjectBuilder`) runs:
   `build/Deployment/archive.sh`, which builds and packages each platform natively, with a cross
   toolchain's `GNUstep.sh` or in a Docker/Podman container. `XcodeProjectTests` runs them with a
   stand-in toolchain. The XIB editor's
@@ -85,8 +87,9 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
     (`PCXcodeProjectEditor`). Its General pane has fixed forms for the project and a target,
     which the code fills from `-generalRows`. The target list's starting width is set in code
     (`-_placeDivider:`): a width constraint on a split view pane pulls the divider back after a drag.
-    Its Deployment tab (`PCDeploymentEditor`) lists the platforms of Archive; the selected
-    platform's form is built in code from `+[PCDeployment fieldsForKind:]`.
+    Its Deployment tab (`PCDeploymentEditor`) shows the selected target's: macOS's
+    Architectures, or a Linux target's distributions; the selected one's form is built in code
+    from `+[PCDeployment fieldsForKind:]`.
   - `Framework/English.lproj/InterfaceEditor.xib`, the XIB editor (`PCInterfaceEditor`): the
     object outline, canvas, inspector panes, Connections controls and object library. The
     inspector's Identity, Attributes and Size forms are built for the selection from the

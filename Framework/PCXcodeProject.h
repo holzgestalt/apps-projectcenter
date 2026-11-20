@@ -39,20 +39,43 @@
               inFile:(NSString *)file
                error:(NSString **)error;
 
-/* GNUstep settings: GNUstep/ProjectCenter.plist beside the .xcodeproj,
- * ProjectCenter's own file (the Xcode project stays unchanged). Keys are
- * TargetName, BuildScript, Executable and Theme, all strings as written
- * (paths not resolved). +projectAtPath:error: puts them in the project
- * dictionary as XCODE_<Key>, with paths resolved. */
+/* Targets by platform: a target whose SDKROOT is linux (or windows) builds
+ * for that system with GNUstep; any other target is a Mac target. The
+ * target is an entry of +overviewOfProjectAtPath:error:. */
++ (NSString *)platformOfTarget:(NSDictionary *)target;
+/* The first Linux target of an overview, or nil. */
++ (NSDictionary *)linuxTargetOfOverview:(NSDictionary *)overview;
+/* A build setting of a target: its Release configuration's, else the first
+ * configuration that has it; a list is joined with spaces. nil if none has
+ * it. Only the target's own settings, not the project's. */
++ (NSString *)buildSetting:(NSString *)key ofTarget:(NSDictionary *)target;
+/* Sets (empty or nil: removes) a build setting in every configuration of
+ * a target. */
++ (BOOL)setBuildSetting:(NSString *)key
+                     to:(NSString *)value
+               ofTarget:(NSDictionary *)target
+        ofProjectAtPath:(NSString *)path
+                  error:(NSString **)error;
+
+/* GNUstep settings, keys TargetName, BuildScript, Executable and Theme, all
+ * strings as written (paths not resolved). BuildScript, Executable and Theme
+ * are build settings of the Linux target (GNUSTEP_BUILD_SCRIPT,
+ * GNUSTEP_EXECUTABLE, GNUSTEP_THEME); without a Linux target, and for
+ * values from before, they are in GNUstep/ProjectCenter.plist beside the
+ * .xcodeproj, ProjectCenter's own file. The Linux target's value wins.
+ * +projectAtPath:error: puts them in the project dictionary as
+ * XCODE_<Key>, with paths resolved. */
 + (NSDictionary *)GNUstepSettingsOfProjectAtPath:(NSString *)path;
-/* Sets one of them; an empty or nil value removes it. Creates the file
- * when needed and removes it when no setting is left. */
+/* Sets one of them; an empty or nil value removes it. With a Linux target,
+ * BuildScript, Executable and Theme go into it and out of the plist file;
+ * the plist file is created when needed and removed when no setting is
+ * left. */
 + (BOOL)setGNUstepSetting:(NSString *)value
                    forKey:(NSString *)key
          ofProjectAtPath:(NSString *)path
                     error:(NSString **)error;
 /* Sets any property list value (a string, or arrays and dictionaries of
- * them, such as Deployment); an empty or nil value removes it. */
+ * them) in GNUstep/ProjectCenter.plist; an empty or nil value removes it. */
 + (BOOL)setGNUstepValue:(id)value
                  forKey:(NSString *)key
         ofProjectAtPath:(NSString *)path

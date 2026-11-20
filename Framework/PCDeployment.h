@@ -14,12 +14,22 @@
 
 #import <Foundation/Foundation.h>
 
-/* The platforms are kept as Deployment in GNUstep/ProjectCenter.plist, an
- * array of dictionaries of strings: Kind (macOS, Debian, RPM, Linux or
- * Windows), Name, Enabled (YES or NO) and the settings of the kind (see
- * +fieldsForKind:). A setting that is not there takes its default
- * (+defaultValueForKey:ofDeployment:project:), so a platform holds only
- * what was changed. Foundation only, so the tests can use it.
+/* The Deployment of an Xcode project lives in the build settings of its
+ * targets, where Xcode leaves it alone (see +[PCXcodeProject
+ * platformOfTarget:]):
+ * - A Mac target has one platform, macOS, whose only setting is the
+ *   target's ARCHS (Architectures); the rest comes from the Xcode project.
+ * - A Linux target (SDKROOT = linux) lists its distributions in
+ *   GNUSTEP_DISTRIBUTIONS (Debian, RPM, Linux: words of Kind) and keeps each
+ *   one's settings as GNUSTEP_<KIND>_<SETTING> (KIND being DEBIAN, RPM or
+ *   TARBALL, SETTING the key in capitals: GNUSTEP_DEBIAN_PACKAGE_NAME).
+ *   ARCHS (Architectures) holds the architectures of all its distributions.
+ * Settings are written into every configuration of the target, and only
+ * when changed: one that is not there takes its default
+ * (+defaultValueForKey:ofDeployment:project:). A deployment is a dictionary
+ * of strings: Kind, Target (its name), Architectures, the settings, and for
+ * Archive, Name and Architecture (one of them, in the kind's own words).
+ * Foundation only, so the tests can use it.
  *
  * A GNUstep platform (all but macOS) is built in one of three ways (Build):
  * - Native: with this computer's GNUstep, for this computer's system and
@@ -45,25 +55,50 @@
 /* The keys of the fields that the deployment's Build doesn't use. */
 + (NSSet *)unusedKeysOfDeployment:(NSDictionary *)deployment;
 
-/* The deployments of the project at path (the .xcodeproj), and saving them.
- * An empty list removes the Deployment setting. */
+/* The kinds of a platform (macOS, Linux or Windows), in menu order. */
++ (NSArray *)kindsForPlatform:(NSString *)platform;
+/* The build setting a setting of a kind is kept in; nil for those that are
+ * not kept (Kind, Name, Enabled, Architecture). */
++ (NSString *)buildSettingForKey:(NSString *)key ofKind:(NSString *)kind;
+/* The distributions (kinds) of a Linux target, in its order. */
++ (NSArray *)distributionsOfTarget:(NSDictionary *)target;
+/* The deployments of a target, an entry of +[PCXcodeProject
+ * overviewOfProjectAtPath:error:]: macOS for a Mac target, one for each
+ * distribution of a Linux target. */
++ (NSArray *)deploymentsOfTarget:(NSDictionary *)target;
+/* What Archive makes for the project at path (the .xcodeproj): macOS for
+ * every Mac application target (with its own scheme where it has one), and
+ * every distribution of each Linux target once for each architecture, with
+ * Name and Architecture. */
 + (NSArray *)deploymentsOfProjectAtPath:(NSString *)path;
-+ (BOOL)setDeployments:(NSArray *)deployments
-       ofProjectAtPath:(NSString *)path
-                 error:(NSString **)error;
 
-/* A new platform of a kind, enabled, with a name not yet used. */
-+ (NSDictionary *)deploymentOfKind:(NSString *)kind
-                          existing:(NSArray *)deployments
-                        forProject:(NSDictionary *)projectDict;
-/* The deployment as another kind: it keeps Enabled and the settings the new
- * kind has too, and its architecture where the new kind builds for it; a
- * name made from the old kind is made again, a name of the user's own kept.
- * deployments are all of them, this one included. */
-+ (NSDictionary *)deployment:(NSDictionary *)deployment
-               changedToKind:(NSString *)kind
-                    existing:(NSArray *)deployments
-                  forProject:(NSDictionary *)projectDict;
+/* Edits, written into the target's build settings at once. An empty or nil
+ * value removes the setting. */
++ (BOOL)setValue:(NSString *)value
+          forKey:(NSString *)key
+    ofDeployment:(NSDictionary *)deployment
+          target:(NSDictionary *)target
+   projectAtPath:(NSString *)path
+           error:(NSString **)error;
++ (BOOL)addDistribution:(NSString *)kind
+               toTarget:(NSDictionary *)target
+          projectAtPath:(NSString *)path
+                  error:(NSString **)error;
+/* Removes the distribution and its settings. */
++ (BOOL)removeDistribution:(NSString *)kind
+                fromTarget:(NSDictionary *)target
+             projectAtPath:(NSString *)path
+                     error:(NSString **)error;
+/* The deployment as another kind: it keeps the settings the new kind has
+ * too. */
++ (NSDictionary *)deployment:(NSDictionary *)deployment changedToKind:(NSString *)kind;
+/* Changes a distribution of a target into another, in its place; refused if
+ * the target has that one already. */
++ (BOOL)changeDistribution:(NSDictionary *)deployment
+                    toKind:(NSString *)kind
+                  ofTarget:(NSDictionary *)target
+             projectAtPath:(NSString *)path
+                     error:(NSString **)error;
 
 /* The product of the project read by +[PCXcodeProject projectAtPath:error:]:
  * {Target, Product, DisplayName, Version, Identifier}, from its Release

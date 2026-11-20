@@ -565,7 +565,7 @@ static void TestDeployment(void)
   NSString            *root = [[NSTemporaryDirectory() stringByAppendingPathComponent:
                                 [[NSProcessInfo processInfo] globallyUniqueString]] stringByResolvingSymlinksInPath];
   NSString            *bundle, *error = nil, *text, *script, *folder;
-  NSDictionary        *projectDict, *scripts, *debian, *second, *container;
+  NSDictionary        *projectDict, *scripts, *debian, *container, *overview, *macTarget, *linuxTarget;
   NSMutableDictionary *tarball, *windows;
   NSArray             *list;
 
@@ -573,13 +573,18 @@ static void TestDeployment(void)
   root = [root stringByResolvingSymlinksInPath];
   bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
   Write(root, @"Sample.xcodeproj/project.pbxproj", @"{objectVersion=77; rootObject=PROJ; objects={"
-        "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(APP);buildConfigurationList=PL;};"
+        "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(APP, LNX);buildConfigurationList=PL;};"
         "PL={isa=XCConfigurationList;buildConfigurations=(PR);};"
         "PR={isa=XCBuildConfiguration;name=Release;buildSettings={MARKETING_VERSION=\"2.1\";};};"
         "APP={isa=PBXNativeTarget;name=Sample;productName=Sample;buildConfigurationList=TL;"
         "productType=\"com.apple.product-type.application\";};"
         "TL={isa=XCConfigurationList;buildConfigurations=(TR);};"
-        "TR={isa=XCBuildConfiguration;name=Release;buildSettings={PRODUCT_NAME=\"$(TARGET_NAME) App\";};};"
+        "TR={isa=XCBuildConfiguration;name=Release;buildSettings={\n\t\t\t\tPRODUCT_NAME = \"$(TARGET_NAME) App\";\n\t\t\t};};"
+        "LNX={isa=PBXNativeTarget;name=\"Sample Linux\";productName=Sample;buildConfigurationList=LL;"
+        "productType=\"com.apple.product-type.application\";};"
+        "LL={isa=XCConfigurationList;buildConfigurations=(LD, LR);};"
+        "LD={isa=XCBuildConfiguration;name=Debug;buildSettings={\n\t\t\t\tPRODUCT_NAME = Sample;\n\t\t\t\tSDKROOT = linux;\n\t\t\t};};"
+        "LR={isa=XCBuildConfiguration;name=Release;buildSettings={\n\t\t\t\tPRODUCT_NAME = Sample;\n\t\t\t\tSDKROOT = linux;\n\t\t\t};};"
         "ROOT={isa=PBXGroup;children=();sourceTree=\"<group>\";};};}");
   /* A build script that makes the bundle where GNUSTEP_BUILD_DIR says. */
   Write(root, @"build.sh", @"for argument; do case \"$argument\" in GNUSTEP_BUILD_DIR=*) dir=${argument#*=};; esac; done\n"
@@ -588,45 +593,126 @@ static void TestDeployment(void)
   Write(root, @"GNUstep/ProjectCenter.plist", @"{BuildScript=build.sh;}");
   projectDict = [PCXcodeProject projectAtPath:bundle error:&error];
   Check(projectDict != nil, error);
-  Check([[PCDeployment deploymentsOfProjectAtPath:bundle] count] == 0, @"no deployment");
+
+  /* Targets: SDKROOT = linux makes the Linux target. */
+  overview = [PCXcodeProject overviewOfProjectAtPath:bundle error:&error];
+  macTarget = [[overview objectForKey:@"Targets"] objectAtIndex:0];
+  linuxTarget = [PCXcodeProject linuxTargetOfOverview:overview];
+  Check([[PCXcodeProject platformOfTarget:macTarget] isEqual:@"macOS"]
+        && [[linuxTarget objectForKey:@"Name"] isEqual:@"Sample Linux"], @"a Mac and a Linux target");
+  list = [PCDeployment deploymentsOfProjectAtPath:bundle];
+  Check([list count] == 1 && [[[list objectAtIndex:0] objectForKey:@"Kind"] isEqual:@"macOS"]
+        && [[[list objectAtIndex:0] objectForKey:@"Name"] isEqual:@"macOS"],
+        [NSString stringWithFormat:@"a Mac application target archives for macOS, no distribution yet: %@", list]);
 
   Check([[[PCDeployment productOfProject:projectDict] objectForKey:@"Version"] isEqual:@"2.1"]
         && [[[PCDeployment productOfProject:projectDict] objectForKey:@"Product"] isEqual:@"Sample App"],
         [NSString stringWithFormat:@"the product's name and version: %@", [PCDeployment productOfProject:projectDict]]);
-  debian = [PCDeployment deploymentOfKind:@"Debian" existing:@[] forProject:projectDict];
-  Check([[debian objectForKey:@"Enabled"] isEqual:@"YES"] && [[debian objectForKey:@"Name"] hasPrefix:@"Debian / Ubuntu ("],
-        [NSString stringWithFormat:@"a new platform: %@", debian]);
-  second = [PCDeployment deploymentOfKind:@"Debian" existing:@[debian] forProject:projectDict];
-  Check(![[PCDeployment valueForKey:@"Architecture" ofDeployment:second project:projectDict]
-          isEqual:[PCDeployment valueForKey:@"Architecture" ofDeployment:debian project:projectDict]]
-        && ![[second objectForKey:@"Name"] isEqual:[debian objectForKey:@"Name"]],
-        @"another platform of a kind is another architecture");
-  Check([[[[PCDeployment fieldsForKind:@"Windows"] objectAtIndex:1] objectForKey:@"Key"] isEqual:@"Kind"],
-        @"the form starts with the platform");
+  Check([[[[PCDeployment fieldsForKind:@"Debian"] objectAtIndex:1] objectForKey:@"Key"] isEqual:@"Kind"]
+        && [[[[PCDeployment fieldsForKind:@"Debian"] objectAtIndex:2] objectForKey:@"Key"] isEqual:@"Architectures"]
+        && [[[PCDeployment fieldsForKind:@"macOS"] valueForKey:@"Key"] containsObject:@"Architectures"]
+        && [[[PCDeployment fieldsForKind:@"macOS"] filteredArrayUsingPredicate:
+             [NSPredicate predicateWithFormat:@"Key != nil"]] count] == 1,
+        @"a distribution's form starts with it and the architectures; macOS has only those");
+  Check([[PCDeployment buildSettingForKey:@"PackageName" ofKind:@"Debian"] isEqual:@"GNUSTEP_DEBIAN_PACKAGE_NAME"]
+        && [[PCDeployment buildSettingForKey:@"AutomaticDependencies" ofKind:@"RPM"]
+            isEqual:@"GNUSTEP_RPM_AUTOMATIC_DEPENDENCIES"]
+        && [[PCDeployment buildSettingForKey:@"FileName" ofKind:@"Linux"] isEqual:@"GNUSTEP_TARBALL_FILE_NAME"]
+        && [[PCDeployment buildSettingForKey:@"Architectures" ofKind:@"macOS"] isEqual:@"ARCHS"]
+        && [PCDeployment buildSettingForKey:@"Name" ofKind:@"Debian"] == nil
+        && [PCDeployment buildSettingForKey:@"Target" ofKind:@"RPM"] == nil
+        && [PCDeployment buildSettingForKey:@"Maintainer" ofKind:@"RPM"] == nil,
+        @"the build setting of each setting");
   {
-    NSDictionary *mac = @{@"Kind": @"macOS", @"Name": @"macOS", @"Enabled": @"NO", @"Format": @"dmg"};
-    NSDictionary *own = @{@"Kind": @"Debian", @"Name": @"Office", @"Architecture": @"amd64",
-                          @"Configuration": @"Beta", @"Maintainer": @"Me", @"Build": @"Container"};
-    NSDictionary *linux, *rpm, *tar;
+    NSDictionary *own = @{@"Kind": @"Debian", @"Architectures": @"x86_64", @"Configuration": @"Beta",
+                          @"Maintainer": @"Me", @"Build": @"Container"};
+    NSDictionary *rpm = [PCDeployment deployment:own changedToKind:@"RPM"];
 
-    linux = [PCDeployment deployment:mac changedToKind:@"Linux" existing:@[mac] forProject:projectDict];
-    Check([[linux objectForKey:@"Kind"] isEqual:@"Linux"] && [[linux objectForKey:@"Name"] hasPrefix:@"Linux ("]
-          && [[linux objectForKey:@"Enabled"] isEqual:@"NO"] && [linux objectForKey:@"Format"] == nil,
-          [NSString stringWithFormat:@"macOS made Linux: a new name, kept Enabled, no macOS settings: %@", linux]);
-    rpm = [PCDeployment deployment:own changedToKind:@"RPM" existing:@[own] forProject:projectDict];
-    Check([[rpm objectForKey:@"Name"] isEqual:@"Office"] && [[rpm objectForKey:@"Configuration"] isEqual:@"Beta"]
-          && [[rpm objectForKey:@"Build"] isEqual:@"Container"] && [rpm objectForKey:@"Maintainer"] == nil
-          && ![[rpm objectForKey:@"Architecture"] isEqual:@"amd64"],
-          [NSString stringWithFormat:@"Debian made RPM: own name and shared settings kept, "
-           @"Debian-only settings and architecture dropped: %@", rpm]);
-    tar = [PCDeployment deployment:rpm changedToKind:@"Linux" existing:@[rpm] forProject:projectDict];
-    Check([[tar objectForKey:@"Architecture"] isEqual:[rpm objectForKey:@"Architecture"]]
-          || ([tar objectForKey:@"Architecture"] == nil && [rpm objectForKey:@"Architecture"] == nil),
-          [NSString stringWithFormat:@"an architecture both kinds build for is kept: %@", tar]);
-    Check([PCDeployment deployment:own changedToKind:@"Nothing" existing:@[own] forProject:projectDict] == nil
-          && [PCDeployment deployment:own changedToKind:@"Debian" existing:@[own] forProject:projectDict] == own,
-          @"an unknown or unchanged kind");
+    Check([[rpm objectForKey:@"Configuration"] isEqual:@"Beta"] && [[rpm objectForKey:@"Build"] isEqual:@"Container"]
+          && [[rpm objectForKey:@"Architectures"] isEqual:@"x86_64"] && [rpm objectForKey:@"Maintainer"] == nil,
+          [NSString stringWithFormat:@"Debian made RPM keeps the shared settings: %@", rpm]);
+    Check([PCDeployment deployment:own changedToKind:@"Nothing"] == nil
+          && [PCDeployment deployment:own changedToKind:@"Debian"] == own, @"an unknown or unchanged kind");
   }
+
+  /* Distributions, written as build settings of the Linux target. */
+  Check([PCDeployment addDistribution:@"Debian" toTarget:linuxTarget projectAtPath:bundle error:&error]
+        && [PCDeployment addDistribution:@"RPM" toTarget:linuxTarget projectAtPath:bundle error:&error], error);
+  Check(![PCDeployment addDistribution:@"macOS" toTarget:linuxTarget projectAtPath:bundle error:&error],
+        @"only Linux distributions in a Linux target");
+  linuxTarget = [PCXcodeProject linuxTargetOfOverview:[PCXcodeProject overviewOfProjectAtPath:bundle error:NULL]];
+  debian = [[PCDeployment deploymentsOfTarget:linuxTarget] objectAtIndex:0];
+  Check([PCDeployment setValue:@"Me <me@example.com>" forKey:@"Maintainer" ofDeployment:debian target:linuxTarget
+                 projectAtPath:bundle error:&error]
+        && [PCDeployment setValue:@"x86_64 aarch64" forKey:@"Architectures" ofDeployment:debian target:linuxTarget
+                    projectAtPath:bundle error:&error]
+        && [PCDeployment setValue:@"Beta" forKey:@"Configuration"
+                     ofDeployment:[[PCDeployment deploymentsOfTarget:linuxTarget] objectAtIndex:1]
+                           target:linuxTarget projectAtPath:bundle error:&error], error);
+  text = [NSString stringWithContentsOfFile:[bundle stringByAppendingPathComponent:@"project.pbxproj"]
+                                   encoding:NSUTF8StringEncoding error:NULL];
+  Check([[text componentsSeparatedByString:@"GNUSTEP_DEBIAN_MAINTAINER = \"Me <me@example.com>\";"] count] == 3
+        && [[text componentsSeparatedByString:@"GNUSTEP_DISTRIBUTIONS = \"Debian RPM\";"] count] == 3
+        && [[text componentsSeparatedByString:@"ARCHS = \"x86_64 aarch64\";"] count] == 3,
+        [NSString stringWithFormat:@"written into both configurations of the Linux target: %@", text]);
+  linuxTarget = [PCXcodeProject linuxTargetOfOverview:[PCXcodeProject overviewOfProjectAtPath:bundle error:NULL]];
+  list = [PCDeployment deploymentsOfTarget:linuxTarget];
+  Check([[list valueForKey:@"Kind"] isEqual:(@[@"Debian", @"RPM"])]
+        && [[[list objectAtIndex:0] objectForKey:@"Maintainer"] isEqual:@"Me <me@example.com>"]
+        && [[[list objectAtIndex:1] objectForKey:@"Configuration"] isEqual:@"Beta"]
+        && [[[list objectAtIndex:1] objectForKey:@"Architectures"] isEqual:@"x86_64 aarch64"],
+        [NSString stringWithFormat:@"read back from the target: %@", list]);
+  list = [PCDeployment deploymentsOfProjectAtPath:bundle];
+  Check([[list valueForKey:@"Name"] isEqual:(@[@"macOS", @"Debian / Ubuntu (amd64)", @"Debian / Ubuntu (arm64)",
+                                              @"Fedora / openSUSE (x86_64)", @"Fedora / openSUSE (aarch64)"])]
+        && [[[list objectAtIndex:2] objectForKey:@"Architecture"] isEqual:@"arm64"],
+        [NSString stringWithFormat:@"Archive: each distribution once per architecture, in its words: %@",
+         [list valueForKey:@"Name"]]);
+
+  /* Changing and removing a distribution takes its settings along. */
+  Check(![PCDeployment changeDistribution:[[PCDeployment deploymentsOfTarget:linuxTarget] objectAtIndex:1]
+                                   toKind:@"Debian" ofTarget:linuxTarget projectAtPath:bundle error:&error],
+        @"a distribution the target has already is refused");
+  Check([PCDeployment changeDistribution:[[PCDeployment deploymentsOfTarget:linuxTarget] objectAtIndex:1]
+                                  toKind:@"Linux" ofTarget:linuxTarget projectAtPath:bundle error:&error], error);
+  linuxTarget = [PCXcodeProject linuxTargetOfOverview:[PCXcodeProject overviewOfProjectAtPath:bundle error:NULL]];
+  Check([[PCDeployment distributionsOfTarget:linuxTarget] isEqual:(@[@"Debian", @"Linux"])]
+        && [[PCXcodeProject buildSetting:@"GNUSTEP_TARBALL_CONFIGURATION" ofTarget:linuxTarget] isEqual:@"Beta"]
+        && [PCXcodeProject buildSetting:@"GNUSTEP_RPM_CONFIGURATION" ofTarget:linuxTarget] == nil
+        && [PCXcodeProject buildSetting:@"GNUSTEP_TARBALL_TARGET" ofTarget:linuxTarget] == nil,
+        @"RPM made a tarball, in its place, with its settings");
+  Check([PCDeployment removeDistribution:@"Debian" fromTarget:linuxTarget projectAtPath:bundle error:&error], error);
+  linuxTarget = [PCXcodeProject linuxTargetOfOverview:[PCXcodeProject overviewOfProjectAtPath:bundle error:NULL]];
+  Check([[PCDeployment distributionsOfTarget:linuxTarget] isEqual:(@[@"Linux"])]
+        && [PCXcodeProject buildSetting:@"GNUSTEP_DEBIAN_MAINTAINER" ofTarget:linuxTarget] == nil,
+        @"a removed distribution leaves no settings");
+
+  /* The Mac target: only its ARCHS. */
+  Check([PCDeployment setValue:@"arm64" forKey:@"Architectures"
+                  ofDeployment:[[PCDeployment deploymentsOfTarget:macTarget] objectAtIndex:0]
+                        target:macTarget projectAtPath:bundle error:&error], error);
+  macTarget = [[[PCXcodeProject overviewOfProjectAtPath:bundle error:NULL] objectForKey:@"Targets"] objectAtIndex:0];
+  Check([[[[PCDeployment deploymentsOfTarget:macTarget] objectAtIndex:0] objectForKey:@"Architectures"] isEqual:@"arm64"]
+        && [PCXcodeProject buildSetting:@"GNUSTEP_DISTRIBUTIONS" ofTarget:macTarget] == nil,
+        @"the Mac target's architectures are its ARCHS");
+
+  /* The GNUstep settings move from ProjectCenter.plist to the Linux target. */
+  Check([[[PCXcodeProject GNUstepSettingsOfProjectAtPath:bundle] objectForKey:@"BuildScript"] isEqual:@"build.sh"],
+        @"a setting from before is still read from ProjectCenter.plist");
+  Check([PCXcodeProject setGNUstepSetting:@"GTK4Native" forKey:@"Theme" ofProjectAtPath:bundle error:&error]
+        && [PCXcodeProject setGNUstepSetting:@"build.sh" forKey:@"BuildScript" ofProjectAtPath:bundle error:&error],
+        error);
+  linuxTarget = [PCXcodeProject linuxTargetOfOverview:[PCXcodeProject overviewOfProjectAtPath:bundle error:NULL]];
+  Check([[PCXcodeProject buildSetting:@"GNUSTEP_THEME" ofTarget:linuxTarget] isEqual:@"GTK4Native"]
+        && [[PCXcodeProject buildSetting:@"GNUSTEP_BUILD_SCRIPT" ofTarget:linuxTarget] isEqual:@"build.sh"]
+        && ![fm fileExistsAtPath:[root stringByAppendingPathComponent:@"GNUstep/ProjectCenter.plist"]],
+        @"set again, they are build settings of the Linux target, and the plist file is gone");
+  projectDict = [PCXcodeProject projectAtPath:bundle error:&error];
+  Check([[projectDict objectForKey:@"XCODE_BuildScript"] isEqual:[root stringByAppendingPathComponent:@"build.sh"]]
+        && [[projectDict objectForKey:@"XCODE_Theme"] isEqual:@"GTK4Native"],
+        @"the project reads them from the Linux target");
+
+  debian = @{@"Kind": @"Debian", @"Name": @"Debian / Ubuntu (amd64)", @"Architecture": @"amd64"};
   Check([[PCDeployment valueForKey:@"PackageName" ofDeployment:debian project:projectDict] isEqual:@"sample-app"]
         && [[PCDeployment valueForKey:@"Version" ofDeployment:debian project:projectDict] isEqual:@"2.1"],
         @"package name and version from the project");
@@ -646,21 +732,8 @@ static void TestDeployment(void)
   Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Linux", @"Build": @"Toolchain"} project:projectDict]
           componentsJoinedByString:@" "] rangeOfString:@"Set Toolchain"].location != NSNotFound,
         @"a toolchain needs its folder");
-
-  /* Saved as only what was set, read back the same. */
-  container = @{@"Kind": @"RPM", @"Name": @"Fedora \"arm\"", @"Enabled": @"NO", @"Build": @"Container",
-                @"Architecture": @"aarch64", @"Summary": @"", @"Setup": @"dnf install -y it's"};
-  Check([PCDeployment setDeployments:@[debian, container] ofProjectAtPath:bundle error:&error], error);
-  list = [PCDeployment deploymentsOfProjectAtPath:bundle];
-  Check([list count] == 2 && [[list objectAtIndex:0] isEqual:debian]
-        && [[[list objectAtIndex:1] objectForKey:@"Name"] isEqual:@"Fedora \"arm\""]
-        && [[list objectAtIndex:1] objectForKey:@"Summary"] == nil,
-        [NSString stringWithFormat:@"deployments read back: %@", list]);
-  text = [NSString stringWithContentsOfFile:[root stringByAppendingPathComponent:@"GNUstep/ProjectCenter.plist"]
-                                   encoding:NSUTF8StringEncoding error:NULL];
-  Check([text hasPrefix:@"{\n    BuildScript = \"build.sh\";\n    Deployment = (\n        {\n"],
-        [NSString stringWithFormat:@"written as a readable property list: %@", text]);
-  Check([PCXcodeProject projectAtPath:bundle error:&error] != nil, @"the project still reads its settings");
+  container = @{@"Kind": @"RPM", @"Name": @"Fedora \"arm\"", @"Build": @"Container",
+                @"Architecture": @"aarch64", @"Setup": @"dnf install -y it's"};
 
   /* The scripts: well formed, the container run with its platform. */
   folder = [root stringByAppendingPathComponent:@"build/Archives/Test"];
@@ -697,8 +770,7 @@ static void TestDeployment(void)
   }
 
   /* Archive, with the stand-in toolchain: a tar.gz and a Windows zip. */
-  tarball = [NSMutableDictionary dictionaryWithDictionary:
-             [PCDeployment deploymentOfKind:@"Linux" existing:@[] forProject:projectDict]];
+  tarball = [NSMutableDictionary dictionaryWithDictionary:@{@"Kind": @"Linux", @"Name": @"Linux (x86_64)"}];
   [tarball setObject:@"Toolchain" forKey:@"Build"];
   [tarball setObject:[root stringByAppendingPathComponent:@"Toolchain"] forKey:@"Toolchain"];
   windows = [NSMutableDictionary dictionaryWithDictionary:tarball];

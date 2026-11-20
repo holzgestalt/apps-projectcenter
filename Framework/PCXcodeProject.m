@@ -188,6 +188,22 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier, NSDictio
 }
 
 @implementation PCXcodeProject
+/* The platform of a target as project.pbxproj has it (see
+ * +platformOfTarget:). */
+static NSString *PlatformOfRawTarget(NSDictionary *target, NSDictionary *objects)
+{
+  for (NSString *identifier in [[objects objectForKey:[target objectForKey:@"buildConfigurationList"]]
+                                objectForKey:@"buildConfigurations"])
+  {
+    id sdk = [[[objects objectForKey:identifier] objectForKey:@"buildSettings"] objectForKey:@"SDKROOT"];
+
+    if (![sdk isKindOfClass:[NSString class]]) continue;
+    if ([[sdk lowercaseString] isEqual:@"linux"]) return @"Linux";
+    if ([[sdk lowercaseString] isEqual:@"windows"]) return @"Windows";
+  }
+  return @"macOS";
+}
+
 + (NSDictionary *)projectAtPath:(NSString *)path error:(NSString **)error
 {
   if (error) *error = nil;
@@ -223,8 +239,25 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier, NSDictio
           (![settings objectForKey:@"TargetName"] || [[target objectForKey:@"name"] isEqual:[settings objectForKey:@"TargetName"]]))
         [targets addObject:target];
     }
+    if ([targets count] > 1)
+    {
+      /* An application with a Mac and a Linux target: the one for this
+       * computer. */
+#ifdef GNUSTEP
+      NSString *platform = @"Linux";
+#else
+      NSString *platform = @"macOS";
+#endif
+      NSMutableArray *own = [NSMutableArray array];
+      for (NSDictionary *target in targets)
+        if ([PlatformOfRawTarget(target, objects) isEqual:platform]) [own addObject:target];
+      if ([own count] == 1) targets = own;
+    }
     if ([targets count] != 1)
       [NSException raise:@"XcodeImport" format:@"Expected one application target (found %lu). Select an application target with TargetName in GNUstep/ProjectCenter.plist.", (unsigned long)[targets count]];
+    /* BuildScript, Executable and Theme may be build settings of the Linux
+     * target by now. */
+    settings = [self GNUstepSettingsOfProjectAtPath:path];
     NSDictionary *target = [targets objectAtIndex:0];
     if (![[target objectForKey:@"name"] isKindOfClass:[NSString class]] || ![[target objectForKey:@"name"] length])
       [NSException raise:@"XcodeImport" format:@"The application target has no name."];
@@ -799,11 +832,97 @@ static id PropertyListOfString(NSString *text)
 
 // --- GNUstep settings
 
-+ (NSDictionary *)GNUstepSettingsOfProjectAtPath:(NSString *)path
++ (NSDictionary *)_sidecarSettingsOfProjectAtPath:(NSString *)path
 {
   NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:SettingsPath(path)];
 
   return [settings isKindOfClass:[NSDictionary class]] ? settings : [NSDictionary dictionary];
+}
+
+/* The settings kept as build settings of the Linux target. */
+static NSDictionary *TargetGNUstepKeys(void)
+{
+  return @{@"Theme": @"GNUSTEP_THEME", @"BuildScript": @"GNUSTEP_BUILD_SCRIPT",
+           @"Executable": @"GNUSTEP_EXECUTABLE"};
+}
+
++ (NSString *)platformOfTarget:(NSDictionary *)target
+{
+  for (NSDictionary *configuration in [target objectForKey:@"Configurations"])
+  {
+    NSString *sdk = [[[configuration objectForKey:@"Settings"] objectForKey:@"SDKROOT"] lowercaseString];
+
+    if (![sdk isKindOfClass:[NSString class]]) continue;
+    if ([sdk isEqual:@"linux"]) return @"Linux";
+    if ([sdk isEqual:@"windows"]) return @"Windows";
+  }
+  return @"macOS";
+}
+
++ (NSDictionary *)linuxTargetOfOverview:(NSDictionary *)overview
+{
+  for (NSDictionary *target in [overview objectForKey:@"Targets"])
+  {
+    if ([[self platformOfTarget:target] isEqual:@"Linux"]) return target;
+  }
+  return nil;
+}
+
++ (NSString *)buildSetting:(NSString *)key ofTarget:(NSDictionary *)target
+{
+  NSArray *configurations = [target objectForKey:@"Configurations"];
+  id      value = nil;
+
+  /* Release first: the configuration Archive builds. */
+  for (NSDictionary *configuration in configurations)
+  {
+    if ([[configuration objectForKey:@"Name"] isEqual:@"Release"])
+    {
+      value = [[configuration objectForKey:@"Settings"] objectForKey:key];
+    }
+  }
+  for (NSDictionary *configuration in configurations)
+  {
+    if (value == nil) value = [[configuration objectForKey:@"Settings"] objectForKey:key];
+  }
+  if ([value isKindOfClass:[NSArray class]]) value = [value componentsJoinedByString:@" "];
+  return [value isKindOfClass:[NSString class]] ? value : nil;
+}
+
++ (BOOL)setBuildSetting:(NSString *)key
+                     to:(NSString *)value
+               ofTarget:(NSDictionary *)target
+        ofProjectAtPath:(NSString *)path
+                  error:(NSString **)error
+{
+  NSArray *identifiers = [[target objectForKey:@"Configurations"] valueForKey:@"Identifier"];
+
+  if ([identifiers count] == 0)
+  {
+    if (error) *error = [NSString stringWithFormat:@"The target %@ has no build configurations.",
+                         [target objectForKey:@"Name"]];
+    return NO;
+  }
+  return [self setBuildSetting:key to:([value length] ? value : nil) inConfigurations:identifiers
+               ofProjectAtPath:path error:error];
+}
+
++ (NSDictionary *)GNUstepSettingsOfProjectAtPath:(NSString *)path
+{
+  NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithDictionary:
+                                   [self _sidecarSettingsOfProjectAtPath:path]];
+  NSDictionary        *keys = TargetGNUstepKeys();
+  NSDictionary        *target = [self linuxTargetOfOverview:[self overviewOfProjectAtPath:path error:NULL]];
+
+  /* A value of the Linux target wins over one GNUstep/ProjectCenter.plist
+   * still has from before. */
+  for (NSString *key in keys)
+  {
+    NSString *value = [self buildSetting:[keys objectForKey:key] ofTarget:target];
+
+    if ([value length]) [settings setObject:value forKey:key];
+  }
+  return settings;
 }
 
 /* A value as an OpenStep property list, indented as the file's top level
@@ -845,6 +964,17 @@ static NSString *PropertyListText(id value, NSString *indent)
          ofProjectAtPath:(NSString *)path
                     error:(NSString **)error
 {
+  NSString     *setting = [TargetGNUstepKeys() objectForKey:key];
+  NSDictionary *target = setting ? [self linuxTargetOfOverview:[self overviewOfProjectAtPath:path error:NULL]] : nil;
+
+  if (target)
+  {
+    /* Into the Linux target; then out of ProjectCenter.plist, if it was
+     * there. */
+    if (![self setBuildSetting:setting to:value ofTarget:target ofProjectAtPath:path error:error]) return NO;
+    if ([[self _sidecarSettingsOfProjectAtPath:path] objectForKey:key] == nil) return YES;
+    return [self setGNUstepValue:nil forKey:key ofProjectAtPath:path error:error];
+  }
   return [self setGNUstepValue:value forKey:key ofProjectAtPath:path error:error];
 }
 
@@ -856,7 +986,7 @@ static NSString *PropertyListText(id value, NSString *indent)
   NSFileManager       *fm = [NSFileManager defaultManager];
   NSString            *file = SettingsPath(path);
   NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithDictionary:
-                                   [self GNUstepSettingsOfProjectAtPath:path]];
+                                   [self _sidecarSettingsOfProjectAtPath:path]];
   NSMutableString     *text = [NSMutableString stringWithString:@"{\n"];
 
   if (error) *error = nil;

@@ -17,7 +17,6 @@
 
 #include <sys/utsname.h>
 
-static NSString * const PCDeploymentKey = @"Deployment";
 
 // --- Kinds and their settings
 
@@ -48,18 +47,6 @@ static NSDictionary *Choice(NSString *key, NSString *title, NSArray *choices, NS
 {
   return [NSDictionary dictionaryWithObjectsAndKeys:key, @"Key", title, @"Title", @"Choice", @"Type",
           choices, @"Choices", help, @"Help", nil];
-}
-
-/* [[Title, Value]] for values that are their own titles. */
-static NSArray *Plain(NSArray *values)
-{
-  NSMutableArray *choices = [NSMutableArray array];
-
-  for (NSString *value in values)
-  {
-    [choices addObject:[NSArray arrayWithObjects:value, value, nil]];
-  }
-  return choices;
 }
 
 static NSArray *Architectures(NSString *kind)
@@ -159,47 +146,35 @@ static NSString *RootPath(NSString *path, NSString *root)
 
   NSMutableArray *kinds = [NSMutableArray array];
 
-  for (NSDictionary *entry in [self kinds])
-  {
-    [kinds addObject:[NSArray arrayWithObjects:[entry objectForKey:@"Title"], [entry objectForKey:@"Kind"], nil]];
-  }
-  [fields addObject:Section(@"Platform")];
-  [fields addObject:Choice(@"Kind", @"Platform", kinds,
-                           @"The system Archive builds for, and the kind of file it makes. Settings that the "
-                           @"new platform has too are kept.")];
-  [fields addObject:Text(@"Name", @"Name", @"The platform's name in the list and in the Archive log.")];
   if ([kind isEqual:@"macOS"])
   {
+    /* Everything else comes from the Xcode project and its scheme. */
     [fields addObject:Section(@"Build")];
-    [fields addObject:Text(@"Scheme", @"Scheme", @"The scheme xcodebuild archives.")];
-    [fields addObject:Text(@"Configuration", @"Configuration",
-                           @"The build configuration; by default the scheme's Archive configuration.")];
-    [fields addObject:Choice(@"Architecture", @"Architectures",
-                             @[@[@"Project Setting", @""], @[@"Universal (arm64, x86_64)", @"universal"],
-                               @[@"Apple silicon (arm64)", @"arm64"], @[@"Intel (x86_64)", @"x86_64"]],
-                             @"ARCHS for the archive; Project Setting keeps the project's own.")];
-    [fields addObject:Section(@"Signing")];
-    [fields addObject:Text(@"SigningIdentity", @"Signing Identity",
-                           @"A codesign identity, such as \"Developer ID Application: Name (TEAM)\". "
-                           @"Empty signs as the project's settings say.")];
-    [fields addObject:Text(@"NotaryProfile", @"Notary Profile",
-                           @"A keychain profile of notarytool (xcrun notarytool store-credentials). "
-                           @"Empty doesn't notarize.")];
-    [fields addObject:Section(@"Package")];
-    [fields addObject:Choice(@"Format", @"Format", @[@[@"Zip Archive", @"zip"], @[@"Disk Image", @"dmg"]],
-                             @"A zip archive of the application, or a disk image with a link to Applications.")];
-    [fields addObject:Text(@"FileName", @"File Name", @"The name of the file Archive makes.")];
+    [fields addObject:Choice(@"Architectures", @"Architectures",
+                             @[@[@"Universal (Apple silicon and Intel)", @""], @[@"Apple silicon (arm64)", @"arm64"],
+                               @[@"Intel (x86_64)", @"x86_64"]],
+                             @"ARCHS of the target. Universal leaves it to Xcode's standard architectures.")];
     return fields;
   }
-
+  for (NSString *other in [self kindsForPlatform:[[self kindNamed:kind] objectForKey:@"Platform"]])
+  {
+    [kinds addObject:[NSArray arrayWithObjects:[[self kindNamed:other] objectForKey:@"Title"], other, nil]];
+  }
+  [fields addObject:Section(@"Distribution")];
+  [fields addObject:Choice(@"Kind", @"Distribution", kinds,
+                           @"The system Archive packages for, and the kind of file it makes. Settings that the "
+                           @"other distribution has too are kept.")];
+  [fields addObject:Choice(@"Architectures", @"Architectures",
+                           @[@[@"This Computer", @""], @[@"x86_64", @"x86_64"], @[@"aarch64", @"aarch64"],
+                             @[@"x86_64 and aarch64", @"x86_64 aarch64"]],
+                           @"ARCHS of the target, for all its distributions: Archive packages each "
+                           @"distribution once for every architecture.")];
   [fields addObject:Section(@"Build")];
   [fields addObject:Choice(@"Build", @"Build",
                            @[@[@"Native", @"Native"], @[@"Cross Toolchain", @"Toolchain"],
                              @[@"Container", @"Container"]],
                            @"Native builds with this computer's GNUstep; Cross Toolchain with a GNUstep "
                            @"made for the target; Container in a Docker or Podman container.")];
-  [fields addObject:Choice(@"Architecture", @"Architecture", Plain(Architectures(kind)),
-                           @"The architecture the application is built and packaged for.")];
   [fields addObject:Text(@"Configuration", @"Configuration",
                          @"Debug builds with debug=yes, any other configuration with debug=no.")];
   [fields addObject:Text(@"Toolchain", @"Toolchain",
@@ -281,156 +256,363 @@ static NSString *RootPath(NSString *path, NSString *root)
   return keys;
 }
 
-// --- Saving
+// --- Storage: build settings of the targets
+
+/* Kinds by platform: a Mac target has macOS; a Linux target its
+ * distributions. */
++ (NSArray *)kindsForPlatform:(NSString *)platform
+{
+  NSMutableArray *kinds = [NSMutableArray array];
+
+  for (NSDictionary *entry in [self kinds])
+  {
+    if ([[entry objectForKey:@"Platform"] isEqual:platform]) [kinds addObject:[entry objectForKey:@"Kind"]];
+  }
+  return kinds;
+}
+
+/* The word for a kind in its build settings, GNUSTEP_<WORD>_<SETTING>. */
+static NSString *KindWord(NSString *kind)
+{
+  if ([kind isEqual:@"Linux"]) return @"TARBALL";
+  return [kind uppercaseString];
+}
+
+/* PackageName -> PACKAGE_NAME. */
+static NSString *SettingWord(NSString *key)
+{
+  NSMutableString *word = [NSMutableString string];
+  NSUInteger      i;
+
+  for (i = 0; i < [key length]; i++)
+  {
+    unichar c = [key characterAtIndex:i];
+
+    if (i > 0 && [[NSCharacterSet uppercaseLetterCharacterSet] characterIsMember:c]
+        && ![[NSCharacterSet uppercaseLetterCharacterSet] characterIsMember:[key characterAtIndex:i - 1]])
+    {
+      [word appendString:@"_"];
+    }
+    [word appendString:[[NSString stringWithCharacters:&c length:1] uppercaseString]];
+  }
+  return word;
+}
+
++ (NSString *)buildSettingForKey:(NSString *)key ofKind:(NSString *)kind
+{
+  if ([key isEqual:@"Architectures"]) return @"ARCHS";
+  if ([key isEqual:@"Kind"] || !IsGNUstepKind(kind)) return nil;
+  /* Only the kind's own settings; not Name, Enabled, Target... */
+  if (![[[self fieldsForKind:kind] valueForKey:@"Key"] containsObject:key]) return nil;
+  return [NSString stringWithFormat:@"GNUSTEP_%@_%@", KindWord(kind), SettingWord(key)];
+}
+
++ (NSArray *)distributionsOfTarget:(NSDictionary *)target
+{
+  NSMutableArray *kinds = [NSMutableArray array];
+  NSArray        *known = [self kindsForPlatform:@"Linux"];
+
+  for (NSString *word in [[PCXcodeProject buildSetting:@"GNUSTEP_DISTRIBUTIONS" ofTarget:target]
+                          componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]])
+  {
+    for (NSString *kind in known)
+    {
+      if (([word caseInsensitiveCompare:kind] == NSOrderedSame
+           || [word caseInsensitiveCompare:KindWord(kind)] == NSOrderedSame) && ![kinds containsObject:kind])
+      {
+        [kinds addObject:kind];
+      }
+    }
+  }
+  return kinds;
+}
+
+/* A target's ARCHS as the Architectures setting: empty when unset or
+ * Xcode's standard set. */
+static NSString *TargetArchitectures(NSDictionary *target)
+{
+  NSString *archs = Trimmed([PCXcodeProject buildSetting:@"ARCHS" ofTarget:target]);
+
+  if ([archs isEqual:@"$(ARCHS_STANDARD)"] || [archs isEqual:@"${ARCHS_STANDARD}"]) return @"";
+  return archs ? archs : @"";
+}
+
++ (NSArray *)deploymentsOfTarget:(NSDictionary *)target
+{
+  NSString       *platform = [PCXcodeProject platformOfTarget:target];
+  NSMutableArray *deployments = [NSMutableArray array];
+
+  if (target == nil) return deployments;
+  if ([platform isEqual:@"macOS"])
+  {
+    [deployments addObject:@{@"Kind": @"macOS", @"Enabled": @"YES",
+                             @"Target": [target objectForKey:@"Name"],
+                             @"Architectures": TargetArchitectures(target)}];
+    return deployments;
+  }
+  if (![platform isEqual:@"Linux"]) return deployments;
+  for (NSString *kind in [self distributionsOfTarget:target])
+  {
+    NSMutableDictionary *deployment = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                       kind, @"Kind", @"YES", @"Enabled", [target objectForKey:@"Name"], @"Target",
+                                       TargetArchitectures(target), @"Architectures", nil];
+
+    for (NSDictionary *field in [self fieldsForKind:kind])
+    {
+      NSString *key = [field objectForKey:@"Key"];
+      NSString *setting = key ? [self buildSettingForKey:key ofKind:kind] : nil;
+      NSString *value = setting && ![setting isEqual:@"ARCHS"]
+        ? [PCXcodeProject buildSetting:setting ofTarget:target] : nil;
+
+      if ([value length]) [deployment setObject:value forKey:key];
+    }
+    [deployments addObject:deployment];
+  }
+  return deployments;
+}
+
+/* The deployments Archive makes from one of a target: a Linux distribution
+ * once for each of its architectures, named "Title (architecture)". */
+static NSArray *ArchiveDeployments(NSDictionary *deployment, NSUInteger macTargets)
+{
+  NSString       *kind = [deployment objectForKey:@"Kind"];
+  NSString       *title = [[PCDeployment kindNamed:kind] objectForKey:@"Title"];
+  NSMutableArray *result = [NSMutableArray array];
+  NSArray        *archs = [Trimmed([deployment objectForKey:@"Architectures"])
+                           componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+
+  if ([kind isEqual:@"macOS"])
+  {
+    NSMutableDictionary *entry = [NSMutableDictionary dictionaryWithDictionary:deployment];
+
+    [entry setObject:(macTargets > 1 ? [NSString stringWithFormat:@"%@ (%@)", title, [deployment objectForKey:@"Target"]]
+                      : title) forKey:@"Name"];
+    if ([[deployment objectForKey:@"Architectures"] length])
+    {
+      [entry setObject:[deployment objectForKey:@"Architectures"] forKey:@"Architecture"];
+    }
+    [result addObject:entry];
+    return result;
+  }
+  for (NSString *arch in archs)
+  {
+    NSMutableDictionary *entry;
+    NSString            *architecture;
+
+    if (![arch length]) continue;
+    entry = [NSMutableDictionary dictionaryWithDictionary:deployment];
+    architecture = ArchitectureOfMachine(kind, arch);
+    [entry setObject:architecture forKey:@"Architecture"];
+    [entry setObject:[NSString stringWithFormat:@"%@ (%@)", title, architecture] forKey:@"Name"];
+    [result addObject:entry];
+  }
+  if ([result count] == 0)
+  {
+    NSMutableDictionary *entry = [NSMutableDictionary dictionaryWithDictionary:deployment];
+    NSString            *architecture = [PCDeployment defaultValueForKey:@"Architecture" ofDeployment:deployment
+                                                                 project:nil];
+
+    [entry setObject:[NSString stringWithFormat:@"%@ (%@)", title, architecture] forKey:@"Name"];
+    [result addObject:entry];
+  }
+  return result;
+}
 
 + (NSArray *)deploymentsOfProjectAtPath:(NSString *)path
 {
-  id             list = [[PCXcodeProject GNUstepSettingsOfProjectAtPath:path] objectForKey:PCDeploymentKey];
+  NSDictionary   *overview = [PCXcodeProject overviewOfProjectAtPath:path error:NULL];
+  NSMutableArray *macTargets = [NSMutableArray array];
   NSMutableArray *deployments = [NSMutableArray array];
+  NSArray        *schemes;
 
-  if (![list isKindOfClass:[NSArray class]]) return deployments;
-  for (id entry in list)
+  if (![path length]) return deployments;
+  schemes = [[PCXcodeProject schemesOfProjectAtPath:path] valueForKey:@"Name"];
+  for (NSDictionary *target in [overview objectForKey:@"Targets"])
   {
-    if ([entry isKindOfClass:[NSDictionary class]] && [self kindNamed:[entry objectForKey:@"Kind"]])
+    if ([[PCXcodeProject platformOfTarget:target] isEqual:@"macOS"]
+        && [[target objectForKey:@"ProductType"] hasPrefix:@"com.apple.product-type.application"])
     {
-      [deployments addObject:entry];
+      [macTargets addObject:target];
+    }
+  }
+  for (NSDictionary *target in [overview objectForKey:@"Targets"])
+  {
+    NSString *platform = [PCXcodeProject platformOfTarget:target];
+
+    if ([platform isEqual:@"macOS"] && ![macTargets containsObject:target]) continue;
+    for (NSDictionary *deployment in [self deploymentsOfTarget:target])
+    {
+      for (NSMutableDictionary *entry in ArchiveDeployments(deployment, [macTargets count]))
+      {
+        /* A Mac target is archived with its own scheme, where it has one. */
+        if ([platform isEqual:@"macOS"] && [schemes containsObject:[target objectForKey:@"Name"]])
+        {
+          [entry setObject:[target objectForKey:@"Name"] forKey:@"Scheme"];
+        }
+        [deployments addObject:entry];
+      }
     }
   }
   return deployments;
 }
 
-+ (BOOL)setDeployments:(NSArray *)deployments
-       ofProjectAtPath:(NSString *)path
-                 error:(NSString **)error
++ (BOOL)setValue:(NSString *)value
+          forKey:(NSString *)key
+    ofDeployment:(NSDictionary *)deployment
+          target:(NSDictionary *)target
+   projectAtPath:(NSString *)path
+           error:(NSString **)error
 {
-  NSMutableArray *list = [NSMutableArray array];
+  NSString *setting = [self buildSettingForKey:key ofKind:[deployment objectForKey:@"Kind"]];
 
-  /* Only what is set: empty settings take their defaults. */
-  for (NSDictionary *deployment in deployments)
+  if (setting == nil)
   {
-    NSMutableDictionary *entry = [NSMutableDictionary dictionary];
-
-    for (NSString *key in deployment)
-    {
-      NSString *value = Trimmed([deployment objectForKey:key]);
-
-      if ([value length]) [entry setObject:value forKey:key];
-    }
-    [list addObject:entry];
+    if (error) *error = [NSString stringWithFormat:@"%@ is not kept for %@.", key, [deployment objectForKey:@"Kind"]];
+    return NO;
   }
-  return [PCXcodeProject setGNUstepValue:list forKey:PCDeploymentKey ofProjectAtPath:path error:error];
+  return [PCXcodeProject setBuildSetting:setting to:Trimmed(value) ofTarget:target ofProjectAtPath:path error:error];
 }
 
-+ (NSDictionary *)deploymentOfKind:(NSString *)kind
-                          existing:(NSArray *)deployments
-                        forProject:(NSDictionary *)projectDict
++ (BOOL)setDistributions:(NSArray *)kinds
+                ofTarget:(NSDictionary *)target
+           projectAtPath:(NSString *)path
+                   error:(NSString **)error
 {
-  NSString            *title = [[self kindNamed:kind] objectForKey:@"Title"];
-  NSMutableDictionary *deployment = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                     kind, @"Kind", @"YES", @"Enabled", nil];
-  NSArray             *names = [deployments valueForKey:@"Name"];
-  NSString            *name = title;
-  NSUInteger          number = 2;
+  NSMutableArray *words = [NSMutableArray array];
 
-  if (title == nil) return nil;
-  /* Another one of a kind is usually another architecture. */
-  if (IsGNUstepKind(kind))
+  for (NSString *kind in kinds)
   {
-    NSString *architecture = [self defaultValueForKey:@"Architecture" ofDeployment:deployment project:projectDict];
-
-    for (NSDictionary *other in deployments)
-    {
-      if ([[other objectForKey:@"Kind"] isEqual:kind])
-      {
-        for (NSString *candidate in Architectures(kind))
-        {
-          BOOL used = NO;
-
-          for (NSDictionary *existing in deployments)
-          {
-            used = used || ([[existing objectForKey:@"Kind"] isEqual:kind]
-                            && [[self valueForKey:@"Architecture" ofDeployment:existing project:projectDict]
-                                isEqual:candidate]);
-          }
-          if (!used)
-          {
-            architecture = candidate;
-            break;
-          }
-        }
-        [deployment setObject:architecture forKey:@"Architecture"];
-        break;
-      }
-    }
-    name = [NSString stringWithFormat:@"%@ (%@)", title, architecture];
+    [words addObject:kind];
   }
-  while ([names containsObject:name])
-  {
-    name = [NSString stringWithFormat:@"%@ %lu", title, (unsigned long)number++];
-  }
-  [deployment setObject:name forKey:@"Name"];
-  return deployment;
+  return [PCXcodeProject setBuildSetting:@"GNUSTEP_DISTRIBUTIONS" to:[words componentsJoinedByString:@" "]
+                                ofTarget:target ofProjectAtPath:path error:error];
 }
 
-/* Whether name is one +deploymentOfKind:... makes from a kind's title. */
-static BOOL IsMadeName(NSString *name, NSString *title)
+/* The target as the project file has it now: a change reads what earlier
+ * changes wrote, not the caller's copy. */
+static NSDictionary *FreshTarget(NSDictionary *target, NSString *path)
 {
-  NSString *rest;
-
-  if (title == nil || ![name hasPrefix:title]) return NO;
-  rest = [name substringFromIndex:[title length]];
-  if ([rest length] == 0) return YES;
-  if ([rest hasPrefix:@" ("] && [rest hasSuffix:@")"]) return YES;
-  return [rest hasPrefix:@" "] && [rest length] > 1
-    && [[rest substringFromIndex:1] rangeOfCharacterFromSet:
-        [[NSCharacterSet decimalDigitCharacterSet] invertedSet]].location == NSNotFound;
+  for (NSDictionary *entry in [[PCXcodeProject overviewOfProjectAtPath:path error:NULL] objectForKey:@"Targets"])
+  {
+    if ([[entry objectForKey:@"Identifier"] isEqual:[target objectForKey:@"Identifier"]]) return entry;
+  }
+  return target;
 }
 
-+ (NSDictionary *)deployment:(NSDictionary *)deployment
-               changedToKind:(NSString *)kind
-                    existing:(NSArray *)deployments
-                  forProject:(NSDictionary *)projectDict
+/* Removes the settings of a distribution from the target. */
+static BOOL RemoveSettings(NSString *kind, NSDictionary *target, NSString *path, NSString **error)
 {
-  NSString            *oldKind = [deployment objectForKey:@"Kind"];
-  NSMutableArray      *others = [NSMutableArray arrayWithArray:deployments];
+  for (NSDictionary *field in [PCDeployment fieldsForKind:kind])
+  {
+    NSString *key = [field objectForKey:@"Key"];
+    NSString *setting = key ? [PCDeployment buildSettingForKey:key ofKind:kind] : nil;
+
+    if (setting == nil || [setting isEqual:@"ARCHS"]) continue;
+    if ([PCXcodeProject buildSetting:setting ofTarget:target] == nil) continue;
+    if (![PCXcodeProject setBuildSetting:setting to:nil ofTarget:target ofProjectAtPath:path error:error]) return NO;
+  }
+  return YES;
+}
+
++ (BOOL)addDistribution:(NSString *)kind
+               toTarget:(NSDictionary *)target
+          projectAtPath:(NSString *)path
+                  error:(NSString **)error
+{
+  NSArray *kinds;
+
+  target = FreshTarget(target, path);
+  kinds = [self distributionsOfTarget:target];
+  if (![[self kindsForPlatform:@"Linux"] containsObject:kind])
+  {
+    if (error) *error = [NSString stringWithFormat:@"%@ is not a Linux distribution.", kind];
+    return NO;
+  }
+  if ([kinds containsObject:kind]) return YES;
+  return [self setDistributions:[kinds arrayByAddingObject:kind] ofTarget:target projectAtPath:path error:error];
+}
+
++ (BOOL)removeDistribution:(NSString *)kind
+                fromTarget:(NSDictionary *)target
+             projectAtPath:(NSString *)path
+                     error:(NSString **)error
+{
+  NSMutableArray *kinds;
+
+  target = FreshTarget(target, path);
+  kinds = [NSMutableArray arrayWithArray:[self distributionsOfTarget:target]];
+  [kinds removeObject:kind];
+  if (!RemoveSettings(kind, target, path, error)) return NO;
+  return [self setDistributions:kinds ofTarget:target projectAtPath:path error:error];
+}
+
++ (NSDictionary *)deployment:(NSDictionary *)deployment changedToKind:(NSString *)kind
+{
   NSMutableDictionary *changed;
   NSMutableSet        *keys = [NSMutableSet set];
-  NSString            *oldTitle = [[self kindNamed:oldKind] objectForKey:@"Title"];
-  NSString            *name = [deployment objectForKey:@"Name"];
-  NSString            *architecture = [deployment objectForKey:@"Architecture"];
 
   if ([self kindNamed:kind] == nil) return nil;
-  if ([kind isEqual:oldKind]) return deployment;
-  [others removeObjectIdenticalTo:deployment];
-  changed = [NSMutableDictionary dictionaryWithDictionary:[self deploymentOfKind:kind existing:others
-                                                                      forProject:projectDict]];
+  if ([kind isEqual:[deployment objectForKey:@"Kind"]]) return deployment;
+  changed = [NSMutableDictionary dictionaryWithObject:kind forKey:@"Kind"];
   for (NSDictionary *field in [self fieldsForKind:kind])
   {
     if ([field objectForKey:@"Key"]) [keys addObject:[field objectForKey:@"Key"]];
   }
-  /* The settings the new kind has too; an architecture only if the new kind
-   * builds for it. */
+  /* The settings the new kind has too. */
   for (NSString *key in deployment)
   {
     if ([key isEqual:@"Kind"] || [key isEqual:@"Name"] || [key isEqual:@"Architecture"]) continue;
-    if ([keys containsObject:key] || [key isEqual:@"Enabled"]) [changed setObject:[deployment objectForKey:key] forKey:key];
-  }
-  if (architecture && IsGNUstepKind(kind) && [Architectures(kind) containsObject:architecture])
-  {
-    [changed setObject:architecture forKey:@"Architecture"];
-    if (![[changed objectForKey:@"Name"] hasSuffix:[NSString stringWithFormat:@"(%@)", architecture]])
+    if ([keys containsObject:key] || [key isEqual:@"Enabled"] || [key isEqual:@"Target"]
+        || [key isEqual:@"Architectures"])
     {
-      [changed setObject:[NSString stringWithFormat:@"%@ (%@)", [[self kindNamed:kind] objectForKey:@"Title"],
-                          architecture] forKey:@"Name"];
+      [changed setObject:[deployment objectForKey:key] forKey:key];
     }
   }
-  /* A name of the user's own is kept; one made from the old kind ("Title",
-   * "Title (arm64)" or "Title 2") is made again for the new one. */
-  if (name && !IsMadeName(name, oldTitle))
-  {
-    [changed setObject:name forKey:@"Name"];
-  }
   return changed;
+}
+
++ (BOOL)changeDistribution:(NSDictionary *)deployment
+                    toKind:(NSString *)kind
+                  ofTarget:(NSDictionary *)target
+             projectAtPath:(NSString *)path
+                     error:(NSString **)error
+{
+  NSString       *oldKind = [deployment objectForKey:@"Kind"];
+  NSMutableArray *kinds;
+  NSDictionary   *changed = [self deployment:deployment changedToKind:kind];
+  NSUInteger     index;
+
+  target = FreshTarget(target, path);
+  kinds = [NSMutableArray arrayWithArray:[self distributionsOfTarget:target]];
+  index = [kinds indexOfObject:oldKind];
+
+  if (changed == nil || ![[self kindsForPlatform:@"Linux"] containsObject:kind])
+  {
+    if (error) *error = [NSString stringWithFormat:@"%@ is not a Linux distribution.", kind];
+    return NO;
+  }
+  if (changed == deployment) return YES;
+  if ([kinds containsObject:kind])
+  {
+    if (error) *error = [NSString stringWithFormat:@"The target already has %@.",
+                         [[self kindNamed:kind] objectForKey:@"Title"]];
+    return NO;
+  }
+  if (index == NSNotFound) return NO;
+  [kinds replaceObjectAtIndex:index withObject:kind];
+  if (!RemoveSettings(oldKind, target, path, error)) return NO;
+  for (NSString *key in changed)
+  {
+    NSString *setting = [self buildSettingForKey:key ofKind:kind];
+
+    if (setting == nil || [setting isEqual:@"ARCHS"]) continue;
+    if (![PCXcodeProject setBuildSetting:setting to:[changed objectForKey:key] ofTarget:target
+                         ofProjectAtPath:path error:error])
+    {
+      return NO;
+    }
+  }
+  return [self setDistributions:kinds ofTarget:target projectAtPath:path error:error];
 }
 
 // --- Defaults

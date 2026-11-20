@@ -150,10 +150,14 @@ General is laid out in sections, as in Xcode. For a target:
 - **App Icon**, and **Frameworks and Libraries** (the libraries it links).
 - **Build**: configurations (with their base `.xcconfig` files),
   dependencies and an external target's build tool.
-- **GNUstep**, for the target ProjectCenter builds: the build script, the
-  executable and the theme (see below). These are ProjectCenter's own
-  settings, kept in `GNUstep/ProjectCenter.plist`, and can be edited here: a
-  path is saved when you press Return or leave the field.
+- **GNUstep**, for the Linux target (one whose `SDKROOT` is `linux`), or
+  without one for the target ProjectCenter builds: the build script, the
+  executable and the theme (see below). They can be edited here: a path is
+  saved when you press Return or leave the field. With a Linux target they are
+  its build settings `GNUSTEP_BUILD_SCRIPT`, `GNUSTEP_EXECUTABLE` and
+  `GNUSTEP_THEME`, in every configuration; without one, they are kept in
+  `GNUstep/ProjectCenter.plist`. A value still in that file from before is
+  read until it is changed, and then moves into the Linux target.
 
 What Xcode's General pane has only for the App Store or for Xcode itself (App
 Category, Supported Destinations, Development Assets) is left out. Every
@@ -294,33 +298,45 @@ Where GNUstep is installed on the Mac, the Destination menu also has **My Mac
 ## Deployment and Archive
 
 The **Deployment** tab of the project editor (select the project row in the
-navigator) lists the platforms that **Archive** builds shippable applications
-for. Add a platform with **+**, remove the selected one with **−**, and turn
-one off with its check box to leave it out of Archive. The selected platform's
-settings are shown on the right, starting with **Platform**, which changes it
-into another kind (say, Debian / Ubuntu into Fedora / openSUSE). The settings
-the new kind has too are kept, as is a name of your own; a name made from the
-old kind, and an architecture the new kind doesn't build for, follow the new
-kind. An empty field takes the default shown in
-grey, mostly from the project (product name, version), so a platform keeps only
-what you changed. Everything is saved at once as `Deployment` in
-`GNUstep/ProjectCenter.plist`.
+navigator, then a target) shows what **Archive** makes of the selected target.
+An application has a Mac target, which Xcode builds, and for GNUstep a Linux
+target: a target whose `SDKROOT` build setting is `linux`. Xcode shows that
+target as broken (it has no such SDK); the Mac targets are not affected.
+
+- A **Mac target** has one entry, macOS, and one setting: **Architectures**,
+  the target's `ARCHS` (Universal leaves it unset, so Xcode's standard
+  architectures apply; Apple silicon `arm64`; Intel `x86_64`). Everything else
+  comes from the Xcode project and its scheme.
+- A **Linux target** lists the distributions it is packaged for. Add one with
+  **+**, remove the selected one with **−**. Its settings are shown on the
+  right, starting with **Distribution**, which changes it into another (say,
+  Debian / Ubuntu into Fedora / openSUSE; the settings both have are kept),
+  and **Architectures**, the target's `ARCHS` for all its distributions
+  (`x86_64`, `aarch64` or both; This Computer leaves it unset). Archive
+  packages each distribution once for every architecture.
+
+Everything is saved at once as build settings of the target, in every
+configuration, where Xcode leaves them alone: `GNUSTEP_DISTRIBUTIONS` (such as
+`Debian RPM`) and one `GNUSTEP_<DISTRIBUTION>_<SETTING>` for each setting that
+was changed, such as `GNUSTEP_DEBIAN_MAINTAINER` (`DEBIAN`, `RPM`, or
+`TARBALL` for the Linux `.tar.gz`). An empty field takes the default shown in
+grey, mostly from the project (product name, version), and is not written.
+
+Archive makes the macOS entry of every Mac application target (with the
+target's own scheme where it has one) and every distribution of each Linux
+target. A Windows target (`SDKROOT = windows`) is not supported yet.
 
 | Platform | Makes | Built with |
 | --- | --- | --- |
-| macOS | a `.zip` of the application, or a `.dmg` with a link to Applications | `xcodebuild archive` |
+| macOS | a `.zip` of the application | `xcodebuild archive` |
 | Debian / Ubuntu | a `.deb` package (`dpkg-deb`) | GNUstep |
 | Fedora / openSUSE | an `.rpm` package (`rpmbuild`) | GNUstep |
 | Linux | a `.tar.gz` of the application bundle | GNUstep |
-| Windows | a `.zip` of a folder with the application bundle and its DLLs | GNUstep |
+| Windows (not yet for targets) | a `.zip` of a folder with the application bundle and its DLLs | GNUstep |
 
-- **macOS** archives a scheme (by default the toolbar's) in a configuration
-  (by default the scheme's Archive configuration), for the project's
-  architectures, Universal, Apple silicon or Intel. A **Signing Identity**
-  signs the application (and the disk image) with the hardened runtime; a
-  **Notary Profile** (a keychain profile of `xcrun notarytool
-  store-credentials`) notarizes it and staples the ticket. macOS platforms are
-  archived on a Mac with Xcode.
+- **macOS** archives the target's scheme (else the toolbar's) in the scheme's
+  Archive configuration, signed as the project's settings say, into a `.zip`.
+  macOS platforms are archived on a Mac with Xcode.
 - **GNUstep platforms** build with the project's GNUmakefile or `BuildScript`
   (`debug=no`, or `debug=yes` for a Debug configuration, plus the **Make
   Arguments**), into `build/Deployment/<platform>`. **Build** chooses how:

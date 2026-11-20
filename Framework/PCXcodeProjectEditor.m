@@ -158,6 +158,7 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
     [sections setSelectedSegment:0];
     [tabs selectTabViewItemAtIndex:0];
     [deploymentEditor setProject:aProject];
+    [deploymentEditor setOwner:self];
 
     /* The fields of the forms, by the name of their row in -generalRows. */
     projectControls = [[NSDictionary alloc] initWithObjectsAndKeys:
@@ -279,7 +280,6 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
   ASSIGN(overview, fresh);
   targetList->overview = overview;
   [targetList reloadItems];
-  [deploymentEditor reload];
 
   /* Keep the selection; initially the target ProjectCenter builds. */
   if (selectedName == nil || selection == nil)
@@ -470,7 +470,11 @@ static NSArray *NamesWithExtensions(NSArray *files, NSArray *extensions)
     NSString            *productName;
     NSString            *mainKey;
     BOOL                generated = [DisplayValue([settings objectForKey:@"GENERATE_INFOPLIST_FILE"]) isEqual:@"YES"];
-    BOOL                built = [name isEqual:[[project projectDict] objectForKey:@"PROJECT_NAME"]];
+    /* The GNUstep settings belong to the Linux target; without one, to the
+     * target ProjectCenter builds. */
+    NSDictionary        *linuxTarget = [PCXcodeProject linuxTargetOfOverview:overview];
+    BOOL                built = linuxTarget ? [[linuxTarget objectForKey:@"Identifier"] isEqual:[selection objectForKey:@"Identifier"]]
+                                      : [name isEqual:[[project projectDict] objectForKey:@"PROJECT_NAME"]];
 
     if (![settings objectForKey:@"TARGET_NAME"]) [settings setObject:name forKey:@"TARGET_NAME"];
     productName = Expanded([settings objectForKey:@"PRODUCT_NAME"] ? [settings objectForKey:@"PRODUCT_NAME"]
@@ -627,8 +631,11 @@ static NSArray *NamesWithExtensions(NSArray *files, NSArray *extensions)
        * are ProjectCenter's own. */
       NSDictionary *gnustep = [PCXcodeProject GNUstepSettingsOfProjectAtPath:projectPath];
       NSString     *theme = [gnustep objectForKey:@"Theme"];
-      NSString     *pathTip = @"A path, relative to the folder of the .xcodeproj or absolute. "
-                              @"Saved in GNUstep/ProjectCenter.plist.";
+      NSString     *pathTip = (linuxTarget ? @"A path, relative to the folder of the .xcodeproj or absolute. "
+                               @"Saved as a build setting of this target (GNUSTEP_BUILD_SCRIPT, GNUSTEP_EXECUTABLE)."
+                               : @"A path, relative to the folder of the .xcodeproj or absolute. "
+                                 @"Saved in GNUstep/ProjectCenter.plist; a target with SDKROOT = linux "
+                                 @"keeps it as a build setting instead.");
 
       section(@"GNUstep");
       edit(@"Build Script", [gnustep objectForKey:@"BuildScript"],
@@ -841,7 +848,11 @@ static NSArray *NamesWithExtensions(NSArray *files, NSArray *extensions)
   {
     return [NSString stringWithFormat:@"%@ of the project.", [how objectForKey:@"Key"]];
   }
-  return @"Saved in GNUstep/ProjectCenter.plist.";
+  return ([PCXcodeProject linuxTargetOfOverview:overview]
+          ? [NSString stringWithFormat:@"The build setting %@ of this target, for every configuration.",
+             [@{@"Theme": @"GNUSTEP_THEME", @"BuildScript": @"GNUSTEP_BUILD_SCRIPT",
+                @"Executable": @"GNUSTEP_EXECUTABLE"} objectForKey:[how objectForKey:@"Key"]]]
+          : @"Saved in GNUstep/ProjectCenter.plist.");
 }
 
 - (BOOL)setGNUstepSetting:(NSString *)value forKey:(NSString *)key
@@ -1026,6 +1037,7 @@ static NSArray *NamesWithExtensions(NSArray *files, NSArray *extensions)
 
   ASSIGN(selection, entry);
   [targetList selectIndex:entry == overview ? 0 : index];
+  [deploymentEditor setTarget:(entry == overview ? nil : entry)];
   [self _buildGeneralRows];
   [self _buildSettingRows];
   [self _buildPhaseRows];

@@ -14,6 +14,7 @@
 
 #import "PCDeploymentEditor.h"
 #import "PCDeployment.h"
+#import "PCXcodeProject.h"
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCProject.h>
@@ -38,14 +39,6 @@ static const CGFloat Margin = 20;
 
 - (void)awakeFromNib
 {
-  [addButton removeAllItems];
-  [addButton addItemWithTitle:@"+"];
-  for (NSDictionary *kind in [PCDeployment kinds])
-  {
-    [addButton addItemWithTitle:[NSString stringWithFormat:@"%@ (%@)", [kind objectForKey:@"Title"],
-                                 [kind objectForKey:@"Summary"]]];
-    [[addButton lastItem] setRepresentedObject:[kind objectForKey:@"Kind"]];
-  }
   form = [[PCDeploymentForm alloc] initWithFrame:NSMakeRect(0, 0, [formScroll contentSize].width, 100)];
   [form setAutoresizingMask:NSViewWidthSizable];
   [formScroll setDocumentView:form];
@@ -57,6 +50,8 @@ static const CGFloat Margin = 20;
   controls = [[NSMutableDictionary alloc] init];
   deployments = [[NSMutableArray alloc] init];
   [platformsTable setTarget:self];
+  /* No project nor target yet: only the note. */
+  [self _fillAddButton];
   [self _showSelection];
 }
 
@@ -74,6 +69,7 @@ static const CGFloat Margin = 20;
   [deployments release];
   [fields release];
   [form release];
+  [target release];
   [super dealloc];
 }
 
@@ -82,13 +78,33 @@ static const CGFloat Margin = 20;
   project = aProject;
 }
 
+- (void)setOwner:(id)anOwner
+{
+  owner = anOwner;
+}
+
 - (NSString *)_projectPath
 {
   return [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
 }
 
+- (NSDictionary *)target { return target; }
 - (NSArray *)deployments { return deployments; }
 - (NSDictionary *)controls { return controls; }
+
+- (BOOL)_isLinuxTarget
+{
+  return target && [[PCXcodeProject platformOfTarget:target] isEqual:@"Linux"];
+}
+
+- (void)setTarget:(NSDictionary *)aTarget
+{
+  BOOL same = [[aTarget objectForKey:@"Identifier"] isEqual:[target objectForKey:@"Identifier"]];
+
+  ASSIGN(target, aTarget);
+  [self reload];
+  if (!same) [self selectIndex:[deployments count] ? 0 : -1];
+}
 
 - (NSInteger)selectedIndex
 {
@@ -108,54 +124,107 @@ static const CGFloat Margin = 20;
   [self _showSelection];
 }
 
+/* The add menu: the distributions a Linux target doesn't have yet. */
+- (void)_fillAddButton
+{
+  NSArray *present = [deployments valueForKey:@"Kind"];
+
+  [addButton removeAllItems];
+  [addButton addItemWithTitle:@"+"];
+  for (NSString *kind in [PCDeployment kindsForPlatform:@"Linux"])
+  {
+    NSDictionary *entry = [PCDeployment kindNamed:kind];
+
+    if ([present containsObject:kind]) continue;
+    [addButton addItemWithTitle:[NSString stringWithFormat:@"%@ (%@)", [entry objectForKey:@"Title"],
+                                 [entry objectForKey:@"Summary"]]];
+    [[addButton lastItem] setRepresentedObject:kind];
+  }
+  [addButton setHidden:![self _isLinuxTarget]];
+  [removeButton setHidden:![self _isLinuxTarget]];
+  [addButton setEnabled:([addButton numberOfItems] > 1)];
+}
+
 - (void)reload
 {
   NSInteger selected = [self selectedIndex];
+  NSString  *selectedKind = selected >= 0 && selected < (NSInteger)[deployments count]
+    ? [[deployments objectAtIndex:selected] objectForKey:@"Kind"] : nil;
+  NSInteger index;
 
   [deployments removeAllObjects];
-  for (NSDictionary *deployment in [PCDeployment deploymentsOfProjectAtPath:[self _projectPath]])
+  for (NSDictionary *deployment in [PCDeployment deploymentsOfTarget:target])
   {
     [deployments addObject:[NSMutableDictionary dictionaryWithDictionary:deployment]];
   }
   [platformsTable reloadData];
-  if (selected < 0 && [deployments count]) selected = 0;
-  [self selectIndex:MIN(selected, (NSInteger)[deployments count] - 1)];
-}
-
-- (BOOL)_save
-{
-  NSString *error = nil;
-
-  if ([self _projectPath] == nil) return NO;
-  if (![PCDeployment setDeployments:deployments ofProjectAtPath:[self _projectPath] error:&error])
+  [self _fillAddButton];
+  /* The same distribution stays selected; its form only takes the new
+   * values, so a field being edited keeps its place. */
+  index = selectedKind ? (NSInteger)[[deployments valueForKey:@"Kind"] indexOfObject:selectedKind] : NSNotFound;
+  if (index != NSNotFound && index == selected)
   {
-    NSRunAlertPanel(@"Deployment", @"%@", @"OK", nil, nil, error);
-    return NO;
+    [self _updateForm];
+    return;
   }
-  return YES;
+  if (index == NSNotFound) index = MIN(MAX(selected, 0), (NSInteger)[deployments count] - 1);
+  [self selectIndex:index];
 }
 
-// --- Platforms
+/* After an edit: the project editor reads the project again, and gives the
+ * target back with its new settings. Later, as an edit may come from a
+ * control the form makes again. */
+- (void)_projectChanged
+{
+  [NSObject cancelPreviousPerformRequestsWithTarget:owner selector:@selector(reload) object:nil];
+  if ([owner respondsToSelector:@selector(reload)])
+  {
+    [owner performSelector:@selector(reload) withObject:nil afterDelay:0];
+  }
+}
+
+- (BOOL)_succeeded:(BOOL)done error:(NSString *)error
+{
+  if (!done)
+  {
+    NSRunAlertPanel(@"Deployment", @"%@", @"OK", nil, nil, error ? error : @"The project could not be changed.");
+  }
+  [self _projectChanged];
+  return done;
+}
+
+// --- Distributions
 
 - (void)addPlatformOfKind:(NSString *)kind
 {
-  NSDictionary *deployment = [PCDeployment deploymentOfKind:kind existing:deployments
-                                                 forProject:[project projectDict]];
+  NSString *error = nil;
+  BOOL     done = [PCDeployment addDistribution:kind toTarget:target projectAtPath:[self _projectPath] error:&error];
 
-  if (deployment == nil) return;
-  [deployments addObject:[NSMutableDictionary dictionaryWithDictionary:deployment]];
-  [self _save];
-  [platformsTable reloadData];
-  [self selectIndex:[deployments count] - 1];
+  if (done)
+  {
+    /* Shown at once; the project editor's reload confirms it. */
+    [deployments addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:kind, @"Kind", @"YES", @"Enabled", nil]];
+    [platformsTable reloadData];
+    [self selectIndex:[deployments count] - 1];
+  }
+  [self _succeeded:done error:error];
 }
 
 - (void)removePlatformAtIndex:(NSUInteger)index
 {
+  NSString *error = nil;
+  BOOL     done;
+
   if (index >= [deployments count]) return;
-  [deployments removeObjectAtIndex:index];
-  [self _save];
-  [platformsTable reloadData];
-  [self selectIndex:MIN((NSInteger)index, (NSInteger)[deployments count] - 1)];
+  done = [PCDeployment removeDistribution:[[deployments objectAtIndex:index] objectForKey:@"Kind"]
+                               fromTarget:target projectAtPath:[self _projectPath] error:&error];
+  if (done)
+  {
+    [deployments removeObjectAtIndex:index];
+    [platformsTable reloadData];
+    [self selectIndex:MIN((NSInteger)index, (NSInteger)[deployments count] - 1)];
+  }
+  [self _succeeded:done error:error];
 }
 
 - (void)addPlatform:(id)sender
@@ -182,48 +251,46 @@ static const CGFloat Margin = 20;
 {
   NSMutableDictionary *deployment = index < [deployments count] ? [deployments objectAtIndex:index] : nil;
   NSString            *old;
+  NSString            *error = nil;
+  BOOL                done;
 
-  if (deployment == nil) return NO;
+  if (deployment == nil || target == nil) return NO;
   if ([key isEqual:@"Kind"])
   {
-    NSDictionary *changed = [PCDeployment deployment:deployment changedToKind:value
-                                            existing:deployments forProject:[project projectDict]];
-
-    if (changed == nil) return NO;
-    if (changed == deployment) return YES;
-    [deployments replaceObjectAtIndex:index withObject:[NSMutableDictionary dictionaryWithDictionary:changed]];
-    if (![self _save]) return NO;
-    [platformsTable reloadData];
-    /* The fields depend on the kind. The form is made again after the
-     * popup that changed it has finished, as that removes the popup. */
-    if ((NSInteger)index == [self selectedIndex])
-    {
-      [self performSelector:@selector(_showSelection) withObject:nil afterDelay:0];
-    }
-    return YES;
+    if ([value isEqual:[deployment objectForKey:@"Kind"]]) return YES;
+    done = [PCDeployment changeDistribution:deployment toKind:value ofTarget:target
+                              projectAtPath:[self _projectPath] error:&error];
+    /* The reload finds another distribution in its place, and makes the
+     * form again for its fields. */
+    return [self _succeeded:done error:error];
   }
   value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
   old = [deployment objectForKey:key];
   if ([(old ? old : @"") isEqual:(value ? value : @"")]) return YES;
   /* A value that is the default is left out, so it follows the project. */
-  if ([value length] && ![value isEqual:[PCDeployment defaultValueForKey:key ofDeployment:deployment
-                                                                 project:[project projectDict]]])
+  if ([value length] && [value isEqual:[PCDeployment defaultValueForKey:key ofDeployment:deployment
+                                                                project:[project projectDict]]])
   {
-    [deployment setObject:value forKey:key];
+    value = nil;
   }
-  else if ([key isEqual:@"Enabled"] || [key isEqual:@"Kind"] || [key isEqual:@"Name"])
+  done = [PCDeployment setValue:value forKey:key ofDeployment:deployment target:target
+                  projectAtPath:[self _projectPath] error:&error];
+  if (done)
   {
-    /* Always written, so the file says what it is. */
     if ([value length]) [deployment setObject:value forKey:key];
+    else [deployment removeObjectForKey:key];
+    /* Architectures belong to the target: every distribution has them. */
+    if ([key isEqual:@"Architectures"])
+    {
+      for (NSMutableDictionary *other in deployments)
+      {
+        [other setObject:(value ? value : @"") forKey:key];
+      }
+    }
+    [platformsTable reloadData];
+    if ((NSInteger)index == [self selectedIndex]) [self _updateForm];
   }
-  else
-  {
-    [deployment removeObjectForKey:key];
-  }
-  if (![self _save]) return NO;
-  [platformsTable reloadData];
-  if ((NSInteger)index == [self selectedIndex]) [self _updateForm];
-  return YES;
+  return [self _succeeded:done error:error];
 }
 
 // --- Table
@@ -235,30 +302,13 @@ static const CGFloat Margin = 20;
 
 - (id)tableView:(NSTableView *)table objectValueForTableColumn:(NSTableColumn *)column row:(NSInteger)row
 {
-  NSDictionary *deployment = [deployments objectAtIndex:row];
-
-  if ([[column identifier] isEqual:@"Enabled"])
-  {
-    return [NSNumber numberWithBool:[[PCDeployment valueForKey:@"Enabled" ofDeployment:deployment
-                                                       project:[project projectDict]] boolValue]];
-  }
-  return [PCDeployment valueForKey:@"Name" ofDeployment:deployment project:[project projectDict]];
-}
-
-- (void)tableView:(NSTableView *)table
-   setObjectValue:(id)value
-   forTableColumn:(NSTableColumn *)column
-              row:(NSInteger)row
-{
-  if ([[column identifier] isEqual:@"Enabled"])
-  {
-    [self setValue:[value boolValue] ? @"YES" : @"NO" forSetting:@"Enabled" ofDeploymentAtIndex:row];
-  }
+  return [PCDeployment valueForKey:@"Name" ofDeployment:[deployments objectAtIndex:row]
+                           project:[project projectDict]];
 }
 
 - (BOOL)tableView:(NSTableView *)table shouldEditTableColumn:(NSTableColumn *)column row:(NSInteger)row
 {
-  return [[column identifier] isEqual:@"Enabled"];
+  return NO;
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)notification
@@ -304,15 +354,20 @@ static const CGFloat Margin = 20;
 
   if (deployment == nil)
   {
-    NSTextField *note = [self _labelWithTitle:([deployments count]
-                                               ? @"Select a platform to see its settings."
-                                               : @"Add a platform with + for each system Archive builds "
-                                                 @"the application for.")
-                                        frame:NSMakeRect(Margin, y, width - 2 * Margin, 34)];
+    NSString    *text = (target == nil
+                         ? @"Select a target to see its deployment. A Mac target has the architectures "
+                           @"it is built for; a Linux target (SDKROOT = linux) the distributions it is "
+                           @"packaged for."
+                         : [self _isLinuxTarget]
+                         ? ([deployments count] ? @"Select a distribution to see its settings."
+                            : @"Add a distribution with + for each system Archive packages the application for.")
+                         : @"This target is not built for macOS or Linux.");
+    NSTextField *note = [self _labelWithTitle:text
+                                        frame:NSMakeRect(Margin, y, width - 2 * Margin, 51)];
 
     [note setAutoresizingMask:NSViewWidthSizable];
     [form addSubview:note];
-    y += 40;
+    y += 57;
   }
   for (NSDictionary *field in fields)
   {
@@ -422,14 +477,12 @@ static const CGFloat Margin = 20;
     [control setEnabled:![unused containsObject:key]];
   }
 
-  for (NSDictionary *other in deployments)
-  {
-    if ([[PCDeployment valueForKey:@"Enabled" ofDeployment:other project:projectDict] boolValue]) enabled++;
-  }
+  /* Archive makes all of the project's, not only this target's. */
+  enabled = [self _projectPath] ? [[PCDeployment deploymentsOfProjectAtPath:[self _projectPath]] count] : 0;
   [archiveButton setEnabled:(enabled > 0)];
   if (deployment == nil)
   {
-    [statusField setStringValue:enabled ? [NSString stringWithFormat:@"Archive builds %lu platform%@.",
+    [statusField setStringValue:enabled ? [NSString stringWithFormat:@"Archive makes %lu package%@.",
                                            (unsigned long)enabled, enabled == 1 ? @"" : @"s"] : @""];
     [statusField setToolTip:nil];
     return;

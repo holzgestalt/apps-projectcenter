@@ -275,19 +275,8 @@
                                                                     <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                     <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                                                     <tableColumns>
-                                                                        <tableColumn identifier="Enabled" width="20" minWidth="20" maxWidth="20" id="dp14">
-                                                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border">
-                                                                                <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
-                                                                                <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
-                                                                            </tableHeaderCell>
-                                                                            <buttonCell key="dataCell" type="check" bezelStyle="regularSquare" imagePosition="only" alignment="center" inset="2" id="dp15">
-                                                                                <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                                                                <font key="font" metaFont="system"/>
-                                                                            </buttonCell>
-                                                                            <tableColumnResizingMask key="resizingMask"/>
-                                                                        </tableColumn>
-                                                                        <tableColumn identifier="Name" editable="NO" width="176" minWidth="40" maxWidth="1000" id="dp16">
-                                                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" title="Platform">
+                                                                        <tableColumn identifier="Name" editable="NO" width="199" minWidth="40" maxWidth="1000" id="dp16">
+                                                                            <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" title="Deployment">
                                                                                 <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                                                 <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
                                                                             </tableHeaderCell>

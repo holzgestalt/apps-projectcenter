@@ -1,8 +1,9 @@
 /*
  PCDeploymentEditor.h
 
- The Deployment tab of the Xcode project editor: the platforms that
- Archive builds shippable applications for, and the settings of each.
+ The Deployment tab of the Xcode project editor: for the selected target,
+ its architectures (a Mac target) or the distributions Archive packages it
+ for (a Linux target), and the settings of each.
 
  This file is part of GNUstep ProjectCenter.
 
@@ -17,12 +18,16 @@
 @class PCProject;
 
 /* The views are in the Deployment tab of ProjectEditor.xib. The settings
- * form of the selected platform is made in code from
+ * form of the selected distribution is made in code from
  * +[PCDeployment fieldsForKind:], as the fields depend on the kind. Every
- * change is saved at once in GNUstep/ProjectCenter.plist. */
+ * change is saved at once as a build setting of the target (see
+ * PCDeployment.h), and the owner (the project editor) is asked to -reload,
+ * which gives the target back with -setTarget:. */
 @interface PCDeploymentEditor : NSObject
 {
   PCProject           *project;     // not retained
+  id                  owner;       // not retained
+  NSDictionary        *target;      // an overview entry, or nil
   NSMutableArray      *deployments; // NSMutableDictionary each
   NSArray             *fields;      // of the selected platform
   NSMutableDictionary *controls;    // setting key -> control of the form
@@ -37,7 +42,12 @@
 }
 
 - (void)setProject:(PCProject *)aProject;
-/* Reads the platforms from the project again. */
+- (void)setOwner:(id)anOwner;
+/* The target whose deployment is shown, an entry of +[PCXcodeProject
+ * overviewOfProjectAtPath:error:]; nil for none (the project row). */
+- (void)setTarget:(NSDictionary *)aTarget;
+- (NSDictionary *)target;
+/* Reads the target's deployment again. */
 - (void)reload;
 - (NSArray *)deployments;
 - (NSInteger)selectedIndex;
@@ -45,7 +55,7 @@
 /* The form's controls by setting key, for the selected platform. */
 - (NSDictionary *)controls;
 
-/* Edits, saved at once; nil or empty takes the default. */
+/* Edits, saved at once; nil, empty or the default removes the setting. */
 - (BOOL)setValue:(NSString *)value forSetting:(NSString *)key ofDeploymentAtIndex:(NSUInteger)index;
 - (void)addPlatformOfKind:(NSString *)kind;
 - (void)removePlatformAtIndex:(NSUInteger)index;
