@@ -772,11 +772,23 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 - (void)setTitle
 {
   NSString *name = [project projectName];
-  NSString *path = [[project projectPath] stringByAbbreviatingWithTildeInPath];
   NSString *language = [[project projectDict] objectForKey:PCLanguage];
+  NSString *path = [self _restorablePath];
 
-  [projectWindow
-   setTitle:[NSString stringWithFormat:@"%@ - %@ [%@]",name,path,language]];
+  // The full path is available from the title's proxy icon instead.
+  if (path != nil)
+    {
+      [projectWindow setRepresentedFilename:path];
+    }
+  if ([language length] > 0)
+    {
+      [projectWindow
+       setTitle:[NSString stringWithFormat:@"%@ [%@]", name, language]];
+    }
+  else
+    {
+      [projectWindow setTitle:name];
+    }
 }
 
 - (void)dealloc
