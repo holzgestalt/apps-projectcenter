@@ -492,7 +492,7 @@ typedef enum
 
 @interface PCInspectorForm : NSView
 {
-  CGFloat        y;
+  NSView *lastBand; // retained by the subview hierarchy
 }
 - (void)reset;
 - (void)addHeader:(NSString *)title;
@@ -503,161 +503,137 @@ typedef enum
 
 static const CGFloat LabelWidth = 92;
 
-@implementation PCInspectorForm
-- (BOOL)isFlipped
+static void InspectorConstraint(NSView *owner, NSView *first, NSLayoutAttribute attribute,
+                                NSLayoutRelation relation, NSView *second,
+                                NSLayoutAttribute other, CGFloat constant, NSLayoutPriority priority)
 {
-  return YES;
+  NSLayoutConstraint *constraint = [NSLayoutConstraint constraintWithItem:first attribute:attribute
+     relatedBy:relation toItem:second attribute:other multiplier:1 constant:constant];
+  [constraint setPriority:priority];
+  [owner addConstraint:constraint];
 }
+
+@implementation PCInspectorForm
+- (BOOL)isFlipped { return YES; }
 - (id)initWithFrame:(NSRect)frame
 {
-  if ((self = [super initWithFrame:frame]))
-  {
-    [self setAutoresizingMask:NSViewWidthSizable];
-  }
+  if ((self = [super initWithFrame:frame])) [self setAutoresizingMask:NSViewWidthSizable];
   return self;
-}
-- (void)dealloc
-{
-  [[NSNotificationCenter defaultCenter] removeObserver:self];
-  [super dealloc];
-}
-/* The form is as wide as the scroll view it is in. */
-- (void)viewDidMoveToSuperview
-{
-  [[NSNotificationCenter defaultCenter] removeObserver:self];
-  if ([self superview])
-  {
-    [[self superview] setPostsFrameChangedNotifications:YES];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(superviewFrameDidChange:)
-                                                 name:NSViewFrameDidChangeNotification
-                                               object:[self superview]];
-  }
-}
-- (void)superviewFrameDidChange:(NSNotification *)notification
-{
-  [self finish];
 }
 - (void)reset
 {
-  while ([[self subviews] count])
-  {
-    [[[self subviews] lastObject] removeFromSuperview];
-  }
-  y = 4;
+  [self removeConstraints:[self constraints]];
+  while ([[self subviews] count]) [[[self subviews] lastObject] removeFromSuperview];
+  lastBand = nil;
+}
+/* Only model changes construct rows. Native measurement determines their
+ * heights and scroll extent; viewport changes never call an AppKit form layout. */
+- (NSView *)appendBandWithPreferredHeight:(CGFloat)height
+{
+  NSView *band = [[[NSView alloc] initWithFrame:NSZeroRect] autorelease];
+  [band setTranslatesAutoresizingMaskIntoConstraints:NO];
+  [self addSubview:band];
+  InspectorConstraint(self, band, NSLayoutAttributeLeading, NSLayoutRelationEqual, self, NSLayoutAttributeLeading, 4, 1000);
+  InspectorConstraint(self, band, NSLayoutAttributeTrailing, NSLayoutRelationEqual, self, NSLayoutAttributeTrailing, -8, 1000);
+  InspectorConstraint(self, band, NSLayoutAttributeTop, NSLayoutRelationEqual, lastBand ?: self,
+                      lastBand ? NSLayoutAttributeBottom : NSLayoutAttributeTop, lastBand ? 5 : 4, 1000);
+  if (height > 0)
+    InspectorConstraint(self, band, NSLayoutAttributeHeight, NSLayoutRelationEqual, nil, NSLayoutAttributeNotAnAttribute, height, 250);
+  lastBand = band;
+  return band;
 }
 - (void)addHeader:(NSString *)title
 {
-  NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(8, y + 8, NSWidth([self frame]) - 16, 16)]
-                        autorelease];
-
-  if (y > 4)
-  {
-    NSBox *separator = [[[NSBox alloc] initWithFrame:NSMakeRect(8, y + 2, NSWidth([self frame]) - 16, 1)] autorelease];
-    [separator setBoxType:NSBoxSeparator];
-    [separator setAutoresizingMask:NSViewWidthSizable];
-    [self addSubview:separator];
-  }
-  [label setStringValue:title];
-  [label setEditable:NO];
-  [label setSelectable:NO];
-  [label setBezeled:NO];
-  [label setDrawsBackground:NO];
+  BOOL separator = lastBand != nil;
+  NSView *band = [self appendBandWithPreferredHeight:0];
+  NSTextField *label = [[[NSTextField alloc] initWithFrame:NSZeroRect] autorelease];
+  [label setStringValue:title]; [label setEditable:NO]; [label setSelectable:NO];
+  [label setBezeled:NO]; [label setDrawsBackground:NO];
   [label setFont:[NSFont boldSystemFontOfSize:11]];
   [label setTextColor:[NSColor disabledControlTextColor]];
-  [label setAutoresizingMask:NSViewWidthSizable];
-  [self addSubview:label];
-  y += 28;
+  [label setTranslatesAutoresizingMaskIntoConstraints:NO];
+  [band addSubview:label];
+  InspectorConstraint(band, label, NSLayoutAttributeLeading, NSLayoutRelationEqual, band, NSLayoutAttributeLeading, 4, 1000);
+  InspectorConstraint(band, label, NSLayoutAttributeTrailing, NSLayoutRelationEqual, band, NSLayoutAttributeTrailing, 0, 1000);
+  if (separator)
+  {
+    NSBox *line = [[[NSBox alloc] initWithFrame:NSMakeRect(0, 0, 1, 1)] autorelease];
+    [line setBoxType:NSBoxSeparator]; [line setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [band addSubview:line];
+    InspectorConstraint(band, line, NSLayoutAttributeLeading, NSLayoutRelationEqual, label, NSLayoutAttributeLeading, 0, 1000);
+    InspectorConstraint(band, line, NSLayoutAttributeTrailing, NSLayoutRelationEqual, label, NSLayoutAttributeTrailing, 0, 1000);
+    InspectorConstraint(band, line, NSLayoutAttributeTop, NSLayoutRelationEqual, band, NSLayoutAttributeTop, 2, 1000);
+    InspectorConstraint(band, line, NSLayoutAttributeHeight, NSLayoutRelationEqual, nil, NSLayoutAttributeNotAnAttribute, 1, 1000);
+    InspectorConstraint(band, label, NSLayoutAttributeTop, NSLayoutRelationEqual, line, NSLayoutAttributeBottom, 6, 1000);
+  }
+  else InspectorConstraint(band, label, NSLayoutAttributeTop, NSLayoutRelationEqual, band, NSLayoutAttributeTop, 8, 1000);
+  InspectorConstraint(band, band, NSLayoutAttributeBottom, NSLayoutRelationEqual, label, NSLayoutAttributeBottom, 4, 1000);
 }
 - (void)addRow:(NSString *)label views:(NSArray *)views height:(CGFloat)height
 {
-  CGFloat x = LabelWidth + 8, right = NSWidth([self frame]) - 8;
-  CGFloat fixed = 0, flexible = 0, gap = 4;
-
+  NSView *band = [self appendBandWithPreferredHeight:height];
+  NSView *previous = nil, *flexible = nil;
+  BOOL hasFlexible = NO;
+  for (NSView *control in views) if (NSWidth([control frame]) <= 0) hasFlexible = YES;
   if ([label length])
   {
-    NSTextField *text = [[[NSTextField alloc] initWithFrame:NSMakeRect(4, y + floor((height - 15) / 2),
-                                                                       LabelWidth, 15)] autorelease];
-
-    [text setStringValue:label];
-    [text setEditable:NO];
-    [text setSelectable:NO];
-    [text setBezeled:NO];
-    [text setDrawsBackground:NO];
-    [text setAlignment:NSRightTextAlignment];
-    [text setFont:[NSFont systemFontOfSize:11]];
-    [[text cell] setLineBreakMode:NSLineBreakByTruncatingTail];
-    [self addSubview:text];
+    NSTextField *name = [[[NSTextField alloc] initWithFrame:NSZeroRect] autorelease];
+    [name setStringValue:label]; [name setEditable:NO]; [name setSelectable:NO];
+    [name setBezeled:NO]; [name setDrawsBackground:NO]; [name setAlignment:NSRightTextAlignment];
+    [name setFont:[NSFont systemFontOfSize:11]];
+    [[name cell] setLineBreakMode:NSLineBreakByTruncatingTail];
+    [name setTranslatesAutoresizingMaskIntoConstraints:NO]; [band addSubview:name];
+    InspectorConstraint(band, name, NSLayoutAttributeLeading, NSLayoutRelationEqual, band, NSLayoutAttributeLeading, 0, 1000);
+    InspectorConstraint(band, name, NSLayoutAttributeWidth, NSLayoutRelationEqual, nil, NSLayoutAttributeNotAnAttribute, LabelWidth, 1000);
+    InspectorConstraint(band, name, NSLayoutAttributeCenterY, NSLayoutRelationEqual, band, NSLayoutAttributeCenterY, 0, 1000);
+    InspectorConstraint(band, name, NSLayoutAttributeTop, NSLayoutRelationGreaterThanOrEqual, band, NSLayoutAttributeTop, 0, 1000);
+    InspectorConstraint(band, name, NSLayoutAttributeBottom, NSLayoutRelationLessThanOrEqual, band, NSLayoutAttributeBottom, 0, 1000);
   }
-  /* Views with a width keep it; the others share the rest. */
-  for (NSView *view in views)
+  for (NSView *control in views)
   {
-    if (NSWidth([view frame]) > 0)
+    CGFloat width = NSWidth([control frame]);
+    [control setTranslatesAutoresizingMaskIntoConstraints:NO];
+    if ([control isKindOfClass:[NSControl class]])
     {
-      fixed += NSWidth([view frame]);
+      [[(NSControl *)control cell] setControlSize:NSSmallControlSize];
+      if (![control isKindOfClass:[NSColorWell class]]) [(NSControl *)control setFont:[NSFont systemFontOfSize:11]];
     }
+    [band addSubview:control];
+    InspectorConstraint(band, control, NSLayoutAttributeLeading, NSLayoutRelationEqual, previous ?: band,
+                        previous ? NSLayoutAttributeTrailing : NSLayoutAttributeLeading, previous ? 4 : LabelWidth + 4, 1000);
+    InspectorConstraint(band, control, NSLayoutAttributeCenterY, NSLayoutRelationEqual, band, NSLayoutAttributeCenterY, 0, 1000);
+    InspectorConstraint(band, control, NSLayoutAttributeTop, NSLayoutRelationGreaterThanOrEqual, band, NSLayoutAttributeTop, 0, 1000);
+    InspectorConstraint(band, control, NSLayoutAttributeBottom, NSLayoutRelationLessThanOrEqual, band, NSLayoutAttributeBottom, 0, 1000);
+    if (width > 0)
+      InspectorConstraint(band, control, NSLayoutAttributeWidth, NSLayoutRelationEqual, nil, NSLayoutAttributeNotAnAttribute, width, 1000);
     else
     {
-      flexible++;
+      if (flexible) InspectorConstraint(band, control, NSLayoutAttributeWidth, NSLayoutRelationEqual, flexible, NSLayoutAttributeWidth, 0, 1000);
+      flexible = control;
     }
+    previous = control;
   }
-  fixed += gap * ([views count] - 1);
-  CGFloat share = floor((right - x - fixed) / MAX(1, flexible));
-  for (NSView *view in views)
-  {
-    BOOL    hasWidth = NSWidth([view frame]) > 0;
-    CGFloat width = hasWidth ? NSWidth([view frame]) : share;
-
-    [view setFrame:NSMakeRect(x, y, width, height)];
-    if ([views count] == 1)
-    {
-      [view setAutoresizingMask:NSViewWidthSizable];
-    }
-    else if (hasWidth)
-    {
-      /* Fixed views keep their place relative to the flexible ones. */
-      [view setAutoresizingMask:flexible ? NSViewMinXMargin | NSViewMaxXMargin : NSViewMinXMargin];
-    }
-    else
-    {
-      [view setAutoresizingMask:NSViewWidthSizable];
-    }
-    if ([view isKindOfClass:[NSControl class]])
-    {
-      [[(NSControl *)view cell] setControlSize:NSSmallControlSize];
-      if (![view isKindOfClass:[NSColorWell class]])
-      {
-        [(NSControl *)view setFont:[NSFont systemFontOfSize:11]];
-      }
-    }
-    [self addSubview:view];
-    x += width + gap;
-  }
-  y += height + 5;
+  if (previous)
+    InspectorConstraint(band, previous, NSLayoutAttributeTrailing, hasFlexible ? NSLayoutRelationEqual : NSLayoutRelationLessThanOrEqual,
+                        band, NSLayoutAttributeTrailing, 0, 1000);
 }
 - (void)addNote:(NSString *)text
 {
-  NSTextField *note = [[[NSTextField alloc] initWithFrame:NSMakeRect(8, y, NSWidth([self frame]) - 16, 30)]
-                       autorelease];
-
-  [note setStringValue:text];
-  [note setEditable:NO];
-  [note setSelectable:NO];
-  [note setBezeled:NO];
-  [note setDrawsBackground:NO];
-  [note setFont:[NSFont systemFontOfSize:11]];
-  [note setTextColor:[NSColor disabledControlTextColor]];
-  [[note cell] setWraps:YES];
-  [note setAutoresizingMask:NSViewWidthSizable];
-  [self addSubview:note];
-  y += 34;
+  NSView *band = [self appendBandWithPreferredHeight:30];
+  NSTextField *note = [[[NSTextField alloc] initWithFrame:NSZeroRect] autorelease];
+  [note setStringValue:text]; [note setEditable:NO]; [note setSelectable:NO];
+  [note setBezeled:NO]; [note setDrawsBackground:NO]; [note setFont:[NSFont systemFontOfSize:11]];
+  [note setTextColor:[NSColor disabledControlTextColor]]; [[note cell] setWraps:YES];
+  [note setTranslatesAutoresizingMaskIntoConstraints:NO]; [band addSubview:note];
+  InspectorConstraint(band, note, NSLayoutAttributeLeading, NSLayoutRelationEqual, band, NSLayoutAttributeLeading, 4, 1000);
+  InspectorConstraint(band, note, NSLayoutAttributeTrailing, NSLayoutRelationEqual, band, NSLayoutAttributeTrailing, 0, 1000);
+  InspectorConstraint(band, note, NSLayoutAttributeTop, NSLayoutRelationEqual, band, NSLayoutAttributeTop, 0, 1000);
+  InspectorConstraint(band, note, NSLayoutAttributeBottom, NSLayoutRelationEqual, band, NSLayoutAttributeBottom, 0, 1000);
 }
 - (void)finish
 {
-  NSSize visible = [[self enclosingScrollView] contentSize];
-
-  [self setFrameSize:NSMakeSize(visible.width, MAX(y + 8, visible.height))];
-  [self setNeedsDisplay:YES];
+  if (lastBand)
+    InspectorConstraint(self, self, NSLayoutAttributeBottom, NSLayoutRelationGreaterThanOrEqual, lastBand, NSLayoutAttributeBottom, 8, 1000);
 }
 @end
 
@@ -1707,7 +1683,6 @@ static BOOL Rebuilding = NO;
     PCInspectorForm *form = [scrolls[i] documentView];
 
     [form reset];
-    [form setFrameSize:NSMakeSize([scrolls[i] contentSize].width, NSHeight([form frame]))];
   }
   if (_selected)
   {

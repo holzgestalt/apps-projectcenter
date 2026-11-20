@@ -711,90 +711,109 @@ static NSTextField *FormField(NSRect frame, NSString *text, BOOL editable)
   return popUp;
 }
 
+/* Constraints describe the form once. The active toolkit measures controls and
+ * lays out rows from their actual bounds; no resize callback moves the rows. */
+static void FormConstraint(NSView *owner, NSView *first, NSLayoutAttribute attribute,
+                           NSLayoutRelation relation, NSView *second,
+                           NSLayoutAttribute other, CGFloat constant, NSLayoutPriority priority)
+{
+  NSLayoutConstraint *constraint = [NSLayoutConstraint constraintWithItem:first attribute:attribute
+     relatedBy:relation toItem:second attribute:other multiplier:1 constant:constant];
+  [constraint setPriority:priority];
+  [owner addConstraint:constraint];
+}
+
 - (void)_layoutGeneralForm
 {
-  CGFloat    width = MAX(400, [generalScroll contentSize].width);
-  CGFloat    labelWidth = 180;
-  CGFloat    x = labelWidth + 32;
-  CGFloat    y = 16;
-  NSPoint    scrolled = [[generalScroll contentView] bounds].origin;
+  CGFloat width = MAX(400, [generalScroll contentSize].width);
+  NSPoint scrolled = [[generalScroll contentView] bounds].origin;
   PCFormView *form = [[[PCFormView alloc] initWithFrame:NSMakeRect(0, 0, width, 100)] autorelease];
-  NSFont     *bold = [NSFont boldSystemFontOfSize:0];
+  NSView *previous = nil;
   NSUInteger index;
 
   [form setAutoresizingMask:NSViewWidthSizable];
   for (index = 0; index < [generalRows count]; index++)
   {
     NSArray *row = [generalRows objectAtIndex:index];
+    NSView *band = [[[NSView alloc] initWithFrame:NSZeroRect] autorelease];
+    [band setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [form addSubview:band];
+    FormConstraint(form, band, NSLayoutAttributeLeading, NSLayoutRelationEqual, form, NSLayoutAttributeLeading, 20, 1000);
+    FormConstraint(form, band, NSLayoutAttributeTrailing, NSLayoutRelationEqual, form, NSLayoutAttributeTrailing, -20, 1000);
+    FormConstraint(form, band, NSLayoutAttributeTop, NSLayoutRelationEqual, previous ?: form,
+                   previous ? NSLayoutAttributeBottom : NSLayoutAttributeTop, previous ? 6 : 16, 1000);
+    previous = band;
 
     if ([row count] == 1)
     {
-      /* A section: its title over a line, as in Xcode. */
-      NSTextField *title = FormField(NSMakeRect(20, y + 8, width - 40, 18), [row objectAtIndex:0], NO);
-      NSBox       *line = [[[NSBox alloc] initWithFrame:NSMakeRect(20, y + 30, width - 40, 1)] autorelease];
-
-      [title setFont:bold];
+      NSTextField *title = FormField(NSZeroRect, [row objectAtIndex:0], NO);
+      NSBox *line = [[[NSBox alloc] initWithFrame:NSMakeRect(0, 0, 1, 1)] autorelease];
+      [title setFont:[NSFont boldSystemFontOfSize:0]];
       [title setSelectable:NO];
-      [title setAutoresizingMask:NSViewWidthSizable];
       [line setBoxType:NSBoxSeparator];
-      [line setAutoresizingMask:NSViewWidthSizable];
-      [form addSubview:title];
-      [form addSubview:line];
-      y += 40;
+      for (NSView *child in @[title, line])
+      {
+        [child setTranslatesAutoresizingMaskIntoConstraints:NO];
+        [band addSubview:child];
+        FormConstraint(band, child, NSLayoutAttributeLeading, NSLayoutRelationEqual, band, NSLayoutAttributeLeading, 0, 1000);
+        FormConstraint(band, child, NSLayoutAttributeTrailing, NSLayoutRelationEqual, band, NSLayoutAttributeTrailing, 0, 1000);
+      }
+      FormConstraint(band, title, NSLayoutAttributeTop, NSLayoutRelationEqual, band, NSLayoutAttributeTop, 8, 1000);
+      FormConstraint(band, line, NSLayoutAttributeTop, NSLayoutRelationEqual, title, NSLayoutAttributeBottom, 6, 1000);
+      FormConstraint(band, line, NSLayoutAttributeHeight, NSLayoutRelationEqual, nil, NSLayoutAttributeNotAnAttribute, 1, 1000);
+      FormConstraint(band, band, NSLayoutAttributeBottom, NSLayoutRelationEqual, line, NSLayoutAttributeBottom, 4, 1000);
       continue;
     }
 
-    NSString     *text = [row objectAtIndex:1];
+    NSString *text = [row objectAtIndex:1];
     NSDictionary *how = [row count] > 2 ? [row objectAtIndex:2] : nil;
-    NSTextField  *name = FormField(NSMakeRect(20, y + 3, labelWidth, 18), [row objectAtIndex:0], NO);
-    NSView       *control;
-
+    NSTextField *name = FormField(NSZeroRect, [row objectAtIndex:0], NO);
+    NSView *control;
+    BOOL popup = [[how objectForKey:@"Control"] isEqual:@"Theme"] || [how objectForKey:@"Choices"];
     [name setAlignment:NSRightTextAlignment];
     [name setSelectable:NO];
-    [form addSubview:name];
-    if ([[how objectForKey:@"Control"] isEqual:@"Theme"] || [how objectForKey:@"Choices"])
+    if (popup)
     {
-      NSRect        frame = NSMakeRect(x, y, MIN(260, width - x - 20), 24);
-      NSPopUpButton *popUp = ([how objectForKey:@"Choices"]
-                              ? [self _popUp:frame choices:[how objectForKey:@"Choices"] selected:text]
-                              : [self _themePopUp:frame selected:
-                                 [[PCXcodeProject GNUstepSettingsOfProjectAtPath:
-                                   [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]]
-                                  objectForKey:@"Theme"]]);
-
-      [popUp setTag:index];
-      [popUp setTarget:self];
-      [popUp setAction:@selector(generalChoiceChanged:)];
-      control = popUp;
+      NSPopUpButton *choice = ([how objectForKey:@"Choices"]
+        ? [self _popUp:NSZeroRect choices:[how objectForKey:@"Choices"] selected:text]
+        : [self _themePopUp:NSZeroRect selected:
+           [[PCXcodeProject GNUstepSettingsOfProjectAtPath:[[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]]
+            objectForKey:@"Theme"]]);
+      [choice setTag:index]; [choice setTarget:self]; [choice setAction:@selector(generalChoiceChanged:)];
+      control = choice;
     }
     else if (how)
     {
-      NSTextField *field = FormField(NSMakeRect(x, y + 1, width - x - 20, 22), text, YES);
-
-      if ([how objectForKey:@"Placeholder"])
-      {
-        [[field cell] setPlaceholderString:[how objectForKey:@"Placeholder"]];
-      }
-      [field setTag:index];
-      [field setTarget:self];
-      [field setAction:@selector(generalFieldChanged:)];
+      NSTextField *field = FormField(NSZeroRect, text, YES);
+      if ([how objectForKey:@"Placeholder"]) [[field cell] setPlaceholderString:[how objectForKey:@"Placeholder"]];
+      [field setTag:index]; [field setTarget:self]; [field setAction:@selector(generalFieldChanged:)];
       [field setDelegate:(id)self];
-      [field setAutoresizingMask:NSViewWidthSizable];
       control = field;
     }
-    else
+    else control = FormField(NSZeroRect, text, NO);
+
+    [control setToolTip:([how objectForKey:@"ToolTip"] ?: (how ? [self _whereSaved:how] : text))];
+    for (NSView *child in @[name, control])
     {
-      control = FormField(NSMakeRect(x, y + 3, width - x - 20, 18), text, NO);
-      [control setAutoresizingMask:NSViewWidthSizable];
+      [child setTranslatesAutoresizingMaskIntoConstraints:NO];
+      [band addSubview:child];
+      FormConstraint(band, child, NSLayoutAttributeCenterY, NSLayoutRelationEqual, band, NSLayoutAttributeCenterY, 0, 1000);
+      FormConstraint(band, child, NSLayoutAttributeTop, NSLayoutRelationGreaterThanOrEqual, band, NSLayoutAttributeTop, 0, 1000);
+      FormConstraint(band, child, NSLayoutAttributeBottom, NSLayoutRelationLessThanOrEqual, band, NSLayoutAttributeBottom, 0, 1000);
     }
-    [control setToolTip:([how objectForKey:@"ToolTip"] ? [how objectForKey:@"ToolTip"]
-                         : how ? [self _whereSaved:how] : text)];
-    [form addSubview:control];
-    y += 28;
+    FormConstraint(band, name, NSLayoutAttributeLeading, NSLayoutRelationEqual, band, NSLayoutAttributeLeading, 0, 1000);
+    FormConstraint(band, name, NSLayoutAttributeWidth, NSLayoutRelationEqual, nil, NSLayoutAttributeNotAnAttribute, 180, 1000);
+    FormConstraint(band, control, NSLayoutAttributeLeading, NSLayoutRelationEqual, name, NSLayoutAttributeTrailing, 12, 1000);
+    FormConstraint(band, control, NSLayoutAttributeTrailing, popup ? NSLayoutRelationLessThanOrEqual : NSLayoutRelationEqual,
+                   band, NSLayoutAttributeTrailing, 0, 1000);
+    if (popup)
+    {
+      FormConstraint(band, control, NSLayoutAttributeWidth, NSLayoutRelationLessThanOrEqual, nil, NSLayoutAttributeNotAnAttribute, 260, 1000);
+    }
   }
-  [form setFrameSize:NSMakeSize(width, MAX(y + 16, [generalScroll contentSize].height))];
+  if (previous)
+    FormConstraint(form, form, NSLayoutAttributeBottom, NSLayoutRelationGreaterThanOrEqual, previous, NSLayoutAttributeBottom, 16, 1000);
   [generalScroll setDocumentView:form];
-  /* Rebuilt after an edit: keep the place. */
   [[generalScroll contentView] scrollToPoint:scrolled];
   [generalScroll reflectScrolledClipView:[generalScroll contentView]];
 }
