@@ -112,6 +112,7 @@ ProjectCenter_OBJC_FILES = \
 # Resources
 #
 ProjectCenter_RESOURCE_FILES = \
+  Resources/pc-xcode-build.py \
   Resources/cfile.template \
   Resources/cheader.template \
   Resources/class.template \

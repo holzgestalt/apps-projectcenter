@@ -378,40 +378,28 @@ menu item, which is only in the XIB of the main menu.
 
 ## GNUstep build and debug integration
 
-Reading an Xcode project does not supply Apple's SDKs or translate its build
-phases. The Build/Clean controls use an existing `GNUmakefile` in the project
-root. Alternatively, create `GNUstep/ProjectCenter.plist` beside the
-`.xcodeproj`:
+On GNUstep, Build and Clean compile the selected Xcode targets directly using
+ProjectCenter's bundled PBX compiler. Run resolves the product from the same
+scheme and configuration. A project does not need a GNUmakefile, application
+build script, or `GNUstep/ProjectCenter.plist`.
 
-```text
-{
-    TargetName = MyApp;
-    BuildScript = "scripts/build-gnustep.sh";
-    Executable = "build/MyApp.app/MyApp";
-    Theme = GTK4Native;
-}
-```
+The compiler reads source/resource/header membership, target and referenced
+subproject dependencies, project/target settings and xcconfig includes, prefix
+headers and per-file ARC overrides. It builds C, C++ and Objective-C sources
+against the installed GNUstep SDK. Products and compiler caches live under
+`build/ProjectCenter/<configuration>` beside the `.xcodeproj`. Clean removes only
+the chosen configuration's products. Source project metadata is never rewritten.
 
-`TargetName` is optional for a single application target. `BuildScript` and
-`Executable` paths are absolute or relative to the directory containing the
-`.xcodeproj`. The script is invoked with `/bin/bash` when Build/Clean is selected,
-with the project root as its working directory and GNUstep Make arguments
-(including `all`/`clean`) forwarded to it. Opening a project does not execute it.
-The toolbar's Configuration chooses `debug=yes` for a configuration named
-Debug and `debug=no` for others, in place of the Build Options' debug switch.
-Without a script or makefile, browsing/editing still works and Build explains
-that a GNUstep build is required. `Executable` selects the binary for Run/Debug;
-otherwise ProjectCenter searches its standard GNUstep output locations.
-`Theme` is the GNUstep theme Run uses (`-GSTheme`). The project editor's
-General pane edits `BuildScript`, `Executable` and `Theme`, and writes the
-file sorted, as above; on macOS, a `BuildScript` also replaces `xcodebuild`
-for Build.
-Launch ProjectCenter from a shell with the correct GNUstep environment loaded.
-Project settings changed in the Inspector/Build panels are session-local;
-edit the sidecar file for persistent configuration.
+An installed appearance provider can expose an `xcode_sdk` pkg-config variable
+for its compiler flags, SDK sources, library replacements and resource adaptation.
+GTK-specific adapters remain in GTK4Native. Apple signing phases are skipped with
+a diagnostic; arbitrary shell phases, Swift, and unknown external SDK libraries
+are rejected rather than silently treated as a successful build.
 
-This workspace configures EditGlyphData to use its existing build script,
-resource preparation and GTK4Native output in `build/EditGlyphData/`.
+Existing projects with an explicitly configured `BuildScript` or `Executable` in
+`GNUstep/ProjectCenter.plist` retain those overrides. They are optional legacy
+integration, not a prerequisite for Xcode project builds. FontTableViewer has no
+such sidecar and builds from its original Xcode project and GSFontTools subproject.
 
 ## Workspace validation
 

@@ -1757,6 +1757,34 @@ static id JSONFromTool(NSString *tool, NSArray *arguments)
   return [architecture isEqual:NativeArchitecture()] ? nil : architecture;
 }
 
++ (NSString *)GNUstepBuildTool
+{
+  return [[NSBundle bundleForClass:self] pathForResource:@"pc-xcode-build" ofType:@"py"];
+}
+
++ (NSArray *)GNUstepBuildArgumentsForProject:(NSDictionary *)projectDict action:(NSString *)action
+{
+  NSString *path = [projectDict objectForKey:PCXcodeProjectMarker];
+  NSString *tool = [self GNUstepBuildTool];
+  if (!path || !tool || ![self buildsWithGNUstepForProject:projectDict]
+      || [projectDict objectForKey:@"XCODE_BuildScript"]) return nil;
+  NSDictionary *selection = [self buildSelectionForProject:projectDict];
+  NSDictionary *scheme = [selection objectForKey:@"Scheme"];
+  NSMutableArray *targets = [NSMutableArray array];
+  NSString *runTarget = [scheme objectForKey:@"RunTarget"];
+  if (runTarget) [targets addObject:runTarget];
+  for (NSString *target in [scheme objectForKey:@"Targets"])
+    if (![targets containsObject:target]) [targets addObject:target];
+  NSMutableArray *arguments = [NSMutableArray arrayWithObjects:@"python3", tool,
+    @"--project", path, @"--configuration", [selection objectForKey:@"Configuration"] ?: @"Debug", nil];
+  for (NSString *target in targets) [arguments addObjectsFromArray:@[@"--target", target]];
+  NSString *theme = [projectDict objectForKey:@"XCODE_Theme"];
+  if (theme.length) [arguments addObjectsFromArray:@[@"--theme", theme]];
+  if ([action isEqual:@"describe"]) [arguments addObject:@"--describe"];
+  else [arguments addObjectsFromArray:@[@"--action", action]];
+  return arguments;
+}
+
 + (NSString *)builtExecutableForProject:(NSDictionary *)projectDict
 {
   static NSMutableDictionary *executables = nil;
@@ -1767,6 +1795,13 @@ static id JSONFromTool(NSString *tool, NSArray *arguments)
   NSString     *key;
   NSString     *executable;
 
+  if (path && [self buildsWithGNUstepForProject:projectDict]
+      && ![projectDict objectForKey:@"XCODE_BuildScript"])
+  {
+    if (![[[self buildSelectionForProject:projectDict] objectForKey:@"Scheme"] objectForKey:@"RunTarget"]) return nil;
+    NSArray *arguments = [self GNUstepBuildArgumentsForProject:projectDict action:@"describe"];
+    return arguments ? [JSONFromTool(@"/usr/bin/env", arguments) objectForKey:@"executable"] : nil;
+  }
   if (path == nil || [self xcodebuildPath] == nil)
   {
     return nil;

@@ -212,6 +212,12 @@ enum {
 {
   NSString *executable = [[project projectDict] objectForKey:@"XCODE_Executable"];
   if (executable) return [executable stringByDeletingLastPathComponent];
+  if ([[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]
+      && ![[project projectDict] objectForKey:@"XCODE_BuildScript"])
+  {
+    NSString *built = [PCXcodeProject builtExecutableForProject:[project projectDict]];
+    if (built) return [built stringByDeletingLastPathComponent];
+  }
   if ([[project projectTypeName] isEqualToString: @"Application"])
   {
     NSString *appName;
@@ -227,6 +233,12 @@ enum {
 {
   NSString *configured = [[project projectDict] objectForKey:@"XCODE_Executable"];
   if (configured) return configured;
+  if ([[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]
+      && [PCXcodeProject buildsWithGNUstepForProject:[project projectDict]]
+      && ![[project projectDict] objectForKey:@"XCODE_BuildScript"])
+  {
+    return [PCXcodeProject builtExecutableForProject:[project projectDict]];
+  }
 #ifndef GNUSTEP
   /* Built by xcodebuild (see PCProjectBuilder): where Xcode puts it. */
   if ([[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"]

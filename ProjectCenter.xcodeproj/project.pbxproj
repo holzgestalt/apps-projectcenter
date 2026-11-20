@@ -11,6 +11,7 @@
 		EB942323927AB26AE95E1BF7 /* PCDeploymentEditor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2232729BF9A214FF063C4DB9 /* PCDeploymentEditor.h */; };
 		9D6BE243490D88EE9C483B69 /* PCDeployment.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FAFA04BB9EFD90FD6B2B8DB /* PCDeployment.m */; };
 		DEFF7BF64BBAA36442E0A186 /* PCDeployment.h in Headers */ = {isa = PBXBuildFile; fileRef = 955FC4E24376C52D170A2D7D /* PCDeployment.h */; };
+		CCDE00000000000000000001 /* pc-xcode-build.py in Resources */ = {isa = PBXBuildFile; fileRef = CCDE00000000000000000002 /* pc-xcode-build.py */; };
 		8EE5031E4B998201E781FAB4 /* PCGormXIBWriter.h in Headers */ = {isa = PBXBuildFile; fileRef = 74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */; };
 		1779DF2815ADA3D81CAF6DC3 /* PCGormXIBWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */; };
 		AF68A149658AEB75EB34895C /* PCInterfaceDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = 4F38379DBB3CAAC08BB1EDD9 /* PCInterfaceDocument.h */; };
@@ -593,6 +594,7 @@
 		2232729BF9A214FF063C4DB9 /* PCDeploymentEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCDeploymentEditor.h; sourceTree = "<group>"; };
 		0FAFA04BB9EFD90FD6B2B8DB /* PCDeployment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCDeployment.m; sourceTree = "<group>"; };
 		955FC4E24376C52D170A2D7D /* PCDeployment.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCDeployment.h; sourceTree = "<group>"; };
+		CCDE00000000000000000002 /* pc-xcode-build.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = Framework/Resources/pc-xcode-build.py; sourceTree = SOURCE_ROOT; };
 		2A4DB7D3A577786C1B757843 /* gorm2xib.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = gorm2xib.m; sourceTree = "<group>"; };
 		74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCGormXIBWriter.h; sourceTree = "<group>"; };
 		0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCGormXIBWriter.m; sourceTree = "<group>"; };
@@ -1195,6 +1197,7 @@
 		0DE1B6CE53E853E30817D43A /* English.lproj */ = {
 			isa = PBXGroup;
 			children = (
+				CCDE00000000000000000002 /* pc-xcode-build.py */,
 				F84AE18E99CEF44FD09476C9 /* BuildAttributes.xib */,
 				3BE5C2A64070316317644258 /* Builder.xib */,
 				F98B5BF7CABEBD8CAF1D79F0 /* BuilderOptions.xib */,
@@ -2301,6 +2304,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CCDE00000000000000000001 /* pc-xcode-build.py in Resources */,
 				32B86604A08E6257CDECC0D3 /* ProjectWindow.xib in Resources */,
 				2D7EE2073FB1AC160D6EB53E /* BuilderPanel.xib in Resources */,
 				D97FB785A089520D33963404 /* Builder.xib in Resources */,

@@ -184,8 +184,11 @@
 /* The architecture to start the product with when it is not this
  * computer's own (x86_64 for "My Mac (Rosetta)"), or nil. */
 + (NSString *)launchArchitectureForProject:(NSDictionary *)projectDict;
-/* The executable that xcodebuild builds for the run target of the selected
- * scheme, configuration and destination, or nil. Asks xcodebuild for the
- * build settings once per selection. */
+/* The executable for the selected run target and configuration. GNUstep
+ * queries the built-in PBX compiler; native macOS queries xcodebuild. */
+/* Built-in GNUstep PBX compiler, packaged in ProjectCenter's framework.
+ * No application makefile, script or sidecar is required. */
++ (NSString *)GNUstepBuildTool;
++ (NSArray *)GNUstepBuildArgumentsForProject:(NSDictionary *)projectDict action:(NSString *)action;
 + (NSString *)builtExecutableForProject:(NSDictionary *)projectDict;
 @end

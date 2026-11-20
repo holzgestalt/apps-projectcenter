@@ -233,7 +233,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 
 /* On macOS an Xcode project without a GNUstep build script is built by
  * xcodebuild, as Xcode would, unless "My Mac (GNUstep)" is chosen; elsewhere
- * by its GNUmakefile or script. */
+ * by ProjectCenter's built-in PBX compiler. Explicit legacy scripts still
+ * take precedence for projects that configure one. */
 - (NSArray *)_xcodebuildArgumentsForAction:(NSString *)action
 {
 #ifdef GNUSTEP
@@ -800,10 +801,10 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   if ([metadata objectForKey:@"XCODE_PROJECT_PATH"] &&
       ![metadata objectForKey:@"XCODE_BuildScript"] &&
       [self _xcodebuildArgumentsForAction:@"build"] == nil &&
-      ![fm fileExistsAtPath:[[project projectPath] stringByAppendingPathComponent:@"GNUmakefile"]])
+      [PCXcodeProject GNUstepBuildArgumentsForProject:metadata action:@"build"] == nil)
   {
     NSRunAlertPanel(@"GNUstep Build Required",
-                    @"This Xcode project has no GNUmakefile. Configure BuildScript in GNUstep/ProjectCenter.plist. macOS SDKs and Xcode build phases cannot be built on Linux directly.", @"OK", nil, nil);
+                    @"ProjectCenter's built-in Xcode build tool is missing. Reinstall ProjectCenter to build this project with GNUstep.", @"OK", nil, nil);
     return NO;
   }
 
@@ -845,7 +846,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   }
 
   // Check build tool path
-  if (!buildTool || !([fm fileExistsAtPath:buildTool] || [fm fileExistsAtPath:[buildTool stringByAppendingPathExtension: @"exe"]]))
+  if ([PCXcodeProject GNUstepBuildArgumentsForProject:metadata action:@"build"] == nil &&
+      (!buildTool || !([fm fileExistsAtPath:buildTool] || [fm fileExistsAtPath:[buildTool stringByAppendingPathExtension: @"exe"]])))
   {
     NSRunAlertPanel(@"Project Build",
                     @"Build tool '%@' not found. Check preferences.\n"
@@ -916,6 +918,9 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   NSString *script = [[project projectDict] objectForKey:@"XCODE_BuildScript"];
   NSArray  *xcodebuildArgs = [self _xcodebuildArgumentsForAction:
                               _isCleaning ? @"clean" : @"build"];
+  NSArray *nativeArgs = _isArchiving ? nil
+    : [PCXcodeProject GNUstepBuildArgumentsForProject:[project projectDict]
+        action:_isCleaning ? @"clean" : @"build"];
   _usesXcodebuild = (xcodebuildArgs != nil) && !_isArchiving;
   if (_isArchiving)
   {
@@ -924,6 +929,10 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   else if (_usesXcodebuild)
   {
     [makeTask setArguments:xcodebuildArgs];
+  }
+  else if (nativeArgs)
+  {
+    [makeTask setArguments:nativeArgs];
   }
   else if (script)
   {
@@ -940,7 +949,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   }
   [makeTask setCurrentDirectoryPath:[project projectPath]];
   [makeTask setLaunchPath:_isArchiving ? @"/bin/sh"
-   : _usesXcodebuild ? [PCXcodeProject xcodebuildPath] : buildTool];
+    : _usesXcodebuild ? [PCXcodeProject xcodebuildPath]
+    : nativeArgs ? @"/usr/bin/env" : buildTool];
   [makeTask setStandardOutput:stdOutPipe];
   [makeTask setStandardError:stdErrorPipe];
 
