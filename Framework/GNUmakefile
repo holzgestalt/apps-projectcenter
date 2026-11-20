@@ -81,8 +81,10 @@ ProjectCenter_OBJC_FILES = \
   PCInterfaceRendering.m \
   PCInterfaceInspector.m \
   PCXcodeProject.m \
+  PCDeployment.m \
   PCNavigators.m \
   PCXcodeProjectEditor.m \
+  PCDeploymentEditor.m \
   PCProject.m \
   PCProjectWindow.m \
   PCProjectInspector.m \

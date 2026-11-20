@@ -37,6 +37,9 @@
 #define UseTearOffWindows    @"UseTearOffWindows"
 #define Debugger             @"Debugger"
 #define Editor               @"Editor"
+/* The GNUstep installation to build with on macOS: a prefix or the folder
+ * of GNUstep.sh; empty finds one (PCGNUstepDefault of PCXcodeProject). */
+#define GNUstepInstallation  @"GNUstepInstallation"
 
 @interface PCMiscPrefs : NSObject <PCPrefsSection>
 {
@@ -54,6 +57,8 @@
   IBOutlet NSButton    *debuggerButton;
   IBOutlet NSTextField *editorField;
   IBOutlet NSTextField *editorButton;
+  IBOutlet NSTextField *gnustepField;   // only in MiscPrefs.xib
+  IBOutlet NSButton    *gnustepButton;
 }
 
 @end

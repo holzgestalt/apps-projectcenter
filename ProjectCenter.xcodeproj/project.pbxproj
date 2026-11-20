@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2892B898DF110317B5DD4A87 /* PCDeploymentEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C982D2DD325327422F1A648 /* PCDeploymentEditor.m */; };
+		EB942323927AB26AE95E1BF7 /* PCDeploymentEditor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2232729BF9A214FF063C4DB9 /* PCDeploymentEditor.h */; };
+		9D6BE243490D88EE9C483B69 /* PCDeployment.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FAFA04BB9EFD90FD6B2B8DB /* PCDeployment.m */; };
+		DEFF7BF64BBAA36442E0A186 /* PCDeployment.h in Headers */ = {isa = PBXBuildFile; fileRef = 955FC4E24376C52D170A2D7D /* PCDeployment.h */; };
 		8EE5031E4B998201E781FAB4 /* PCGormXIBWriter.h in Headers */ = {isa = PBXBuildFile; fileRef = 74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */; };
 		1779DF2815ADA3D81CAF6DC3 /* PCGormXIBWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */; };
 		AF68A149658AEB75EB34895C /* PCInterfaceDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = 4F38379DBB3CAAC08BB1EDD9 /* PCInterfaceDocument.h */; };
@@ -585,6 +589,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9C982D2DD325327422F1A648 /* PCDeploymentEditor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCDeploymentEditor.m; sourceTree = "<group>"; };
+		2232729BF9A214FF063C4DB9 /* PCDeploymentEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCDeploymentEditor.h; sourceTree = "<group>"; };
+		0FAFA04BB9EFD90FD6B2B8DB /* PCDeployment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCDeployment.m; sourceTree = "<group>"; };
+		955FC4E24376C52D170A2D7D /* PCDeployment.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCDeployment.h; sourceTree = "<group>"; };
 		2A4DB7D3A577786C1B757843 /* gorm2xib.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = gorm2xib.m; sourceTree = "<group>"; };
 		74CC40636211DC279DFCE27A /* PCGormXIBWriter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PCGormXIBWriter.h; sourceTree = "<group>"; };
 		0E492F86623F955CB5A64D2B /* PCGormXIBWriter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PCGormXIBWriter.m; sourceTree = "<group>"; };
@@ -1259,8 +1267,12 @@
 				800933EA4D5A3DFACE98A071 /* PCInterfaceDocument.m */,
 				4FE12E514F550AC7632F3723 /* PCXcodeProject.h */,
 				3DD55CD424FFE8D9EE0E5AA7 /* PCXcodeProject.m */,
+				0FAFA04BB9EFD90FD6B2B8DB /* PCDeployment.m */,
+				955FC4E24376C52D170A2D7D /* PCDeployment.h */,
 				6ACBC8B0BB394DCEE011E4F2 /* PCXcodeProjectEditor.h */,
 				C01F94471077A9159E5D7314 /* PCXcodeProjectEditor.m */,
+				9C982D2DD325327422F1A648 /* PCDeploymentEditor.m */,
+				2232729BF9A214FF063C4DB9 /* PCDeploymentEditor.h */,
 			);
 			path = Framework;
 			sourceTree = "<group>";
@@ -1908,6 +1920,8 @@
 				8EE5031E4B998201E781FAB4 /* PCGormXIBWriter.h in Headers */,
 				AF68A149658AEB75EB34895C /* PCInterfaceDocument.h in Headers */,
 				060C81676E30859C93EF0355 /* PCXcodeProject.h in Headers */,
+				EB942323927AB26AE95E1BF7 /* PCDeploymentEditor.h in Headers */,
+				DEFF7BF64BBAA36442E0A186 /* PCDeployment.h in Headers */,
 				6F245A8FB3ABF02C5074DBA0 /* PCXcodeProjectEditor.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2712,6 +2726,8 @@
 				1779DF2815ADA3D81CAF6DC3 /* PCGormXIBWriter.m in Sources */,
 				1F6196A53152EDFF0E69150C /* PCInterfaceDocument.m in Sources */,
 				BD3559D12C621D9E4000D2FA /* PCXcodeProject.m in Sources */,
+				2892B898DF110317B5DD4A87 /* PCDeploymentEditor.m in Sources */,
+				9D6BE243490D88EE9C483B69 /* PCDeployment.m in Sources */,
 				56D673BF9ED679357366154C /* PCNavigators.m in Sources */,
 				60EE038B12DDFC515D329672 /* PCXcodeProjectEditor.m in Sources */,
 				746F499D4347D230CBB87E6F /* PCProject.m in Sources */,

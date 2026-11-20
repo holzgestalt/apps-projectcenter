@@ -804,10 +804,52 @@ static id PropertyListOfString(NSString *text)
   return [settings isKindOfClass:[NSDictionary class]] ? settings : [NSDictionary dictionary];
 }
 
+/* A value as an OpenStep property list, indented as the file's top level
+ * entries are: strings quoted, arrays and dictionaries one entry a line,
+ * dictionaries sorted. */
+static NSString *PropertyListText(id value, NSString *indent)
+{
+  NSMutableString *text;
+  NSString        *inner = [indent stringByAppendingString:@"    "];
+  NSUInteger      i = 0;
+
+  if ([value isKindOfClass:[NSArray class]])
+  {
+    if ([value count] == 0) return @"()";
+    text = [NSMutableString stringWithString:@"(\n"];
+    for (id item in value)
+    {
+      [text appendFormat:@"%@%@%@\n", inner, PropertyListText(item, inner), ++i < [value count] ? @"," : @""];
+    }
+    [text appendFormat:@"%@)", indent];
+    return text;
+  }
+  if ([value isKindOfClass:[NSDictionary class]])
+  {
+    if ([value count] == 0) return @"{}";
+    text = [NSMutableString stringWithString:@"{\n"];
+    for (NSString *key in [[value allKeys] sortedArrayUsingSelector:@selector(compare:)])
+    {
+      [text appendFormat:@"%@%@ = %@;\n", inner, key, PropertyListText([value objectForKey:key], inner)];
+    }
+    [text appendFormat:@"%@}", indent];
+    return text;
+  }
+  return Quoted([value description]);
+}
+
 + (BOOL)setGNUstepSetting:(NSString *)value
                    forKey:(NSString *)key
          ofProjectAtPath:(NSString *)path
                     error:(NSString **)error
+{
+  return [self setGNUstepValue:value forKey:key ofProjectAtPath:path error:error];
+}
+
++ (BOOL)setGNUstepValue:(id)value
+                 forKey:(NSString *)key
+        ofProjectAtPath:(NSString *)path
+                  error:(NSString **)error
 {
   NSFileManager       *fm = [NSFileManager defaultManager];
   NSString            *file = SettingsPath(path);
@@ -821,7 +863,7 @@ static id PropertyListOfString(NSString *text)
     if (error) *error = [NSString stringWithFormat:@"%@ is not a valid property list.", file];
     return NO;
   }
-  if ([value length])
+  if ([value isKindOfClass:[NSString class]] ? [value length] > 0 : [value count] > 0)
   {
     [settings setObject:value forKey:key];
   }
@@ -845,10 +887,7 @@ static id PropertyListOfString(NSString *text)
   }
   for (NSString *name in [[settings allKeys] sortedArrayUsingSelector:@selector(compare:)])
   {
-    id entry = [settings objectForKey:name];
-
-    [text appendFormat:@"    %@ = %@;\n", name,
-     [entry isKindOfClass:[NSString class]] ? Quoted(entry) : [entry description]];
+    [text appendFormat:@"    %@ = %@;\n", name, PropertyListText([settings objectForKey:name], @"    ")];
   }
   [text appendString:@"}\n"];
   [fm createDirectoryAtPath:[file stringByDeletingLastPathComponent]
@@ -1648,7 +1687,33 @@ static BOOL IsGNUstepMakefiles(NSString *path)
   return nil;
 }
 
-+ (NSString *)GNUstepMakefiles
++ (NSString *)GNUstepMakefilesInFolder:(NSString *)path
+{
+  NSArray *relative = @[@"", @"share/GNUstep/Makefiles", @"System/Library/Makefiles",
+                        @"Library/Makefiles", @"lib/GNUstep/Makefiles", @"GNUstep/System/Library/Makefiles"];
+
+  path = [[path stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+          stringByExpandingTildeInPath];
+  if (![path length]) return nil;
+  if ([[path lastPathComponent] isEqual:@"GNUstep.sh"]) path = [path stringByDeletingLastPathComponent];
+  for (NSString *folder in relative)
+  {
+    NSString *makefiles = [folder length] ? [path stringByAppendingPathComponent:folder] : path;
+
+    if (IsGNUstepMakefiles(makefiles)) return [makefiles stringByStandardizingPath];
+  }
+  return nil;
+}
+
++ (NSString *)chosenGNUstep
+{
+  NSString *chosen = [[NSUserDefaults standardUserDefaults] stringForKey:PCGNUstepDefault];
+
+  chosen = [chosen stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+  return [chosen length] ? chosen : nil;
+}
+
++ (NSString *)foundGNUstepMakefiles
 {
   static id makefiles = nil;
 
@@ -1668,6 +1733,15 @@ static BOOL IsGNUstepMakefiles(NSString *path)
     makefiles = makefiles ? [makefiles retain] : [[NSNull null] retain];
   }
   return makefiles == [NSNull null] ? nil : makefiles;
+}
+
++ (NSString *)GNUstepMakefiles
+{
+  NSString *chosen = [self chosenGNUstep];
+
+  /* A chosen installation that has no GNUstep.sh is no GNUstep, rather than
+   * quietly another one. */
+  return chosen ? [self GNUstepMakefilesInFolder:chosen] : [self foundGNUstepMakefiles];
 }
 
 + (NSDictionary *)GNUstepEnvironmentForMakefiles:(NSString *)makefiles
@@ -1706,11 +1780,17 @@ static BOOL IsGNUstepMakefiles(NSString *path)
 
 + (NSDictionary *)GNUstepEnvironment
 {
-  static id environment = nil;
+  static id       environment = nil;
+  static NSString *environmentMakefiles = nil;
+  NSString        *makefiles = [self GNUstepMakefiles];
 
-  if (environment == nil)
+  /* Made again when another GNUstep is chosen. */
+  if (environment == nil || !(makefiles == environmentMakefiles || [makefiles isEqual:environmentMakefiles]))
   {
-    environment = [self GNUstepEnvironmentForMakefiles:[self GNUstepMakefiles]];
+    [environment release];
+    [environmentMakefiles release];
+    environmentMakefiles = [makefiles copy];
+    environment = [self GNUstepEnvironmentForMakefiles:makefiles];
     environment = environment ? [environment retain] : [[NSNull null] retain];
   }
   return environment == [NSNull null] ? nil : environment;

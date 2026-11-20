@@ -77,6 +77,9 @@ typedef enum _ErrorLevel {
   BOOL            _isLogging;
   BOOL            _isErrorLogging;
   BOOL            _usesXcodebuild;
+  BOOL            _isArchiving;
+  NSString        *archiveScript;
+  NSString        *archiveFolder;
 
   // Component view
   BOOL            _isCVLoaded;
@@ -122,6 +125,10 @@ typedef enum _ErrorLevel {
 - (void)performStartBuild;
 - (void)performStartClean;
 - (void)performStopBuild;
+/* Archive: builds and packages every platform of the project's Deployment
+ * that is turned on (see PCDeployment), into build/Archives. */
+- (void)performStartArchive;
+- (BOOL)isArchiving;
 - (NSArray *)buildArguments;
 
 // --- Issues of the last build, for the issue navigator
@@ -141,6 +148,7 @@ typedef enum _ErrorLevel {
 // --- Actions
 - (void)startBuild:(id)sender;
 - (void)startClean:(id)sender;
+- (void)startArchive:(id)sender;
 - (BOOL)stopMake:(id)sender;
 - (void)showOptionsPanel:(id)sender;
 - (void)cleanupAfterMake:(NSString *)statusString;

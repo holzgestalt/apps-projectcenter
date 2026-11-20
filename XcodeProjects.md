@@ -247,8 +247,9 @@ As in Xcode, the toolbar of an Xcode project chooses what Build and Run do:
 Opening a project selects the scheme of its application target. The choices
 are kept per user in ProjectCenter's defaults (`PCXcodeBuildSelections`); the
 Xcode project and its schemes are not changed. Configurations for Test,
-Profile, Analyze and Archive are read but not used, because ProjectCenter has
-only Build and Run.
+Profile and Analyze are read but not used, because ProjectCenter has only
+Build, Run and Archive; a macOS platform of the Deployment (below) archives
+with the scheme's Archive configuration.
 
 ## Building and running on macOS
 
@@ -267,12 +268,22 @@ which macOS doesn't ship.
 Where GNUstep is installed on the Mac, the Destination menu also has **My Mac
 (GNUstep)**. It builds and runs the project as ProjectCenter does on GNUstep:
 
-- **Finding GNUstep:** ProjectCenter looks for `GNUstep.sh` in
-  `GNUSTEP_MAKEFILES` if it is set. Otherwise it asks `gnustep-config`, found on
-  the `PATH` or in `/usr/GNUstep/System/Tools`, `/usr/GNUstep/Local/Tools`,
-  `/usr/local/bin`, `/opt/homebrew/bin` or `/opt/local/bin`. Otherwise it tries
-  the usual makefile folders of a GNUstep, Homebrew or MacPorts install.
-  ProjectCenter looks once, when it starts.
+- **Choosing GNUstep:** **Preferences → Miscellaneous → GNUstep** sets the
+  installation to use: its prefix (such as `~/gnustep-root` or `/usr/GNUstep`)
+  or the folder of `GNUstep.sh`. The field shows in grey the GNUstep found
+  when it is empty. A folder without `GNUstep.sh` is refused; if one chosen
+  earlier has none any more, there is no GNUstep (no My Mac (GNUstep), and
+  Build says so) rather than another one. A change applies at once, also to
+  the Deployment's native builds. The GNUstep build of ProjectCenter doesn't
+  have the field yet (its preferences still come from the `.gorm`); there,
+  `defaults write ProjectCenter GNUstepInstallation <folder>` sets it.
+- **Finding GNUstep:** with no GNUstep chosen, ProjectCenter looks for
+  `GNUstep.sh` in `GNUSTEP_MAKEFILES` if it is set. Otherwise it asks
+  `gnustep-config`, found on the `PATH` or in `/usr/GNUstep/System/Tools`,
+  `/usr/GNUstep/Local/Tools`, `/usr/local/bin`, `/opt/homebrew/bin` or
+  `/opt/local/bin`. Otherwise it tries the usual makefile folders of a
+  GNUstep, Homebrew or MacPorts install. ProjectCenter looks once, when it
+  starts.
 - **Build** runs the build tool from the Build preferences (`/usr/bin/make`) on
   the project's GNUmakefile, or its `BuildScript`, with the environment that
   `GNUstep.sh` sets up. The configuration chooses `debug=yes` or `debug=no`.
@@ -280,6 +291,75 @@ Where GNUstep is installed on the Mac, the Destination menu also has **My Mac
   project folder) in the same environment, with the project's **Theme**
   (`-GSTheme`).
 - The choice is kept per project, like the other destinations.
+
+## Deployment and Archive
+
+The **Deployment** tab of the project editor (select the project row in the
+navigator) lists the platforms that **Archive** builds shippable applications
+for. Add a platform with **+**, remove the selected one with **−**, and turn
+one off with its check box to leave it out of Archive. The selected platform's
+settings are shown on the right, starting with **Platform**, which changes it
+into another kind (say, Debian / Ubuntu into Fedora / openSUSE). The settings
+the new kind has too are kept, as is a name of your own; a name made from the
+old kind, and an architecture the new kind doesn't build for, follow the new
+kind. An empty field takes the default shown in
+grey, mostly from the project (product name, version), so a platform keeps only
+what you changed. Everything is saved at once as `Deployment` in
+`GNUstep/ProjectCenter.plist`.
+
+| Platform | Makes | Built with |
+| --- | --- | --- |
+| macOS | a `.zip` of the application, or a `.dmg` with a link to Applications | `xcodebuild archive` |
+| Debian / Ubuntu | a `.deb` package (`dpkg-deb`) | GNUstep |
+| Fedora / openSUSE | an `.rpm` package (`rpmbuild`) | GNUstep |
+| Linux | a `.tar.gz` of the application bundle | GNUstep |
+| Windows | a `.zip` of a folder with the application bundle and its DLLs | GNUstep |
+
+- **macOS** archives a scheme (by default the toolbar's) in a configuration
+  (by default the scheme's Archive configuration), for the project's
+  architectures, Universal, Apple silicon or Intel. A **Signing Identity**
+  signs the application (and the disk image) with the hardened runtime; a
+  **Notary Profile** (a keychain profile of `xcrun notarytool
+  store-credentials`) notarizes it and staples the ticket. macOS platforms are
+  archived on a Mac with Xcode.
+- **GNUstep platforms** build with the project's GNUmakefile or `BuildScript`
+  (`debug=no`, or `debug=yes` for a Debug configuration, plus the **Make
+  Arguments**), into `build/Deployment/<platform>`. **Build** chooses how:
+  - **Native**: with this computer's GNUstep, for its own system and
+    architecture.
+  - **Cross Toolchain**: with a GNUstep installation made for the target, such
+    as a cross compiled sysroot or an MSYS2 MinGW tree; **Toolchain** is the
+    folder of its `GNUstep.sh`. The package is made on this computer, so it
+    needs `dpkg-deb` or `rpmbuild` (on a Mac: `brew install dpkg`,
+    `brew install rpm`).
+  - **Container**: in a Docker or Podman container of the **Container Image**
+    (`debian:stable`, `fedora:latest`), for any architecture the container tool
+    runs (`--platform linux/arm64` and so on, emulated where needed). The
+    **Container Setup** command installs GNUstep first; leave it empty for an
+    image that has everything, which is much faster. The container builds and
+    packages, so this computer needs only Docker or Podman.
+- **Debian** and **RPM** packages install the bundle in the **Install Folder**
+  (`/usr/lib/GNUstep/Applications`), a command named after the package in
+  `/usr/bin` and a desktop entry with the **Menu Categories** and **Icon**.
+  **Find Dependencies** adds the packages of the libraries the application
+  links and of GNUstep's back end where `dpkg` knows them (native and container
+  builds), or lets `rpmbuild` find them; **Depends** adds more.
+- **Windows** copies the DLLs the executable needs, found with `objdump` in
+  GNUstep's folders and the **Library Folders**. GNUstep's back end bundle and
+  its other resources are not included.
+
+The line below the settings says whether this computer can archive the
+selected platform, or what is missing (a tool, Docker, a toolchain folder).
+
+**Project Build → Archive**, or the **Archive** button of the Deployment tab,
+builds and packages every platform that is turned on, one after the other. It
+leaves out, after asking, the platforms this computer can't archive. The output
+appears in the build log, and a platform that fails doesn't stop the others.
+The packages go to a new folder, `build/Archives/<Product> <date time>`,
+which is shown when Archive finishes. The scripts Archive runs are written to
+`build/Deployment` (`archive.sh` and one for each platform), and can be run
+again from a shell. The GNUstep build has the Archive button but not yet the
+menu item, which is only in the XIB of the main menu.
 
 ## GNUstep build and debug integration
 

@@ -20,7 +20,10 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
      choose the `xcodebuild` arguments; `PCXcodeProject` reads the schemes and keeps the choice
      in the user defaults. Where GNUstep is installed, the destination **My Mac (GNUstep)**
      builds with `make` in the environment of `GNUstep.sh` and runs the GNUstep build, with the
-     theme. No GNUstep is installed on the development Mac, so it was only tried with a stand-in.
+     theme. The installation is the one chosen in Preferences → Miscellaneous (the user default
+     `GNUstepInstallation`, `+[PCXcodeProject GNUstepMakefiles]`), else the one found. No GNUstep
+     is installed on the development Mac (the sources are in `~/Code/gnuStep`, unbuilt), so it was
+     only tried with a stand-in.
    - Interfaces: each `.gorm` has a `.xib` next to it, converted once from it, which the Xcode
      targets compile. Embedded unnamed images and GNUstep theme images (`common_ret`) were not
      converted.
@@ -50,7 +53,12 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
 - `*.m`, `Headers/*.h`: the application (menus, preferences, app controller).
 - `Framework/`, `Headers/ProjectCenter/`, `Headers/Protocols/`: ProjectCenter.framework, which holds
   the project model, project window, navigator, builder, launcher and Xcode project reader
-  (`PCXcodeProject`, `PCXcodeProjectEditor`, `PCNavigators`, `PCInterfaceEditor`). The XIB editor's
+  (`PCXcodeProject`, `PCXcodeProjectEditor`, `PCNavigators`, `PCInterfaceEditor`).
+  `PCDeployment` (Foundation only) holds the Deployment platforms kept in
+  `GNUstep/ProjectCenter.plist` and writes the shell scripts that Archive (`PCProjectBuilder`) runs:
+  `build/Deployment/archive.sh`, which builds and packages each platform natively, with a cross
+  toolchain's `GNUstep.sh` or in a Docker/Podman container. `XcodeProjectTests` runs them with a
+  stand-in toolchain. The XIB editor's
   model is `PCInterfaceDocument` (Foundation only): every edit changes only its own XML, and an
   unchanged XIB is written back byte for byte (`XcodeProjectTests` checks every `.xib`).
   `PCInterfaceInspector` is the editor's Xcode-style inspector, and `PCInterfaceRendering` draws
@@ -77,6 +85,8 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
     (`PCXcodeProjectEditor`). Its General pane has fixed forms for the project and a target,
     which the code fills from `-generalRows`. The target list's starting width is set in code
     (`-_placeDivider:`): a width constraint on a split view pane pulls the divider back after a drag.
+    Its Deployment tab (`PCDeploymentEditor`) lists the platforms of Archive; the selected
+    platform's form is built in code from `+[PCDeployment fieldsForKind:]`.
   - `Framework/English.lproj/InterfaceEditor.xib`, the XIB editor (`PCInterfaceEditor`): the
     object outline, canvas, inspector panes, Connections controls and object library. The
     inspector's Identity, Attributes and Size forms are built for the selection from the

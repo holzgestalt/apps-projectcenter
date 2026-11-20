@@ -1039,6 +1039,9 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
   NSLog(@"ProjectWindow: Preferences did change");
 
+  /* The destinations depend on the GNUstep chosen. */
+  [self updateBuildSelection];
+
   /*  if ([[project projectManager] rootActiveProject] != project)
    {
    return;

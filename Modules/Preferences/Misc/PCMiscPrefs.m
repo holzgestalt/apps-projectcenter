@@ -59,6 +59,31 @@
 
   [debuggerButton setRefusesFirstResponder:YES];
   [editorButton setRefusesFirstResponder:YES];
+  [gnustepButton setRefusesFirstResponder:YES];
+}
+
+/* PCXcodeProject's GNUstep lookup, which is in the framework. */
+static NSString *GNUstepMakefiles(SEL selector, NSString *path)
+{
+  Class project = NSClassFromString(@"PCXcodeProject");
+
+  if (project == Nil || ![project respondsToSelector:selector]) return nil;
+  return path ? [project performSelector:selector withObject:path] : [project performSelector:selector];
+}
+
+/* The field shows the chosen GNUstep, or in grey the one found. */
+- (void)_showGNUstep
+{
+  NSString *chosen = [prefs stringForKey:GNUstepInstallation];
+  NSString *found = GNUstepMakefiles(@selector(foundGNUstepMakefiles), nil);
+  NSString *used = [chosen length] ? GNUstepMakefiles(@selector(GNUstepMakefilesInFolder:), chosen) : found;
+
+  [gnustepField setStringValue:chosen ? chosen : @""];
+  [[gnustepField cell] setPlaceholderString:found ? found : @"None found"];
+  [gnustepField setToolTip:used
+   ? [NSString stringWithFormat:@"Builds with %@/GNUstep.sh. Empty finds GNUstep by itself.", used]
+   : @"The GNUstep installation to build with: its prefix or the folder of GNUstep.sh. "
+     @"Empty finds GNUstep by itself."];
 }
 
 - (void)dealloc
@@ -116,6 +141,8 @@
 
   val = [prefs stringForKey:Editor defaultValue:@"ProjectCenter"];
   [editorField setStringValue:val];
+
+  [self _showGNUstep];
 }
 
 - (NSView *)view
@@ -314,5 +341,38 @@
   [prefs setString:path forKey:Editor notify:YES];
 }
 
-@end
+- (void)setGNUstep:(id)sender
+{
+  NSString *path;
 
+  if (sender == gnustepField)
+  {
+    path = [gnustepField stringValue];
+  }
+  else
+  {
+    NSArray *files = [[PCFileManager defaultManager]
+                      filesOfTypes:nil
+                      operation:PCOpenDirectoryOperation
+                      multiple:NO
+                      title:@"Choose GNUstep Installation"
+                      accView:nil];
+
+    if ([files count] == 0) return;
+    path = [files objectAtIndex:0];
+  }
+  path = [path stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+  if ([path length] && GNUstepMakefiles(@selector(GNUstepMakefilesInFolder:), path) == nil)
+  {
+    NSRunAlertPanel(@"Choose GNUstep",
+                    @"There is no GNUstep.sh in %@.\n"
+                    @"Choose the prefix GNUstep is installed in, or the folder of GNUstep.sh.",
+                    @"OK", nil, nil, path);
+    [self _showGNUstep];
+    return;
+  }
+  [prefs setString:path forKey:GNUstepInstallation notify:YES];
+  [self _showGNUstep];
+}
+
+@end

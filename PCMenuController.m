@@ -296,6 +296,12 @@
   [[[projectManager rootActiveProject] projectBuilder] performStartClean];
 }
 
+- (void)startArchive:(id)sender
+{
+  [self showBuildPanel:self];
+  [[[projectManager rootActiveProject] projectBuilder] performStartArchive];
+}
+
 // Loaded Files
 - (void)showLoadedFilesPanel:(id)sender
 {
@@ -409,6 +415,7 @@
       if ([[menuItem title] isEqualToString:@"Build"]) return NO;
       if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
       if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Archive"]) return NO;
       if ([[menuItem title] isEqualToString:@"Next Error"]) return NO;
       if ([[menuItem title] isEqualToString:@"Previous Error"]) return NO;
     }
@@ -513,12 +520,19 @@
     {
       if ([[menuItem title] isEqualToString:@"Build"]) return NO;
       if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
+      if ([[menuItem title] isEqualToString:@"Archive"]) return NO;
       if ([[menuItem title] isEqualToString:@"Next error"]) return NO;
       if ([[menuItem title] isEqualToString:@"Previous error"]) return NO;
     }
     else
     {
       if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
+    }
+    /* Archive builds the Deployment of an Xcode project. */
+    if ([[menuItem title] isEqualToString:@"Archive"]
+        && [[[projectManager rootActiveProject] projectDict] objectForKey:@"XCODE_PROJECT_PATH"] == nil)
+    {
+      return NO;
     }
   }
 

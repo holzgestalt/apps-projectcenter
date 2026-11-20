@@ -37,6 +37,7 @@
 #import <ProjectCenter/PCProjectBuilder.h>
 #import <ProjectCenter/PCProjectBuilderOptions.h>
 #import "PCXcodeProject.h"
+#import "PCDeployment.h"
 
 #import <ProjectCenter/PCProjectEditor.h>
 #import <Protocols/CodeEditor.h>
@@ -113,6 +114,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   RELEASE(buildStatusTarget);
   RELEASE(buildTarget);
   RELEASE(buildArgs);
+  RELEASE(archiveScript);
+  RELEASE(archiveFolder);
   RELEASE(buildOptions);
 
   RELEASE(successSound);
@@ -410,6 +413,19 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   }
 }
 
+- (void)performStartArchive
+{
+  if (!_isBuilding && !_isCleaning)
+  {
+    [self startArchive:self];
+  }
+}
+
+- (BOOL)isArchiving
+{
+  return _isArchiving;
+}
+
 - (NSArray *)buildArguments
 {
   NSDictionary   *projectDict = [project projectDict];
@@ -599,6 +615,95 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   [self build:self];
 }
 
+/* Archive runs one script, build/Deployment/archive.sh, which builds and
+ * packages each platform in turn; its output is the build log. */
+- (void)startArchive:(id)sender
+{
+  NSDictionary    *projectDict = [project projectDict];
+  NSString        *path = [projectDict objectForKey:@"XCODE_PROJECT_PATH"];
+  NSMutableArray  *ready = [NSMutableArray array];
+  NSMutableArray  *problems = [NSMutableArray array];
+  NSUInteger      enabled = 0;
+  PCProjectEditor *projectEditor = [project projectEditor];
+  NSString        *folder, *script, *error = nil;
+
+  if (_isBuilding || _isCleaning) return;
+  if (path == nil)
+  {
+    NSRunAlertPanel(@"Archive", @"Archive builds the platforms of an Xcode project's Deployment.",
+                    @"OK", nil, nil);
+    return;
+  }
+  for (NSDictionary *deployment in [PCDeployment deploymentsOfProjectAtPath:path])
+  {
+    NSArray *found;
+
+    if (![[PCDeployment valueForKey:@"Enabled" ofDeployment:deployment project:projectDict] boolValue])
+    {
+      continue;
+    }
+    enabled++;
+    found = [PCDeployment problemsWithDeployment:deployment project:projectDict];
+    if ([found count] == 0)
+    {
+      [ready addObject:deployment];
+    }
+    else
+    {
+      [problems addObject:[NSString stringWithFormat:@"%@: %@",
+                           [PCDeployment valueForKey:@"Name" ofDeployment:deployment project:projectDict],
+                           [found componentsJoinedByString:@" "]]];
+    }
+  }
+  if (enabled == 0)
+  {
+    NSRunAlertPanel(@"Archive",
+                    @"No platform is set up for Archive. Select the project in the navigator and add "
+                    @"platforms in the Deployment tab.", @"OK", nil, nil);
+    return;
+  }
+  if ([problems count] && [ready count] == 0)
+  {
+    NSRunAlertPanel(@"Archive", @"This computer can't archive the platforms:\n\n%@", @"OK", nil, nil,
+                    [problems componentsJoinedByString:@"\n"]);
+    return;
+  }
+  if ([problems count]
+      && NSRunAlertPanel(@"Archive", @"This computer can't archive some platforms:\n\n%@\n\nArchive the others?",
+                         @"Archive", @"Cancel", nil, [problems componentsJoinedByString:@"\n"])
+      != NSAlertDefaultReturn)
+  {
+    return;
+  }
+  if ([projectEditor hasModifiedFiles]
+      && !PCRunSaveModifiedFilesPanel(projectEditor, @"Save and Archive", @"Archive Anyway", @"Cancel"))
+  {
+    return;
+  }
+
+  folder = [PCDeployment archiveFolderForProject:projectDict];
+  script = [PCDeployment writeArchiveScriptsForProject:projectDict deployments:ready folder:folder
+                                              makeTool:buildTool error:&error];
+  if (script == nil)
+  {
+    NSRunAlertPanel(@"Archive", @"%@", @"OK", nil, nil, error);
+    return;
+  }
+  ASSIGN(archiveScript, script);
+  ASSIGN(archiveFolder, folder);
+  currentEL = ELNone;
+  lastEL = ELNone;
+  nextEL = ELNone;
+  lastIndentString = @"";
+  buildStatus = @"Archiving...";
+  [buildStatusTarget setString:@"Archive"];
+  [buildButton setState:NSOnState];
+  [cleanButton setEnabled:NO];
+  _isBuilding = YES;
+  _isArchiving = YES;
+  [self build:self];
+}
+
 - (BOOL)stopMake:(id)sender
 {
   if (makeTask && [makeTask isRunning])
@@ -650,6 +755,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
     _isCleaning = NO;
   }
 
+  _isArchiving = NO;
   [buildArgs removeAllObjects];
   [buildStatusTarget setString:@"Default"];
 
@@ -674,10 +780,20 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 #ifndef GNUSTEP
   if ([PCXcodeProject buildsWithGNUstepForProject:metadata] && [PCXcodeProject GNUstepEnvironment] == nil)
   {
-    NSRunAlertPanel(@"GNUstep Build",
-                    @"GNUstep's environment could not be set up from %@/GNUstep.sh. "
-                    @"Choose another destination, or check the GNUstep installation.",
-                    @"OK", nil, nil, [PCXcodeProject GNUstepMakefiles]);
+    if ([PCXcodeProject GNUstepMakefiles] == nil)
+    {
+      NSRunAlertPanel(@"GNUstep Build",
+                      @"There is no GNUstep.sh in %@, the GNUstep chosen in Preferences → Misc. "
+                      @"Choose another installation there, or another destination.",
+                      @"OK", nil, nil, [PCXcodeProject chosenGNUstep]);
+    }
+    else
+    {
+      NSRunAlertPanel(@"GNUstep Build",
+                      @"GNUstep's environment could not be set up from %@/GNUstep.sh. "
+                      @"Choose another destination, or check the GNUstep installation.",
+                      @"OK", nil, nil, [PCXcodeProject GNUstepMakefiles]);
+    }
     return NO;
   }
 #endif
@@ -762,8 +878,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
                       initWithString:[project projectPath]];
   currentBuildFile = [[NSMutableString alloc] initWithString:@""];
 
-  // Checking build conditions
-  if ([self prebuildCheck] == NO)
+  // Checking build conditions (Archive checked its platforms)
+  if (!_isArchiving && [self prebuildCheck] == NO)
   {
     [self cleanupAfterMake:[NSString stringWithFormat:
                             @"%@ - %@ terminated", [project projectName], buildStatusTarget]];
@@ -800,8 +916,12 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   NSString *script = [[project projectDict] objectForKey:@"XCODE_BuildScript"];
   NSArray  *xcodebuildArgs = [self _xcodebuildArgumentsForAction:
                               _isCleaning ? @"clean" : @"build"];
-  _usesXcodebuild = (xcodebuildArgs != nil);
-  if (_usesXcodebuild)
+  _usesXcodebuild = (xcodebuildArgs != nil) && !_isArchiving;
+  if (_isArchiving)
+  {
+    [makeTask setArguments:[NSArray arrayWithObject:archiveScript]];
+  }
+  else if (_usesXcodebuild)
   {
     [makeTask setArguments:xcodebuildArgs];
   }
@@ -814,13 +934,14 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   else [makeTask setArguments:buildArgs];
 #ifndef GNUSTEP
   /* GNUstep's make needs the environment of GNUstep.sh. */
-  if (!_usesXcodebuild && [PCXcodeProject GNUstepEnvironment])
+  if (!_usesXcodebuild && !_isArchiving && [PCXcodeProject GNUstepEnvironment])
   {
     [makeTask setEnvironment:[PCXcodeProject GNUstepEnvironment]];
   }
 #endif
   [makeTask setCurrentDirectoryPath:[project projectPath]];
-  [makeTask setLaunchPath:_usesXcodebuild ? [PCXcodeProject xcodebuildPath] : buildTool];
+  [makeTask setLaunchPath:_isArchiving ? @"/bin/sh"
+   : _usesXcodebuild ? [PCXcodeProject xcodebuildPath] : buildTool];
   [makeTask setStandardOutput:stdOutPipe];
   [makeTask setStandardError:stdErrorPipe];
 
@@ -937,8 +1058,14 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   buildSucceeded = (status == 0);
   RELEASE(buildResult);
   buildResult = [[NSString alloc] initWithFormat:@"%@ %@",
-                 [buildStatusTarget isEqualToString:@"Clean"] ? @"Clean" : @"Build",
+                 [buildStatusTarget isEqualToString:@"Clean"] ? @"Clean"
+                 : _isArchiving ? @"Archive" : @"Build",
                  buildSucceeded ? @"succeeded" : @"failed"];
+  /* Show the packages, as Xcode shows a new archive. */
+  if (_isArchiving && [[NSFileManager defaultManager] fileExistsAtPath:archiveFolder])
+  {
+    [[NSWorkspace sharedWorkspace] selectFile:archiveFolder inFileViewerRootedAtPath:@""];
+  }
 
   // Run post process if configured
   /*  if (status && postProcess)
@@ -1076,13 +1203,14 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
       // Do not process make errors in other mode but building. Maybe
       // some day...
       /* xcodebuild prints the compiler's messages on standard output. */
-      if (_isBuilding && (isError || _usesXcodebuild))
+      if (_isBuilding && (isError || _usesXcodebuild || _isArchiving))
       {
         [self logErrorString:lineString];
       }
       /* The log shows the compiler's messages as they are; the issue
-       * navigator lists them by file. */
-      if (isError || _usesXcodebuild)
+       * navigator lists them by file. Archive's scripts print what they
+       * do, which is shown as it is too. */
+      if (isError || _usesXcodebuild || _isArchiving)
       {
         [self appendToLog:lineString];
       }

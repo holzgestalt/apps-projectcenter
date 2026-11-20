@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "PCXcodeProject.h"
+#import "PCDeployment.h"
 #import "PCGormArchive.h"
 #import "PCGormXIBWriter.h"
 #import "PCInterfaceDocument.h"
@@ -489,10 +490,228 @@ static void TestGNUstepOnMac(void)
         && [environment objectForKey:@"HOME"] != nil,
         [NSString stringWithFormat:@"the environment GNUstep.sh sets up: %@", environment]);
   Check([PCXcodeProject GNUstepEnvironmentForMakefiles:missing] == nil, @"no environment without GNUstep.sh");
+
+  /* The GNUstep chosen in the preferences: a prefix of any layout, the
+   * folder of GNUstep.sh or GNUstep.sh itself. */
+  {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSString       *fhs = [root stringByAppendingPathComponent:@"fhs"];
+    NSString       *fhsMakefiles = [[fhs stringByAppendingPathComponent:@"share/GNUstep/Makefiles"]
+                                    stringByStandardizingPath];
+    NSString       *layout = [root stringByAppendingPathComponent:@"gnustep"];
+    NSString       *layoutMakefiles = [[layout stringByAppendingPathComponent:@"System/Library/Makefiles"]
+                                       stringByStandardizingPath];
+
+    Write(root, @"fhs/share/GNUstep/Makefiles/GNUstep.sh", @"true\n");
+    Write(root, @"gnustep/System/Library/Makefiles/GNUstep.sh", @"true\n");
+    Check([[PCXcodeProject GNUstepMakefilesInFolder:fhs] isEqual:fhsMakefiles]
+          && [[PCXcodeProject GNUstepMakefilesInFolder:layout] isEqual:layoutMakefiles],
+          @"the Makefiles folder of an fhs or gnustep prefix");
+    Check([[PCXcodeProject GNUstepMakefilesInFolder:fhsMakefiles] isEqual:fhsMakefiles]
+          && [[PCXcodeProject GNUstepMakefilesInFolder:[fhsMakefiles stringByAppendingPathComponent:@"GNUstep.sh"]]
+              isEqual:fhsMakefiles]
+          && [[PCXcodeProject GNUstepMakefilesInFolder:[NSString stringWithFormat:@"  %@/ ", fhs]]
+              isEqual:fhsMakefiles],
+          @"the folder of GNUstep.sh, GNUstep.sh itself, and spaces around");
+    Check([PCXcodeProject GNUstepMakefilesInFolder:missing] == nil
+          && [PCXcodeProject GNUstepMakefilesInFolder:@""] == nil
+          && [PCXcodeProject GNUstepMakefilesInFolder:nil] == nil, @"no GNUstep.sh in a folder");
+
+    [defaults setObject:layout forKey:PCGNUstepDefault];
+    Check([[PCXcodeProject chosenGNUstep] isEqual:layout]
+          && [[PCXcodeProject GNUstepMakefiles] isEqual:layoutMakefiles], @"the chosen GNUstep is used");
+    [defaults setObject:missing forKey:PCGNUstepDefault];
+    Check([PCXcodeProject GNUstepMakefiles] == nil && [PCXcodeProject GNUstepEnvironment] == nil,
+          @"a chosen folder without GNUstep.sh is no GNUstep, not another one");
+    [defaults setObject:@" " forKey:PCGNUstepDefault];
+    Check([PCXcodeProject chosenGNUstep] == nil
+          && ([PCXcodeProject GNUstepMakefiles] == [PCXcodeProject foundGNUstepMakefiles]),
+          @"an empty choice finds GNUstep");
+    [defaults removeObjectForKey:PCGNUstepDefault];
+  }
 #ifndef GNUSTEP
   Check(![PCXcodeProject buildsWithGNUstepForProject:@{@"PROJECT_NAME": @"Plain"}],
         @"a ProjectCenter project on macOS has no destination");
 #endif
+  [fm removeItemAtPath:root error:NULL];
+}
+
+/* The exit status of a shell command. */
+static int Shell(NSString *command)
+{
+  NSTask *task = [[[NSTask alloc] init] autorelease];
+
+  [task setLaunchPath:@"/bin/sh"];
+  [task setArguments:@[@"-c", command]];
+  [task setStandardOutput:[NSFileHandle fileHandleWithNullDevice]];
+  [task launch];
+  [task waitUntilExit];
+  return [task terminationStatus];
+}
+
+/* Deployment: the platforms in GNUstep/ProjectCenter.plist, their defaults,
+ * and the Archive scripts, run with a stand-in toolchain. */
+static void TestDeployment(void)
+{
+  NSFileManager       *fm = [NSFileManager defaultManager];
+  NSString            *root = [[NSTemporaryDirectory() stringByAppendingPathComponent:
+                                [[NSProcessInfo processInfo] globallyUniqueString]] stringByResolvingSymlinksInPath];
+  NSString            *bundle, *error = nil, *text, *script, *folder;
+  NSDictionary        *projectDict, *scripts, *debian, *second, *container;
+  NSMutableDictionary *tarball, *windows;
+  NSArray             *list;
+
+  [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:NULL];
+  root = [root stringByResolvingSymlinksInPath];
+  bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
+  Write(root, @"Sample.xcodeproj/project.pbxproj", @"{objectVersion=77; rootObject=PROJ; objects={"
+        "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(APP);buildConfigurationList=PL;};"
+        "PL={isa=XCConfigurationList;buildConfigurations=(PR);};"
+        "PR={isa=XCBuildConfiguration;name=Release;buildSettings={MARKETING_VERSION=\"2.1\";};};"
+        "APP={isa=PBXNativeTarget;name=Sample;productName=Sample;buildConfigurationList=TL;"
+        "productType=\"com.apple.product-type.application\";};"
+        "TL={isa=XCConfigurationList;buildConfigurations=(TR);};"
+        "TR={isa=XCBuildConfiguration;name=Release;buildSettings={PRODUCT_NAME=\"$(TARGET_NAME) App\";};};"
+        "ROOT={isa=PBXGroup;children=();sourceTree=\"<group>\";};};}");
+  /* A build script that makes the bundle where GNUSTEP_BUILD_DIR says. */
+  Write(root, @"build.sh", @"for argument; do case \"$argument\" in GNUSTEP_BUILD_DIR=*) dir=${argument#*=};; esac; done\n"
+        "mkdir -p \"$dir/Sample.app\" && echo binary > \"$dir/Sample.app/Sample\" && echo exe > \"$dir/Sample.app/Sample.exe\"\n");
+  Write(root, @"Toolchain/GNUstep.sh", @"PC_TOOLCHAIN=yes\n");
+  Write(root, @"GNUstep/ProjectCenter.plist", @"{BuildScript=build.sh;}");
+  projectDict = [PCXcodeProject projectAtPath:bundle error:&error];
+  Check(projectDict != nil, error);
+  Check([[PCDeployment deploymentsOfProjectAtPath:bundle] count] == 0, @"no deployment");
+
+  Check([[[PCDeployment productOfProject:projectDict] objectForKey:@"Version"] isEqual:@"2.1"]
+        && [[[PCDeployment productOfProject:projectDict] objectForKey:@"Product"] isEqual:@"Sample App"],
+        [NSString stringWithFormat:@"the product's name and version: %@", [PCDeployment productOfProject:projectDict]]);
+  debian = [PCDeployment deploymentOfKind:@"Debian" existing:@[] forProject:projectDict];
+  Check([[debian objectForKey:@"Enabled"] isEqual:@"YES"] && [[debian objectForKey:@"Name"] hasPrefix:@"Debian / Ubuntu ("],
+        [NSString stringWithFormat:@"a new platform: %@", debian]);
+  second = [PCDeployment deploymentOfKind:@"Debian" existing:@[debian] forProject:projectDict];
+  Check(![[PCDeployment valueForKey:@"Architecture" ofDeployment:second project:projectDict]
+          isEqual:[PCDeployment valueForKey:@"Architecture" ofDeployment:debian project:projectDict]]
+        && ![[second objectForKey:@"Name"] isEqual:[debian objectForKey:@"Name"]],
+        @"another platform of a kind is another architecture");
+  Check([[[[PCDeployment fieldsForKind:@"Windows"] objectAtIndex:1] objectForKey:@"Key"] isEqual:@"Kind"],
+        @"the form starts with the platform");
+  {
+    NSDictionary *mac = @{@"Kind": @"macOS", @"Name": @"macOS", @"Enabled": @"NO", @"Format": @"dmg"};
+    NSDictionary *own = @{@"Kind": @"Debian", @"Name": @"Office", @"Architecture": @"amd64",
+                          @"Configuration": @"Beta", @"Maintainer": @"Me", @"Build": @"Container"};
+    NSDictionary *linux, *rpm, *tar;
+
+    linux = [PCDeployment deployment:mac changedToKind:@"Linux" existing:@[mac] forProject:projectDict];
+    Check([[linux objectForKey:@"Kind"] isEqual:@"Linux"] && [[linux objectForKey:@"Name"] hasPrefix:@"Linux ("]
+          && [[linux objectForKey:@"Enabled"] isEqual:@"NO"] && [linux objectForKey:@"Format"] == nil,
+          [NSString stringWithFormat:@"macOS made Linux: a new name, kept Enabled, no macOS settings: %@", linux]);
+    rpm = [PCDeployment deployment:own changedToKind:@"RPM" existing:@[own] forProject:projectDict];
+    Check([[rpm objectForKey:@"Name"] isEqual:@"Office"] && [[rpm objectForKey:@"Configuration"] isEqual:@"Beta"]
+          && [[rpm objectForKey:@"Build"] isEqual:@"Container"] && [rpm objectForKey:@"Maintainer"] == nil
+          && ![[rpm objectForKey:@"Architecture"] isEqual:@"amd64"],
+          [NSString stringWithFormat:@"Debian made RPM: own name and shared settings kept, "
+           @"Debian-only settings and architecture dropped: %@", rpm]);
+    tar = [PCDeployment deployment:rpm changedToKind:@"Linux" existing:@[rpm] forProject:projectDict];
+    Check([[tar objectForKey:@"Architecture"] isEqual:[rpm objectForKey:@"Architecture"]]
+          || ([tar objectForKey:@"Architecture"] == nil && [rpm objectForKey:@"Architecture"] == nil),
+          [NSString stringWithFormat:@"an architecture both kinds build for is kept: %@", tar]);
+    Check([PCDeployment deployment:own changedToKind:@"Nothing" existing:@[own] forProject:projectDict] == nil
+          && [PCDeployment deployment:own changedToKind:@"Debian" existing:@[own] forProject:projectDict] == own,
+          @"an unknown or unchanged kind");
+  }
+  Check([[PCDeployment valueForKey:@"PackageName" ofDeployment:debian project:projectDict] isEqual:@"sample-app"]
+        && [[PCDeployment valueForKey:@"Version" ofDeployment:debian project:projectDict] isEqual:@"2.1"],
+        @"package name and version from the project");
+  Check([[PCDeployment fileNameOfDeployment:@{@"Kind": @"Debian", @"Architecture": @"arm64"} project:projectDict]
+         isEqual:@"sample-app_2.1_arm64.deb"], @"Debian file name");
+  Check([[PCDeployment fileNameOfDeployment:@{@"Kind": @"RPM", @"Architecture": @"aarch64", @"Version": @"2.1-beta"}
+                                    project:projectDict] isEqual:@"sample-app-2.1_beta-1.aarch64.rpm"],
+        @"RPM file name");
+  Check([[PCDeployment unusedKeysOfDeployment:@{@"Kind": @"Debian", @"Build": @"Container"}] containsObject:@"Toolchain"]
+        && ![[PCDeployment unusedKeysOfDeployment:@{@"Kind": @"Debian", @"Build": @"Container"}] containsObject:@"Image"],
+        @"the settings a way to build uses");
+#ifdef __APPLE__
+  Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Debian", @"Build": @"Native"} project:projectDict]
+          componentsJoinedByString:@" "] rangeOfString:@"need a Linux computer"].location != NSNotFound,
+        @"no native Linux build on a Mac");
+#endif
+  Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Linux", @"Build": @"Toolchain"} project:projectDict]
+          componentsJoinedByString:@" "] rangeOfString:@"Set Toolchain"].location != NSNotFound,
+        @"a toolchain needs its folder");
+
+  /* Saved as only what was set, read back the same. */
+  container = @{@"Kind": @"RPM", @"Name": @"Fedora \"arm\"", @"Enabled": @"NO", @"Build": @"Container",
+                @"Architecture": @"aarch64", @"Summary": @"", @"Setup": @"dnf install -y it's"};
+  Check([PCDeployment setDeployments:@[debian, container] ofProjectAtPath:bundle error:&error], error);
+  list = [PCDeployment deploymentsOfProjectAtPath:bundle];
+  Check([list count] == 2 && [[list objectAtIndex:0] isEqual:debian]
+        && [[[list objectAtIndex:1] objectForKey:@"Name"] isEqual:@"Fedora \"arm\""]
+        && [[list objectAtIndex:1] objectForKey:@"Summary"] == nil,
+        [NSString stringWithFormat:@"deployments read back: %@", list]);
+  text = [NSString stringWithContentsOfFile:[root stringByAppendingPathComponent:@"GNUstep/ProjectCenter.plist"]
+                                   encoding:NSUTF8StringEncoding error:NULL];
+  Check([text hasPrefix:@"{\n    BuildScript = \"build.sh\";\n    Deployment = (\n        {\n"],
+        [NSString stringWithFormat:@"written as a readable property list: %@", text]);
+  Check([PCXcodeProject projectAtPath:bundle error:&error] != nil, @"the project still reads its settings");
+
+  /* The scripts: well formed, the container run with its platform. */
+  folder = [root stringByAppendingPathComponent:@"build/Archives/Test"];
+  scripts = [PCDeployment archiveScriptsForProject:projectDict
+                                       deployments:@[debian, container,
+                                                     @{@"Kind": @"macOS", @"Format": @"dmg", @"SigningIdentity": @"Me"},
+                                                     @{@"Kind": @"Windows", @"Build": @"Toolchain"}]
+                                            folder:folder makeTool:@"/usr/bin/make"];
+  Check([scripts count] == 5, [NSString stringWithFormat:@"a script for each platform: %@", [scripts allKeys]]);
+  for (NSString *name in scripts)
+  {
+    NSString *path = [root stringByAppendingPathComponent:name];
+
+    [[scripts objectForKey:name] writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+    Check(Shell([NSString stringWithFormat:@"/bin/sh -n '%@'", path]) == 0,
+          [NSString stringWithFormat:@"%@ is a well-formed script:\n%@", name, [scripts objectForKey:name]]);
+  }
+  script = [scripts objectForKey:@"archive.sh"];
+  Check([script rangeOfString:@"run --rm --platform 'linux/arm64'"].location != NSNotFound
+        && [script rangeOfString:@"'fedora:latest'"].location != NSNotFound
+        && [script rangeOfString:@"/src/build/Archives/Test"].location != NSNotFound,
+        [NSString stringWithFormat:@"the container build: %@", script]);
+  Check([[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"hdiutil create"].location != NSNotFound
+        && [[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"--sign \"$IDENTITY\""].location != NSNotFound,
+        @"the macOS disk image, signed");
+  for (NSString *name in scripts)
+  {
+    if ([name hasPrefix:@"1-"])
+    {
+      Check([[scripts objectForKey:name] rangeOfString:@"dpkg-deb"].location != NSNotFound
+            && [[scripts objectForKey:name] rangeOfString:@"/bin/bash \"$ROOT\"/'build.sh' all"].location != NSNotFound,
+            @"the Debian package, built with the project's script");
+    }
+  }
+
+  /* Archive, with the stand-in toolchain: a tar.gz and a Windows zip. */
+  tarball = [NSMutableDictionary dictionaryWithDictionary:
+             [PCDeployment deploymentOfKind:@"Linux" existing:@[] forProject:projectDict]];
+  [tarball setObject:@"Toolchain" forKey:@"Build"];
+  [tarball setObject:[root stringByAppendingPathComponent:@"Toolchain"] forKey:@"Toolchain"];
+  windows = [NSMutableDictionary dictionaryWithDictionary:tarball];
+  [windows setObject:@"Windows" forKey:@"Kind"];
+  [windows setObject:@"x86_64" forKey:@"Architecture"];
+  [windows setObject:@"Windows" forKey:@"Name"];
+  Check([[PCDeployment problemsWithDeployment:tarball project:projectDict] count] == 0,
+        [NSString stringWithFormat:@"ready to archive: %@", [PCDeployment problemsWithDeployment:tarball project:projectDict]]);
+  script = [PCDeployment writeArchiveScriptsForProject:projectDict deployments:@[tarball, windows]
+                                                folder:folder makeTool:@"/usr/bin/make" error:&error];
+  Check(script != nil, error);
+  Check(Shell([NSString stringWithFormat:@"/bin/sh '%@'", script]) == 0, @"Archive runs");
+  Check(Shell([NSString stringWithFormat:@"tar -tzf '%@/%@' | grep -q '^Sample.app/Sample$'", folder,
+               [PCDeployment fileNameOfDeployment:tarball project:projectDict]]) == 0,
+        @"the tar.gz holds the application");
+  Check(Shell([NSString stringWithFormat:@"unzip -l '%@/SampleApp-2.1-windows-x86_64.zip' | grep -q 'Sample/Sample.app/Sample.exe'",
+               folder]) == 0, @"the Windows zip holds the application in its folder");
+  [windows setObject:[root stringByAppendingPathComponent:@"Missing"] forKey:@"Toolchain"];
+  script = [PCDeployment writeArchiveScriptsForProject:projectDict deployments:@[windows]
+                                                folder:folder makeTool:@"/usr/bin/make" error:&error];
+  Check(Shell([NSString stringWithFormat:@"/bin/sh '%@'", script]) != 0, @"a failed platform fails Archive");
   [fm removeItemAtPath:root error:NULL];
 }
 
@@ -847,6 +1066,7 @@ int main(int argc, char **argv)
     TestBuildSelection();
     TestConvertToXIB();
     TestGNUstepSettings();
+    TestDeployment();
     TestProjectEditing();
     TestGNUstepOnMac();
     TestGormArchives();

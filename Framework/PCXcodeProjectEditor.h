@@ -17,6 +17,7 @@
 
 @class PCProject;
 @class PCTargetList;
+@class PCDeploymentEditor;
 
 /* The views are in ProjectEditor.xib; the General pane has a form for the
  * project and one for a target, whose fields are filled from -generalRows. */
@@ -74,6 +75,7 @@
   IBOutlet NSTextField        *buildScriptField;
   IBOutlet NSTextField        *executableField;
   IBOutlet NSPopUpButton      *themePopUp;
+  IBOutlet PCDeploymentEditor *deploymentEditor;
 }
 
 - (id)initWithProject:(PCProject *)aProject;
@@ -85,7 +87,7 @@
 - (void)selectEntryAtIndex:(NSInteger)index;
 - (NSDictionary *)selection;
 - (NSTabView *)tabView;
-/* General (0), Build Settings (1), Build Phases (2). */
+/* General (0), Build Settings (1), Build Phases (2), Deployment (3). */
 - (void)selectSectionAtIndex:(NSInteger)index;
 /* The General pane: [Section title] rows start a section, as Xcode's, and
  * [Property, Value] rows follow. An editable row has a third element, the
@@ -106,5 +108,7 @@
 - (NSArray *)frameworkRows;
 - (NSArray *)configurationNames;
 - (NSOutlineView *)targetOutlineView;
+/* The Deployment tab: the platforms Archive builds for. */
+- (PCDeploymentEditor *)deploymentEditor;
 
 @end

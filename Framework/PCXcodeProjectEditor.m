@@ -15,6 +15,7 @@
 #import "PCXcodeProjectEditor.h"
 #import "PCXcodeProject.h"
 #import "PCNavigators.h"
+#import "PCDeploymentEditor.h"
 
 #import <ProjectCenter/PCProject.h>
 
@@ -156,6 +157,7 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
 
     [sections setSelectedSegment:0];
     [tabs selectTabViewItemAtIndex:0];
+    [deploymentEditor setProject:aProject];
 
     /* The fields of the forms, by the name of their row in -generalRows. */
     projectControls = [[NSDictionary alloc] initWithObjectsAndKeys:
@@ -228,6 +230,7 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
   [targetList release];
   /* The nib's top-level objects. */
   [view release];
+  [deploymentEditor release];
   [projectForm release];
   [targetForm release];
   [formContainer release];
@@ -264,6 +267,7 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
 - (NSArray *)frameworkRows { return frameworkRows; }
 - (NSArray *)configurationNames { return configurationNames; }
 - (NSOutlineView *)targetOutlineView { return [targetList outlineView]; }
+- (PCDeploymentEditor *)deploymentEditor { return deploymentEditor; }
 
 - (void)reload
 {
@@ -275,6 +279,7 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
   ASSIGN(overview, fresh);
   targetList->overview = overview;
   [targetList reloadItems];
+  [deploymentEditor reload];
 
   /* Keep the selection; initially the target ProjectCenter builds. */
   if (selectedName == nil || selection == nil)

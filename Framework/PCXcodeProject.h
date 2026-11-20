@@ -1,5 +1,9 @@
 #import <Foundation/Foundation.h>
 
+/* The user default that chooses GNUstep (see +chosenGNUstep), set in the
+ * Misc preferences. */
+#define PCGNUstepDefault @"GNUstepInstallation"
+
 /* Read-only project metadata adapter. Source files remain editable. */
 @interface PCXcodeProject : NSObject
 + (NSDictionary *)projectAtPath:(NSString *)path error:(NSString **)error;
@@ -47,6 +51,12 @@
                    forKey:(NSString *)key
          ofProjectAtPath:(NSString *)path
                     error:(NSString **)error;
+/* Sets any property list value (a string, or arrays and dictionaries of
+ * them, such as Deployment); an empty or nil value removes it. */
++ (BOOL)setGNUstepValue:(id)value
+                 forKey:(NSString *)key
+        ofProjectAtPath:(NSString *)path
+                  error:(NSString **)error;
 
 /* GNUstep themes, found as GSTheme finds them: <Name>.theme bundles in the
  * Themes folder of each Library directory. Sorted names without the
@@ -89,8 +99,18 @@
 + (NSString *)GNUstepMakefilesWithEnvironment:(NSDictionary *)environment
                                   toolFolders:(NSArray *)toolFolders
                               makefileFolders:(NSArray *)makefileFolders;
-/* The same for this process, with GNUstep's usual places, Homebrew and
- * MacPorts. Looked up once. */
+/* The folder of GNUstep.sh in path: path itself, the folder of a GNUstep.sh
+ * file, or the Makefiles folder of an installation prefix (fhs, gnustep or
+ * the Homebrew and MacPorts layouts); nil if there is none. */
++ (NSString *)GNUstepMakefilesInFolder:(NSString *)path;
+/* The GNUstep chosen in the preferences (the user default GNUstep: an
+ * installation prefix or the folder of GNUstep.sh), or nil to find one. */
++ (NSString *)chosenGNUstep;
+/* GNUstep as this process finds it, with GNUstep's usual places, Homebrew
+ * and MacPorts. Looked up once. */
++ (NSString *)foundGNUstepMakefiles;
+/* The GNUstep that Build, Run and Archive use: the chosen one (nil if it has
+ * no GNUstep.sh), else the one found. */
 + (NSString *)GNUstepMakefiles;
 /* The environment after sourcing GNUstep.sh, or nil. */
 + (NSDictionary *)GNUstepEnvironmentForMakefiles:(NSString *)makefiles;
