@@ -181,15 +181,14 @@ where Xcode saves them:
 - **Read-only:** the target's type, which is fixed when the target is made, as
   in Xcode, and everything else.
 
-**Theme** chooses the GNUstep theme Run starts the application with: Run
-passes `-GSTheme <Name>`, also when it runs the program under gdb. The menu
-lists the themes installed as GNUstep finds them, a `<Name>.theme` bundle in
-the `Themes` folder of a GNUstep Library directory (for instance
-`~/GNUstep/Library/Themes` or `/usr/GNUstep/Local/Library/Themes`), and
-GNUstep's built-in theme. **Default** passes no theme, so the user's own
-`GSTheme` default applies (`defaults write <App> GSTheme <Name>`). A theme that
-is set but not installed is shown as "not installed". The theme only affects
-runs on GNUstep; the Cocoa build on macOS doesn't use GNUstep themes.
+**Theme** chooses the GNUstep appearance for Build and Run. Build passes the
+selected provider as `GNUSTEP_APPLICATION_THEME` to the build script or make,
+so the executable links that provider. Rebuild after changing it. The menu lists
+installed application providers (for example Default, Classic and GTK4Native).
+**Application Default** removes the override and uses the application's own
+build default; it also clears any theme override inherited from ProjectCenter's
+process. The selection is stored in `GNUstep/ProjectCenter.plist`, and does not
+change the Xcode project or affect Cocoa builds on macOS.
 
 ## Debugging
 
