@@ -126,6 +126,7 @@
 // ==== Window delegate
 // ============================================================================
 - (NSString *)stringWithSavedFrame;
+- (NSWindow *)window;
 - (void)makeKeyAndOrderFront:(id)sender;
 - (void)makeKeyWindow;
 - (void)orderFront:(id)sender;

@@ -50,6 +50,30 @@
 
 #import <math.h>
 
+/* Window restoration: a project window that is open when ProjectCenter quits
+ * reopens its project at the next launch, with the file that was shown in the
+ * editor and the files open in editor windows. The project itself keeps the
+ * window's frame, split views and panels (PCWindows). */
+#ifdef GNUSTEP
+typedef GSWindowRestorationHandler PCWindowRestorationHandler;
+#define PCCallRestorationHandler(handler, window, error) \
+  CALL_BLOCK(handler, window, error)
+#else
+typedef void (^PCWindowRestorationHandler)(NSWindow *, NSError *);
+#define PCCallRestorationHandler(handler, window, error) \
+  handler(window, error)
+#endif
+
+static NSString * const PCRestorableProjectPathKey = @"PCProjectPath";
+static NSString * const PCRestorableActiveFileKey = @"PCActiveFile";
+static NSString * const PCRestorableWindowedFilesKey = @"PCWindowedFiles";
+
+/* Cocoa only accepts a restoration class that conforms to the protocol at
+ * run time, so the methods are in this category's implementation. */
+@interface PCProjectWindow (Restoration) <NSWindowRestoration>
+- (NSString *)_restorablePath;
+@end
+
 @interface PCProjectWindow (Layout)
 - (void)_createToolbar;
 - (void)_createNavigatorArea;
@@ -655,6 +679,9 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
     // Window
     [projectWindow setFrameAutosaveName:@"ProjectWindow"];
+    [projectWindow setIdentifier:
+     [@"ProjectWindow " stringByAppendingString:[self _restorablePath] ?: @""]];
+    [projectWindow setRestorationClass:[PCProjectWindow class]];
 
     pcWindows = [[project projectDict] objectForKey:PCWindows];
     windowFrame = [pcWindows objectForKey:@"ProjectWindow"];
@@ -724,6 +751,18 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
      addObserver:self
      selector:@selector (editorDidRevert:)
      name:PCEditorDidRevertNotification
+     object:nil];
+
+    // The open files are part of the window's restorable state
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector (editorsDidChange:)
+     name:PCEditorDidBecomeActiveNotification
+     object:nil];
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector (editorsDidChange:)
+     name:PCEditorDidCloseNotification
      object:nil];
   }
 
@@ -1114,6 +1153,16 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
   [fileIcon updateIcon];
 }
 
+- (void)editorsDidChange:(NSNotification *)aNotif
+{
+  id<CodeEditor> editor = [aNotif object];
+
+  if ([editor editorManager] == [project projectEditor])
+  {
+    [projectWindow invalidateRestorableState];
+  }
+}
+
 - (void)editorDidSave:(NSNotification *)aNotif
 {
   id<CodeEditor> editor = [aNotif object];
@@ -1146,6 +1195,12 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 {
   return [projectWindow stringWithSavedFrame];
 }
+
+- (NSWindow *)window
+{
+  return projectWindow;
+}
+
 
 - (void)makeKeyAndOrderFront:(id)sender
 {
@@ -1359,3 +1414,104 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
 @end
 
+@implementation PCProjectWindow (Restoration)
+
+// ============================================================================
+// ==== Window restoration
+// ============================================================================
+
+// The path that reopens the project: the .xcodeproj or the project directory.
+- (NSString *)_restorablePath
+{
+  NSString *sourcePath = [[project projectDict] objectForKey:@"XCODE_PROJECT_PATH"];
+
+  return sourcePath ?: [project projectPath];
+}
+
++ (void)restoreWindowWithIdentifier:(NSString *)identifier
+                              state:(NSCoder *)state
+                  completionHandler:(PCWindowRestorationHandler)completionHandler
+{
+  NSString         *path = [state decodeObjectOfClass:[NSString class]
+                                               forKey:PCRestorableProjectPathKey];
+  id               delegate = [NSApp delegate];
+  PCProjectManager *manager = nil;
+  PCProject        *restored = nil;
+
+  if ([delegate respondsToSelector:@selector(projectManager)])
+  {
+    manager = [delegate projectManager];
+  }
+  if ([path length] > 0 && [[NSFileManager defaultManager] fileExistsAtPath:path])
+  {
+    restored = [manager openProjectAt:path makeActive:YES];
+  }
+  if (restored == nil)
+  {
+    PCCallRestorationHandler(completionHandler, nil,
+                             [NSError errorWithDomain:NSCocoaErrorDomain
+                                                 code:NSFileReadNoSuchFileError
+                                             userInfo:nil]);
+    return;
+  }
+  PCCallRestorationHandler(completionHandler, [[restored projectWindow] window], nil);
+}
+
+- (void)window:(NSWindow *)window willEncodeRestorableState:(NSCoder *)state
+{
+  PCProjectEditor *editorManager = [project projectEditor];
+  id<CodeEditor>  activeEditor = [editorManager activeEditor];
+  NSMutableArray  *windowedFiles = [NSMutableArray array];
+  NSEnumerator    *enumerator = [[editorManager allEditors] objectEnumerator];
+  id<CodeEditor>  editor;
+
+  [state encodeObject:[self _restorablePath] forKey:PCRestorableProjectPathKey];
+  if (activeEditor != nil && ![activeEditor isWindowed] && [activeEditor path] != nil)
+  {
+    [state encodeObject:[activeEditor path] forKey:PCRestorableActiveFileKey];
+  }
+  while ((editor = [enumerator nextObject]) != nil)
+  {
+    if ([editor isWindowed] && [editor path] != nil)
+    {
+      [windowedFiles addObject:[editor path]];
+    }
+  }
+  if ([windowedFiles count] > 0)
+  {
+    [state encodeObject:windowedFiles forKey:PCRestorableWindowedFilesKey];
+  }
+}
+
+- (void)window:(NSWindow *)window didDecodeRestorableState:(NSCoder *)state
+{
+  PCProjectEditor *editorManager = [project projectEditor];
+  NSFileManager   *fm = [NSFileManager defaultManager];
+  NSString        *activeFile;
+  NSArray         *windowedFiles;
+  NSEnumerator    *enumerator;
+  NSString        *file;
+
+  activeFile = [state decodeObjectOfClass:[NSString class]
+                                   forKey:PCRestorableActiveFileKey];
+  windowedFiles = [state decodeObjectOfClasses:[NSSet setWithObjects:[NSArray class],
+                                                [NSString class], nil]
+                                        forKey:PCRestorableWindowedFilesKey];
+  if ([windowedFiles isKindOfClass:[NSArray class]])
+  {
+    enumerator = [windowedFiles objectEnumerator];
+    while ((file = [enumerator nextObject]) != nil)
+    {
+      if ([file isKindOfClass:[NSString class]] && [fm fileExistsAtPath:file])
+      {
+        [editorManager openEditorForFilePath:file windowed:YES];
+      }
+    }
+  }
+  if ([activeFile isKindOfClass:[NSString class]] && [fm fileExistsAtPath:activeFile])
+  {
+    [editorManager openEditorForFilePath:activeFile windowed:NO];
+  }
+}
+
+@end

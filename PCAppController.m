@@ -227,7 +227,7 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
                         @"Do you really want to quit ProjectCenter?",
                         @"Cancel", @"Quit", nil))
     {
-      return NSTerminateLater;
+      return NSTerminateCancel;
     }
 
   }
@@ -236,13 +236,13 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
   if ([prefController boolForKey:SaveOnQuit])
   {
     if(![projectManager saveAllProjects])
-      quit = NSTerminateLater;
+      quit = NSTerminateCancel;
   }
 
   // Close ProjectManager (projects, editors, etc.)
-  if ((quit == NO) || ([projectManager close] == NO))
+  if ((quit == NSTerminateCancel) || ([projectManager close] == NO))
   {
-    return NSTerminateLater;
+    return NSTerminateCancel;
   }
 
   [[NSNotificationCenter defaultCenter]
@@ -250,6 +250,12 @@ PCDirectoryContainsProjectWrapper(NSFileManager *fm, NSString *path)
    object:nil];
 
   return NSTerminateNow;
+}
+
+// The windows' restorable state only holds property list objects.
+- (BOOL)applicationSupportsSecureRestorableState:(NSApplication *)app
+{
+  return YES;
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification
