@@ -5,6 +5,7 @@
 #import <ProjectCenter/PCProjectBuilder.h>
 #import <ProjectCenter/PCProjectLauncher.h>
 #import "Framework/PCXcodeProject.h"
+#import "Framework/PCXcodeProjectEditor.h"
 #include <gtk/gtk.h>
 
 static void check(BOOL value,NSString *message) { if(!value) { NSLog(@"FAIL %@",message); exit(1); } }
@@ -32,6 +33,14 @@ int main(int argc,char **argv) { @autoreleasepool { @try {
   check(project!=nil,@"ProjectCenter opens bare Xcode project");
   check([project.projectDict objectForKey:@"XCODE_BuildScript"]==nil && [project.projectDict objectForKey:@"XCODE_Executable"]==nil,@"no configured script or executable");
   check(![[NSFileManager defaultManager] fileExistsAtPath:[root stringByAppendingPathComponent:@"GNUmakefile"]],@"no app makefile exists");
+  if ([path.lastPathComponent isEqual:@"EditGlyphData.xcodeproj"])
+  {
+    check([[[[PCXcodeProject buildSelectionForProject:project.projectDict] objectForKey:@"Scheme"] objectForKey:@"RunTarget"] isEqual:@"EditGlyphData Linux"], @"GNUstep defaults to the Linux target");
+    PCXcodeProjectEditor *editor = [[PCXcodeProjectEditor alloc] initWithProject:project];
+    [editor reload];
+    check([[editor.selection objectForKey:@"Name"] isEqual:@"EditGlyphData Linux"], @"project editor initially selects the Linux target");
+    [editor release];
+  }
   check([PCXcodeProject GNUstepBuildTool]!=nil,@"built-in compiler is packaged");
   PCProjectBuilder *builder=project.projectBuilder;
   [builder startBuild:nil];
@@ -48,6 +57,6 @@ int main(int argc,char **argv) { @autoreleasepool { @try {
   check(![[NSFileManager defaultManager] fileExistsAtPath:[root stringByAppendingPathComponent:@"GNUstep/ProjectCenter.plist"]],@"Build does not create a sidecar");
   check(![[NSFileManager defaultManager] fileExistsAtPath:[root stringByAppendingPathComponent:@"GNUmakefile"]],@"Build does not generate an app makefile");
   [manager closeProject:project];
-  NSLog(@"PASS ProjectCenter: open FontTableViewer, Build and Run directly from Xcode metadata without a sidecar or application build script");
+  NSLog(@"PASS ProjectCenter: open %@, Build and Run directly from Xcode metadata without a sidecar or application build script", path.lastPathComponent);
   return 0;
 } @catch(NSException *exception) { NSLog(@"FAIL %@ %@",exception,exception.callStackSymbols); return 1; } } }

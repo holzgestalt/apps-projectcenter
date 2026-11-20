@@ -55,6 +55,15 @@
  * editor and the files open in editor windows. The project itself keeps the
  * window's frame, split views and panels (PCWindows). */
 #ifdef GNUSTEP
+#import <AppKit/NSWindowRestoration.h>
+
+/* These Cocoa APIs are optional in the installed GNUstep AppKit. */
+@interface NSWindow (PCOptionalRestoration)
+- (void)setIdentifier:(NSString *)identifier;
+- (void)setRestorationClass:(Class)restorationClass;
+- (void)invalidateRestorableState;
+@end
+
 typedef GSWindowRestorationHandler PCWindowRestorationHandler;
 #define PCCallRestorationHandler(handler, window, error) \
   CALL_BLOCK(handler, window, error)
@@ -679,9 +688,11 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
     // Window
     [projectWindow setFrameAutosaveName:@"ProjectWindow"];
-    [projectWindow setIdentifier:
-     [@"ProjectWindow " stringByAppendingString:[self _restorablePath] ?: @""]];
-    [projectWindow setRestorationClass:[PCProjectWindow class]];
+    if ([projectWindow respondsToSelector:@selector(setIdentifier:)])
+      [projectWindow setIdentifier:
+       [@"ProjectWindow " stringByAppendingString:[self _restorablePath] ?: @""]];
+    if ([projectWindow respondsToSelector:@selector(setRestorationClass:)])
+      [projectWindow setRestorationClass:[PCProjectWindow class]];
 
     pcWindows = [[project projectDict] objectForKey:PCWindows];
     windowFrame = [pcWindows objectForKey:@"ProjectWindow"];
@@ -1171,7 +1182,8 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
   if ([editor editorManager] == [project projectEditor])
   {
-    [projectWindow invalidateRestorableState];
+    if ([projectWindow respondsToSelector:@selector(invalidateRestorableState)])
+      [projectWindow invalidateRestorableState];
   }
 }
 

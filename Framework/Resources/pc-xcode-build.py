@@ -165,6 +165,10 @@ class Build:
 
     def choose_target(self):
         targets = [name for name, ref in self.root.targets.items() if self.root.objects[ref].get('productType') == 'com.apple.product-type.application']
+        native = [name for name in targets if 'gnustep' in words(self.root.settings(self.root.targets[name]).get('SUPPORTED_PLATFORMS', []))
+                  or self.root.settings(self.root.targets[name]).get('SDKROOT') in ('linux', 'gnustep')]
+        if len(native) == 1:
+            return native[0]
         if len(targets) != 1:
             raise ValueError('Select a scheme/target: the project does not have exactly one application target')
         return targets[0]
@@ -317,7 +321,11 @@ class Build:
         for fileid, _ in project.files(ref, 'PBXResourcesBuildPhase'):
             source = project.paths[fileid]
             if source.suffix == '.xcassets':
-                print(f'note: GNUstep uses image resources; asset catalog compilation is unavailable: {source}', file=sys.stderr)
+                # Preserve raster image sets, including the configured app icon.
+                for image in source.rglob('*'):
+                    if image.suffix.lower() in ('.png', '.jpg', '.jpeg'):
+                        shutil.copy2(image, destination / image.name)
+                print(f'note: copied raster images from asset catalog: {source}', file=sys.stderr)
                 continue
             target = destination / source.name
             if source.parent.suffix == '.lproj':
@@ -369,9 +377,20 @@ class Build:
             if isinstance(value, list):
                 return [expand_info(v) for v in value]
             return value
+        info.update({key[len('INFOPLIST_KEY_'):]: value for key, value in settings.items() if key.startswith('INFOPLIST_KEY_')})
         info = expand_info(info)
         info.update(CFBundleExecutable=name, NSExecutable=name, NSPrincipalClass=info.get('NSPrincipalClass', 'NSApplication'))
+        exported = {entry['UTTypeIdentifier']: entry for entry in info.get('UTExportedTypeDeclarations', []) if entry.get('UTTypeIdentifier')}
         for document in info.get('CFBundleDocumentTypes', []):
+            # GNUstep dispatches document APIs using CFBundleTypeName, whereas
+            # Cocoa uses the UTI declared in LSItemContentTypes.
+            types = document.get('LSItemContentTypes', [])
+            if types:
+                document['CFBundleTypeName'] = types[0]
+                tags = exported.get(types[0], {}).get('UTTypeTagSpecification', {})
+                extensions = tags.get('public.filename-extension')
+                if extensions and not document.get('CFBundleTypeExtensions'):
+                    document['CFBundleTypeExtensions'] = extensions if isinstance(extensions, list) else [extensions]
             if not document.get('NSDocumentClass'):
                 document.pop('NSDocumentClass', None)
         (resources / 'Info-gnustep.plist').write_bytes(plistlib.dumps(info))

@@ -229,9 +229,10 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
   [NSObject cancelPreviousPerformRequestsWithTarget:self];
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [targetList release];
+  /* Detach the deployment controller while its outlet views are alive. */
+  [deploymentEditor release];
   /* The nib's top-level objects. */
   [view release];
-  [deploymentEditor release];
   [projectForm release];
   [targetForm release];
   [formContainer release];
@@ -284,7 +285,8 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
   /* Keep the selection; initially the target ProjectCenter builds. */
   if (selectedName == nil || selection == nil)
   {
-    selectedName = [[project projectDict] objectForKey:@"PROJECT_NAME"];
+    selectedName = [[[PCXcodeProject buildSelectionForProject:[project projectDict]] objectForKey:@"Scheme"] objectForKey:@"RunTarget"]
+      ?: [[project projectDict] objectForKey:@"PROJECT_NAME"];
     index = -1;
   }
   for (NSDictionary *target in [overview objectForKey:@"Targets"])

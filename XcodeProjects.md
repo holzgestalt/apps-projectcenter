@@ -418,3 +418,11 @@ breakpoints, call stack, frame selection, Stop) and closes the project.
 The focused interface test exercises the theme's native outline rows, icons,
 disclosure controls, nested object selection and document reload without using
 the project file chooser.
+
+A project can keep separate macOS and Linux application targets. Declare
+`SUPPORTED_PLATFORMS = gnustep` in the Linux target's build configurations and
+provide a shared scheme for it. On GNUstep, ProjectCenter defaults to that scheme
+when there is exactly one native target; an explicitly saved scheme selection
+still takes precedence. Each target's own source and resource phases remain the
+build inputs. EditGlyphData uses this arrangement with **EditGlyphData Linux**,
+leaving the macOS target's Python wrapper build phase unchanged.

@@ -214,7 +214,7 @@ int main(int argc, char **argv)
     Check(argc == 2, @"project path argument required");
     NSString *bundle = [NSString stringWithUTF8String:argv[1]];
     NSString *root = [bundle stringByDeletingLastPathComponent];
-    NSArray *protected = @[@"EditGlyphData.xcodeproj/project.pbxproj", @"GNUmakefile", @"EditGlyphDataInfo.plist"];
+    NSArray *protected = @[@"EditGlyphData.xcodeproj/project.pbxproj", @"EditGlyphData/Info.plist"];
     NSMutableDictionary *snapshots = [NSMutableDictionary dictionary];
     for (NSString *file in protected)
     {
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
     for (NSInteger row = 0; row < [outline numberOfRows]; row++)
       if ([outline levelForRow:row] == 1) [topTitles addObject:[[outline itemAtRow:row] valueForKey:@"title"]];
     Check(![topTitles containsObject:@"Classes"] && ![topTitles containsObject:@"Headers"], @"type categories are replaced by Xcode groups");
-    Check([topTitles indexOfObject:@"Supporting Files"] == 2 && [[topTitles objectAtIndex:1] isEqual:@"EditGlyphDataTests"], @"GNUstep build files follow the Xcode groups");
+    Check([[topTitles objectAtIndex:1] isEqual:@"EditGlyphDataTests"], @"Xcode test group follows the application group");
     Check([[sourceTree selectedFiles] count] == 1, @"outline file selection");
     [sourceTree click:outline];
     Check([[[[project projectEditor] activeEditor] path] isEqual:[root stringByAppendingPathComponent:@"EditGlyphData/GSWindowController.m"]], @"outline click opens integrated source editor");
@@ -331,10 +331,10 @@ int main(int argc, char **argv)
     Check(overviewEditor != nil && [[overviewEditor view] window] == [[project projectWindow] valueForKey:@"projectWindow"], @"project row shows the project editor");
     NSArray *overviewTargets = [[[overviewEditor overview] objectForKey:@"Targets"] valueForKey:@"Name"];
     Check([overviewTargets containsObject:@"EditGlyphData"] && [overviewTargets containsObject:@"EditGlyphDataTests"], @"project editor lists the targets");
-    Check([[[overviewEditor selection] objectForKey:@"Name"] isEqual:@"EditGlyphData"], @"the built target is selected first");
+    Check([[[overviewEditor selection] objectForKey:@"Name"] isEqual:@"EditGlyphData Linux"], @"the Linux build target is selected first");
     NSDictionary *general = RowsByFirstColumn([overviewEditor generalRows]);
     Check([[general objectForKey:@"Type"] isEqual:@"Application"] && [[general objectForKey:@"Product Name"] isEqual:@"EditGlyphData"], @"general information for the target");
-    Check([[general objectForKey:@"Build Script"] hasSuffix:@"build-editglyphdata.sh"], @"general information shows the GNUstep build");
+    Check([project.projectDict objectForKey:@"XCODE_BuildScript"] == nil, @"GNUstep build uses Xcode metadata without a script");
     Check([[overviewEditor configurationNames] isEqual:(@[@"Debug", @"Release"])], @"build settings per configuration");
     NSArray *settingNames = [RowsByFirstColumn([overviewEditor settingRows]) allKeys];
     Check([settingNames containsObject:@"PRODUCT_BUNDLE_IDENTIFIER"] && [settingNames containsObject:@"CLANG_ENABLE_OBJC_ARC"], @"target settings merged with project settings");
@@ -592,7 +592,7 @@ int main(int argc, char **argv)
     [[NSFileManager defaultManager] removeItemAtPath:fixturePath error:NULL];
     Check([project save] && [project writeMakefile] && [project saveProjectWindowsAndPanels], @"safe save paths");
     Check(![project isEditableFile:@"project.pbxproj"], @"Xcode metadata is read-only");
-    Check([project isEditableFile:@"GNUmakefile"], @"existing GNUstep build file remains editable");
+    Check([project isEditableFile:@"EditGlyphData/Info.plist"], @"Xcode bundle metadata remains editable");
     Check([[project projectEditor] openEditorForFilePath:[root stringByAppendingPathComponent:@"EditGlyphData/GSWindowController.m"] windowed:NO] != nil, @"open source in integrated editor");
     PumpEvents(0.2); // GTK allocates the newly selected editor before inspecting its geometry.
     Check([[sourceTree nameOfSelectedFile] isEqual:@"EditGlyphData/GSWindowController.m"], @"opening an editor reveals the matching outline file");
@@ -615,7 +615,7 @@ int main(int argc, char **argv)
       [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
     Check(![builder isBuilding], @"integrated build completed");
     Check([[[builder valueForKey:@"statusField"] stringValue] rangeOfString:@"succeeded"].location != NSNotFound, @"integrated build script succeeded");
-    NSString *executable = [[root stringByAppendingPathComponent:@"../../build/EditGlyphData/EditGlyphData.app/EditGlyphData"] stringByStandardizingPath];
+    NSString *executable = [root stringByAppendingPathComponent:@"build/ProjectCenter/Debug/EditGlyphData.app/EditGlyphData"];
     Check([[[project projectLauncher] executablePath] isEqual:executable], @"configured debugger executable");
 
     /* Debugger: breakpoints in Xcode's per-user data, sidebar tabs, a

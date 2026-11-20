@@ -8,6 +8,21 @@ static NSData *RunTool(NSString *tool, NSArray *arguments);
 
 static NSString * const PCXcodeProjectMarker = @"XCODE_PROJECT_PATH";
 
+static BOOL SupportsGNUstep(NSDictionary *target, NSDictionary *objects)
+{
+  NSDictionary *list = [objects objectForKey:[target objectForKey:@"buildConfigurationList"]];
+  for (NSString *config in [list objectForKey:@"buildConfigurations"])
+  {
+    NSDictionary *settings = [[objects objectForKey:config] objectForKey:@"buildSettings"];
+    NSString *sdk = [[settings objectForKey:@"SDKROOT"] lowercaseString];
+    if ([sdk isEqual:@"linux"] || [sdk isEqual:@"gnustep"]) return YES;
+    id platforms = [settings objectForKey:@"SUPPORTED_PLATFORMS"];
+    if ([platforms isKindOfClass:[NSString class]]) platforms = [platforms componentsSeparatedByString:@" "];
+    if ([platforms containsObject:@"gnustep"]) return YES;
+  }
+  return NO;
+}
+
 static NSMutableDictionary *Group(NSString *name)
 {
   return [NSMutableDictionary dictionaryWithObjectsAndKeys:
@@ -192,6 +207,7 @@ static NSDictionary *Phase(NSDictionary *objects, NSString *identifier, NSDictio
  * +platformOfTarget:). */
 static NSString *PlatformOfRawTarget(NSDictionary *target, NSDictionary *objects)
 {
+  if (SupportsGNUstep(target, objects)) return @"Linux";
   for (NSString *identifier in [[objects objectForKey:[target objectForKey:@"buildConfigurationList"]]
                                 objectForKey:@"buildConfigurations"])
   {
@@ -264,7 +280,8 @@ static NSString *PlatformOfRawTarget(NSDictionary *target, NSDictionary *objects
     NSMutableDictionary *paths = [NSMutableDictionary dictionary];
     NSDictionary *mainGroup = ReadGroup([project objectForKey:@"mainGroup"], root, root, objects, paths, [NSMutableSet set]);
     NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                   path, PCXcodeProjectMarker, @"Application", @"PROJECT_TYPE", [target objectForKey:@"name"], @"PROJECT_NAME", nil];
+                                   path, PCXcodeProjectMarker, @"Application", @"PROJECT_TYPE",
+                                   (SupportsGNUstep(target, objects) ? [target objectForKey:@"productName"] ?: [target objectForKey:@"name"] : [target objectForKey:@"name"]), @"PROJECT_NAME", nil];
     /* The navigator shows Xcode's own group hierarchy. */
     NSArray *groups = [mainGroup objectForKey:@"Children"];
     [result setObject:(groups ? groups : [NSArray array]) forKey:@"XCODE_GROUPS"];
@@ -853,7 +870,9 @@ static NSDictionary *TargetGNUstepKeys(void)
     NSString *sdk = [[[configuration objectForKey:@"Settings"] objectForKey:@"SDKROOT"] lowercaseString];
 
     if (![sdk isKindOfClass:[NSString class]]) continue;
-    if ([sdk isEqual:@"linux"]) return @"Linux";
+    id platforms = [[configuration objectForKey:@"Settings"] objectForKey:@"SUPPORTED_PLATFORMS"];
+    if ([platforms isKindOfClass:[NSString class]]) platforms = [platforms componentsSeparatedByString:@" "];
+    if ([sdk isEqual:@"linux"] || [sdk isEqual:@"gnustep"] || [platforms containsObject:@"gnustep"]) return @"Linux";
     if ([sdk isEqual:@"windows"]) return @"Windows";
   }
   return @"macOS";
@@ -1345,6 +1364,15 @@ static NSArray *ReadSchemes(NSString *path)
     [schemes addObject:scheme];
   }
 
+  /* A native GNUstep target can coexist with the original Apple targets. */
+  for (NSMutableDictionary *scheme in schemes)
+    for (NSString *identifier in [project objectForKey:@"targets"])
+    {
+      NSDictionary *target = [objects objectForKey:identifier];
+      if (![[target objectForKey:@"name"] isEqual:[scheme objectForKey:@"RunTarget"]]) continue;
+      if (SupportsGNUstep(target, objects)) [scheme setObject:@YES forKey:@"SupportsGNUstep"];
+    }
+
   /* The order and visibility the user chose in Manage Schemes. */
   state = [[NSDictionary dictionaryWithContentsOfFile:
             [user stringByAppendingPathComponent:@"xcschemes/xcschememanagement.plist"]]
@@ -1490,6 +1518,12 @@ static NSDictionary *SavedSelection(NSString *path)
   configurations = [self configurationsOfProjectAtPath:path];
   saved = SavedSelection(path);
   scheme = Named(schemes, [saved objectForKey:@"Scheme"]);
+#ifdef GNUSTEP
+  if (scheme == nil)
+    for (NSDictionary *candidate in schemes)
+      if ([[candidate objectForKey:@"SupportsGNUstep"] boolValue]) { scheme = candidate; break; }
+#endif
+
   if (scheme == nil)
   {
     scheme = Named(schemes, application);
