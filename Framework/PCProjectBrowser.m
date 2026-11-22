@@ -61,11 +61,6 @@ NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
 - (void)dealloc { [symbolicIconName release]; [super dealloc]; }
 @end
 
-@interface PCSourceOutlineView : NSOutlineView @end
-@implementation PCSourceOutlineView
-- (BOOL)gtk4NativeCompactRows { return YES; }
-@end
-
 /* Items have stable identities until the project file list changes. The
  * category paths remain compatible with editors, inspectors and breakpoints. */
 @interface PCSourceItem : NSObject
@@ -164,7 +159,7 @@ static NSTableCellView *SourceCell(void)
     [sourceScroll setHasVerticalScroller:YES];
     [sourceScroll setHasHorizontalScroller:NO];
     [sourceScroll setAutohidesScrollers:YES];
-    outline = [[PCSourceOutlineView alloc] initWithFrame:[[sourceScroll contentView] bounds]];
+    outline = [[NSOutlineView alloc] initWithFrame:[[sourceScroll contentView] bounds]];
     NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"Source"];
     [column setWidth:230];
     [column setMinWidth:80];
