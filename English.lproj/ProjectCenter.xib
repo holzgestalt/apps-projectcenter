@@ -34,9 +34,6 @@
                             </menuItem>
                         </items>
                     </menu>
-                    <connections>
-                        <action selector="submenuAction:" target="g5" id="x3"/>
-                    </connections>
                 </menuItem>
                 <menuItem title="Project" id="g26">
                     <menu key="submenu" title="Project" id="g29" userLabel="GormNSMenu19">
@@ -56,9 +53,6 @@
                                         </menuItem>
                                     </items>
                                 </menu>
-                                <connections>
-                                    <action selector="submenuAction:" target="g29" id="x57"/>
-                                </connections>
                             </menuItem>
                             <menuItem title="New..." keyEquivalent="N" id="g42" userLabel="MenuItem8">
                                 <connections>
@@ -97,9 +91,6 @@
                             </menuItem>
                         </items>
                     </menu>
-                    <connections>
-                        <action selector="submenuAction:" target="g5" id="x4"/>
-                    </connections>
                 </menuItem>
                 <menuItem title="File" id="g63" userLabel="MenuItem228">
                     <menu key="submenu" title="File" id="g66" userLabel="Menu(15)">
@@ -146,9 +137,6 @@
                             </menuItem>
                         </items>
                     </menu>
-                    <connections>
-                        <action selector="submenuAction:" target="g5" id="x5"/>
-                    </connections>
                 </menuItem>
                 <menuItem title="Edit" id="g92" userLabel="MenuItem139">
                     <menu key="submenu" title="Edit" id="g95" userLabel="Menu(16)">
@@ -219,15 +207,9 @@
                                         </menuItem>
                                     </items>
                                 </menu>
-                                <connections>
-                                    <action selector="submenuAction:" target="g95" id="x64"/>
-                                </connections>
                             </menuItem>
                         </items>
                     </menu>
-                    <connections>
-                        <action selector="submenuAction:" target="g5" id="x6"/>
-                    </connections>
                 </menuItem>
                 <menuItem title="Tools" id="g138" userLabel="MenuItem284">
                     <menu key="submenu" title="Tools" id="g141" userLabel="GormNSMenu47">
@@ -273,9 +255,6 @@
                                         </menuItem>
                                     </items>
                                 </menu>
-                                <connections>
-                                    <action selector="submenuAction:" target="g141" id="x12"/>
-                                </connections>
                             </menuItem>
                             <menuItem title="Loaded Files" id="g166">
                                 <menu key="submenu" title="Loaded Files" id="g169" userLabel="GormNSMenu32">
@@ -307,9 +286,6 @@
                                         </menuItem>
                                     </items>
                                 </menu>
-                                <connections>
-                                    <action selector="submenuAction:" target="g141" id="x13"/>
-                                </connections>
                             </menuItem>
                             <menuItem title="Launcher" id="g186" userLabel="MenuItem203">
                                 <menu key="submenu" title="Launcher" id="g189" userLabel="Menu(21)">
@@ -331,15 +307,9 @@
                                         </menuItem>
                                     </items>
                                 </menu>
-                                <connections>
-                                    <action selector="submenuAction:" target="g141" id="x14"/>
-                                </connections>
                             </menuItem>
                         </items>
                     </menu>
-                    <connections>
-                        <action selector="submenuAction:" target="g5" id="x11"/>
-                    </connections>
                 </menuItem>
                 <menuItem title="Windows" id="g200" userLabel="MenuItem105">
                     <menu key="submenu" title="Windows" id="g203" userLabel="GormNSMenu16">
@@ -361,15 +331,9 @@
                             </menuItem>
                         </items>
                     </menu>
-                    <connections>
-                        <action selector="submenuAction:" target="g5" id="x15"/>
-                    </connections>
                 </menuItem>
                 <menuItem title="Services" id="g214" userLabel="MenuItem318">
                     <menu key="submenu" title="Services" id="g217" userLabel="GormNSMenu17"/>
-                    <connections>
-                        <action selector="submenuAction:" target="g5" id="x19"/>
-                    </connections>
                 </menuItem>
                 <menuItem title="Hide" keyEquivalent="h" id="g219" userLabel="MenuItem330">
                     <connections>
