@@ -566,9 +566,16 @@ static void TestDeployment(void)
                                 [[NSProcessInfo processInfo] globallyUniqueString]] stringByResolvingSymlinksInPath];
   NSString            *bundle, *error = nil, *text, *script, *folder;
   NSDictionary        *projectDict, *scripts, *debian, *container, *overview, *macTarget, *linuxTarget;
-  NSMutableDictionary *tarball, *windows;
+  NSMutableDictionary *tarball, *windows, *compiled, *boxed;
   NSArray             *list;
+  NSString            *repository = [[[NSString stringWithUTF8String:__FILE__]
+                                      stringByDeletingLastPathComponent]
+                                     stringByDeletingLastPathComponent];
+  NSString            *standIn;
 
+  /* ProjectCenter's compiler and image, which the tool has no bundle for. */
+  setenv("PROJECTCENTER_RESOURCES",
+         [[repository stringByAppendingPathComponent:@"Framework/Resources"] fileSystemRepresentation], 1);
   [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:NULL];
   root = [root stringByResolvingSymlinksInPath];
   bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
@@ -753,9 +760,18 @@ static void TestDeployment(void)
   }
   script = [scripts objectForKey:@"archive.sh"];
   Check([script rangeOfString:@"run --rm --platform 'linux/arm64'"].location != NSNotFound
-        && [script rangeOfString:@"'fedora:latest'"].location != NSNotFound
-        && [script rangeOfString:@"/src/build/Archives/Test"].location != NSNotFound,
-        [NSString stringWithFormat:@"the container build: %@", script]);
+        && [script rangeOfString:@"container_image 'projectcenter-gnustep:fedora-arm64' 'linux/arm64'"].location != NSNotFound
+        && [script rangeOfString:@"-v \"$ROOT:$ROOT\" -w \"$ROOT\" 'projectcenter-gnustep:fedora-arm64'"].location
+        != NSNotFound
+        && [script rangeOfString:@"dnf install -y it'\\''s && exec /bin/sh"].location != NSNotFound,
+        [NSString stringWithFormat:@"the container build, in ProjectCenter's image, at the project's own path: %@",
+         script]);
+  Check([[PCDeployment valueForKey:@"Setup" ofDeployment:@{@"Kind": @"Debian"} project:projectDict] isEqual:@""]
+        && [[PCDeployment valueForKey:@"Setup" ofDeployment:@{@"Kind": @"Debian", @"Image": @"debian:stable"}
+                                  project:projectDict] hasPrefix:@"apt-get"],
+        @"ProjectCenter's image needs no setup; another one installs GNUstep");
+  Check([[scripts objectForKey:@"2-Fedora-arm.sh"] rangeOfString:@"/opt/projectcenter/packages/*.rpm"].location
+        != NSNotFound, @"the RPM gets GNUstep's package from the image next to it");
   Check([[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"hdiutil create"].location != NSNotFound
         && [[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"--sign \"$IDENTITY\""].location != NSNotFound,
         @"the macOS disk image, signed");
@@ -792,6 +808,76 @@ static void TestDeployment(void)
   script = [PCDeployment writeArchiveScriptsForProject:projectDict deployments:@[windows]
                                                 folder:folder makeTool:@"/usr/bin/make" error:&error];
   Check(Shell([NSString stringWithFormat:@"/bin/sh '%@'", script]) != 0, @"a failed platform fails Archive");
+
+  /* Without a build script: ProjectCenter's compiler, as Build uses it. */
+  compiled = [NSMutableDictionary dictionaryWithDictionary:projectDict];
+  [compiled removeObjectForKey:@"XCODE_BuildScript"];
+  scripts = [PCDeployment archiveScriptsForProject:compiled
+                                       deployments:@[@{@"Kind": @"Debian", @"Name": @"Debian (arm64)",
+                                                       @"Architecture": @"arm64", @"Target": @"Sample Linux",
+                                                       @"Build": @"Container"}]
+                                            folder:folder makeTool:@"/usr/bin/make"];
+  Check([[scripts objectForKey:@"1-Debian-arm64.sh"] rangeOfString:
+         @"python3 \"$ROOT/build/Deployment/pc-xcode-build.py\" --project \"$ROOT\"/'Sample.xcodeproj' "
+         @"--configuration 'Release' --target 'Sample Linux' --theme 'GTK4Native' --build-dir \"$BUILD/obj\""]
+        .location != NSNotFound,
+        [NSString stringWithFormat:@"the Linux target, built by ProjectCenter's compiler: %@",
+         [scripts objectForKey:@"1-Debian-arm64.sh"]]);
+
+  /* A container build, with a stand-in docker that runs the command here
+   * (the project is mounted at its own path) and records what it builds. */
+  standIn = [root stringByAppendingPathComponent:@"bin"];
+  Write(root, @"bin/docker", @"#!/bin/sh\n"
+        "log=\"$STANDIN_LOG\"\n"
+        "case \"$1\" in\n"
+        "  info) exit 0 ;;\n"
+        "  image) [ -f \"$log.images\" ] && grep -qx \"$3\" \"$log.images\" ;;\n"
+        "  build)\n"
+        "    for argument; do context=\"$argument\"; done\n"
+        "    echo \"$*\" >> \"$log\"\n"
+        "    [ -f \"$context/Dockerfile\" ] && [ -f \"$context/gnustep-image.sh\" ] && [ -f \"$context/sources/.keep\" ] || exit 1\n"
+        "    [ -f \"$context/sources/libobjc2/README\" ] && [ ! -e \"$context/sources/libobjc2/.git\" ] || exit 1\n"
+        "    while [ $# -gt 0 ]; do [ \"$1\" = -t ] && echo \"$2\" >> \"$log.images\"; shift; done ;;\n"
+        "  run)\n"
+        "    echo \"$*\" >> \"$log\"\n"
+        "    shift\n"
+        "    while [ $# -gt 0 ]; do\n"
+        "      case \"$1\" in --rm) shift ;; -w) cd \"$2\" || exit 1; shift 2 ;; --platform|-e|-v) shift 2 ;; *) break ;; esac\n"
+        "    done\n"
+        "    shift\n"
+        "    exec \"$@\" ;;\n"
+        "  *) exit 1 ;;\n"
+        "esac\n");
+  Shell([NSString stringWithFormat:@"chmod 755 '%@/docker'", standIn]);
+  Write(root, @"Sources/libobjc2/README", @"libobjc2\n");
+  Write(root, @"Sources/libobjc2/.git/HEAD", @"ref\n");
+  boxed = [NSMutableDictionary dictionaryWithDictionary:@{@"Kind": @"Linux", @"Name": @"Linux (aarch64)",
+                                                          @"Architecture": @"aarch64", @"Build": @"Container"}];
+  script = [PCDeployment writeArchiveScriptsForProject:projectDict deployments:@[boxed]
+                                                folder:folder makeTool:@"/usr/bin/make" error:&error];
+  Check(script != nil
+        && [fm fileExistsAtPath:[root stringByAppendingPathComponent:@"build/Deployment/GNUstep-image.Dockerfile"]]
+        && [fm fileExistsAtPath:[root stringByAppendingPathComponent:@"build/Deployment/pc-xcode-build.py"]],
+        @"the image's files and the compiler are next to the scripts");
+  text = [NSString stringWithFormat:@"PATH='%@':\"$PATH\" STANDIN_LOG='%@/docker.log' GNUSTEP_SOURCES='%@/Sources' "
+          @"GNUSTEP_MAKEFILES='%@/Toolchain' /bin/sh '%@'", standIn, root, root, root, script];
+  Check(Shell(text) == 0, @"Archive runs in the stand-in container");
+  Check(Shell([NSString stringWithFormat:@"tar -tzf '%@/%@' | grep -q '^Sample.app/Sample$'", folder,
+               [PCDeployment fileNameOfDeployment:boxed project:projectDict]]) == 0,
+        @"the container made the tar.gz");
+  Check(Shell([NSString stringWithFormat:@"grep -q \"^build --platform linux/arm64 --build-arg BASE=debian:trixie "
+               @"-t projectcenter-gnustep:debian-arm64 \" '%@/docker.log' && grep -q \"^run --rm --platform linux/arm64 \" "
+               @"'%@/docker.log'", root, root]) == 0,
+        [NSString stringWithFormat:@"the image is built once for its platform, then run: %@",
+         [NSString stringWithContentsOfFile:[root stringByAppendingPathComponent:@"docker.log"]
+                                   encoding:NSUTF8StringEncoding error:NULL]]);
+  Check(Shell(text) == 0
+        && Shell([NSString stringWithFormat:@"[ $(grep -c '^build ' '%@/docker.log') = 1 ]", root]) == 0,
+        @"an image that is there is not built again");
+  Check(Shell([NSString stringWithFormat:@"PATH='%@':\"$PATH\" STANDIN_LOG='%@/docker.log' "
+               @"GNUSTEP_MAKEFILES='%@/Missing' /bin/sh '%@' 2>&1 | grep -q 'error: GNUstep.sh not found'",
+               standIn, root, root, script]) == 0,
+        @"errors in the container reach the build log");
   [fm removeItemAtPath:root error:NULL];
 }
 

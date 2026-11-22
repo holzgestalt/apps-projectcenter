@@ -16,3 +16,6 @@ obj
 # Xcode
 xcuserdata/
 .DS_Store
+
+# Archive and Build output of the ArchiveDemo test project
+Tests/ArchiveDemo/build/

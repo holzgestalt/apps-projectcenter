@@ -92,6 +92,33 @@ static BOOL IsGNUstepKind(NSString *kind)
   || [kind isEqual:@"Windows"];
 }
 
+/* ProjectCenter's own image, made from GNUstep-image.Dockerfile. */
+static NSString *const OwnImagePrefix = @"projectcenter-gnustep:";
+
+static BOOL IsOwnImage(NSString *image)
+{
+  return [image hasPrefix:OwnImagePrefix] && [image length] > [OwnImagePrefix length];
+}
+
+/* The image a container build runs: ProjectCenter's own once for each
+ * platform (projectcenter-gnustep:debian-arm64), as a local image has one
+ * platform; others as they are. */
+static NSString *ContainerImage(NSString *image, NSString *platform)
+{
+  NSString *arch;
+
+  if (!IsOwnImage(image) || platform == nil) return image;
+  arch = [[platform substringFromIndex:[@"linux/" length]] stringByReplacingOccurrencesOfString:@"/" withString:@""];
+  return [NSString stringWithFormat:@"%@-%@", image, [arch isEqual:@"armv7"] ? @"armhf" : arch];
+}
+
+/* The files that the scripts use besides themselves, copied next to them
+ * into build/Deployment. */
+static NSArray *DeploymentResources(void)
+{
+  return @[@"pc-xcode-build.py", @"GNUstep-image.Dockerfile", @"gnustep-image.sh"];
+}
+
 // --- Shell scripts
 
 /* A word for /bin/sh: single quoted. */
@@ -183,8 +210,9 @@ static NSString *RootPath(NSString *path, NSString *root)
   if (![kind isEqual:@"Windows"])
   {
     [fields addObject:Text(@"Image", @"Container Image",
-                           @"For Container: the image to build in, with GNUstep, or a system the Setup "
-                           @"command installs it on.")];
+                           @"For Container: the image to build in. ProjectCenter's own, projectcenter-gnustep:debian, "
+                           @":ubuntu or :fedora, is built once for each architecture when it is missing; any "
+                           @"other image needs GNUstep, or a Setup command that installs it.")];
     [fields addObject:Text(@"Setup", @"Container Setup",
                            @"For Container: a shell command run in the container before the build. "
                            @"Empty for an image that has everything.")];
@@ -780,10 +808,12 @@ static NSString *PackageName(NSString *name)
   if ([key isEqual:@"Format"]) return @"zip";
   if ([key isEqual:@"Image"])
   {
-    return [kind isEqual:@"RPM"] ? @"fedora:latest" : @"debian:stable";
+    return [kind isEqual:@"RPM"] ? @"projectcenter-gnustep:fedora" : @"projectcenter-gnustep:debian";
   }
   if ([key isEqual:@"Setup"])
   {
+    /* ProjectCenter's image has everything. */
+    if (IsOwnImage([self valueForKey:@"Image" ofDeployment:deployment project:projectDict])) return @"";
     if ([kind isEqual:@"RPM"])
     {
       return @"dnf install -y -q make gcc-objc gnustep-make gnustep-base-devel gnustep-gui-devel "
@@ -904,6 +934,19 @@ static NSString *PackageName(NSString *name)
   return nil;
 }
 
++ (NSString *)pathOfResource:(NSString *)file
+{
+  NSString *path = [[NSBundle bundleForClass:self] pathForResource:[file stringByDeletingPathExtension]
+                                                            ofType:[file pathExtension]];
+  NSString *folder = [[[NSProcessInfo processInfo] environment] objectForKey:@"PROJECTCENTER_RESOURCES"];
+
+  if (path == nil && [folder length])
+  {
+    path = [folder stringByAppendingPathComponent:file];
+  }
+  return path && [[NSFileManager defaultManager] fileExistsAtPath:path] ? path : nil;
+}
+
 + (NSString *)_containerTool
 {
   NSString *tool = [self pathOfTool:@"docker"];
@@ -943,10 +986,17 @@ static NSString *PackageName(NSString *name)
     return problems;
   }
   if (root == nil || (![projectDict objectForKey:@"XCODE_BuildScript"]
+                      && [self pathOfResource:@"pc-xcode-build.py"] == nil
                       && ![[NSFileManager defaultManager] fileExistsAtPath:
                            [root stringByAppendingPathComponent:@"GNUmakefile"]]))
   {
     [problems addObject:@"The project has no GNUmakefile or GNUstep build script."];
+  }
+  if ([build isEqual:@"Container"]
+      && IsOwnImage([self valueForKey:@"Image" ofDeployment:deployment project:projectDict])
+      && [self pathOfResource:@"GNUstep-image.Dockerfile"] == nil)
+  {
+    [problems addObject:@"ProjectCenter's GNUstep-image.Dockerfile is missing."];
   }
   if ([build isEqual:@"Native"])
   {
@@ -1108,17 +1158,34 @@ static void AppendGNUstepBuild(NSMutableString *s, NSDictionary *deployment, NSD
    @"rm -rf \"$BUILD\"\n"
    @"mkdir -p \"$BUILD\" \"$OUT\"\n"];
   [s appendFormat:@"echo \"Building %@ (%@)...\"\n", target, configuration];
-  if (script)
+  if (script == nil && [PCDeployment pathOfResource:@"pc-xcode-build.py"]
+      && [projectDict objectForKey:@"XCODE_PROJECT_PATH"])
   {
-    [s appendFormat:@"/bin/bash %@ all", RootPath(script, root)];
+    /* ProjectCenter's compiler, as Build uses it: the target's sources and
+     * settings from the Xcode project, no GNUmakefile. */
+    NSString *linuxTarget = Trimmed([deployment objectForKey:@"Target"]);
+    NSString *theme = Trimmed([projectDict objectForKey:@"XCODE_Theme"]);
+
+    [s appendFormat:@"python3 \"$ROOT/build/Deployment/pc-xcode-build.py\" --project %@ --configuration %@",
+     RootPath([projectDict objectForKey:@"XCODE_PROJECT_PATH"], root), SQ(configuration)];
+    if ([linuxTarget length]) [s appendFormat:@" --target %@", SQ(linuxTarget)];
+    if ([theme length]) [s appendFormat:@" --theme %@", SQ(theme)];
+    [s appendString:@" --build-dir \"$BUILD/obj\" --action build\n"];
   }
   else
   {
-    [s appendFormat:@"%@", [build isEqual:@"Container"] || ![makeTool length] ? @"make" : SQ(makeTool)];
+    if (script)
+    {
+      [s appendFormat:@"/bin/bash %@ all", RootPath(script, root)];
+    }
+    else
+    {
+      [s appendFormat:@"%@", [build isEqual:@"Container"] || ![makeTool length] ? @"make" : SQ(makeTool)];
+    }
+    [s appendFormat:@" %@ messages=yes GNUSTEP_BUILD_DIR=\"$BUILD/obj\"%@%@\n",
+     [[configuration lowercaseString] hasPrefix:@"debug"] ? @"debug=yes" : @"debug=no",
+     [arguments length] ? @" " : @"", arguments];
   }
-  [s appendFormat:@" %@ messages=yes GNUSTEP_BUILD_DIR=\"$BUILD/obj\"%@%@\n",
-   [[configuration lowercaseString] hasPrefix:@"debug"] ? @"debug=yes" : @"debug=no",
-   [arguments length] ? @" " : @"", arguments];
 
   /* The bundle: in the build folder, else where Run finds it. */
   candidates = [NSString stringWithFormat:@"\"$BUILD/obj/\"%@", SQ([target stringByAppendingPathExtension:@"app"])];
@@ -1195,6 +1262,18 @@ static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDic
   }
 }
 
+/* In ProjectCenter's image, GNUstep is a package of its own, which the
+ * application's package depends on: it goes next to it. */
+static void AppendRuntimePackage(NSMutableString *s, NSString *extension)
+{
+  [s appendFormat:@"for runtime in /opt/projectcenter/packages/*.%@; do\n"
+   @"  if [ -f \"$runtime\" ]; then\n"
+   @"    cp \"$runtime\" \"$OUT/\"\n"
+   @"    echo \"Copied GNUstep's package $(basename \"$runtime\"), which the application needs\"\n"
+   @"  fi\n"
+   @"done\n", extension];
+}
+
 static NSString *DebianScript(NSDictionary *deployment, NSDictionary *projectDict)
 {
   NSMutableString *s = [NSMutableString string];
@@ -1213,7 +1292,7 @@ static NSString *DebianScript(NSDictionary *deployment, NSDictionary *projectDic
     [s appendString:@"if command -v dpkg-query >/dev/null 2>&1 && command -v ldd >/dev/null 2>&1; then\n"
      @"  FOUND=$( {\n"
      @"    for binary in \"$APP/$EXE\" $(find \"$APP\" -type f -name '*.so*'); do\n"
-     @"      ldd \"$binary\" 2>/dev/null | awk '/=>/ { print $3 }'\n"
+     @"      ldd \"$binary\" 2>/dev/null | awk '$3 ~ /^\\// { print $3 }'\n"
      @"    done | sort -u | while read -r library; do\n"
      @"      [ -n \"$library\" ] || continue\n"
      @"      dpkg -S \"$library\" 2>/dev/null || dpkg -S \"$(readlink -f \"$library\")\" 2>/dev/null\n"
@@ -1244,6 +1323,7 @@ static NSString *DebianScript(NSDictionary *deployment, NSDictionary *projectDic
    @"else\n"
    @"  dpkg-deb --build \"$STAGE\" \"$OUT/$FILE\"\n"
    @"fi\n"];
+  AppendRuntimePackage(s, @"deb");
   return s;
 }
 
@@ -1293,6 +1373,7 @@ static NSString *RPMScript(NSDictionary *deployment, NSDictionary *projectDict)
    @"MADE=$(find \"$TOP/RPMS\" -type f -name '*.rpm' | head -n 1)\n"
    @"if [ -z \"$MADE\" ]; then echo \"error: rpmbuild made no package\" >&2; exit 1; fi\n"
    @"cp \"$MADE\" \"$OUT/$FILE\"\n"];
+  AppendRuntimePackage(s, @"rpm");
   return s;
 }
 
@@ -1457,7 +1538,8 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
 {
   NSString            *root = [[projectDict objectForKey:@"XCODE_PROJECT_PATH"] stringByDeletingLastPathComponent];
   NSString            *prefix = [root stringByAppendingString:@"/"];
-  NSString            *relativeFolder = [folder hasPrefix:prefix] ? [folder substringFromIndex:[prefix length]] : nil;
+  BOOL                outInside = [folder hasPrefix:prefix];
+  BOOL                containers = NO;
   NSString            *nativeMakefiles = [self _nativeMakefiles];
   NSString            *containerTool = [self _containerTool];
   NSMutableDictionary *scripts = [NSMutableDictionary dictionary];
@@ -1472,6 +1554,71 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
   [main appendString:@"mkdir -p \"$OUT\"\n"
    @"FAILED=''\n"
    @"DONE=0\n"];
+  for (NSDictionary *deployment in deployments)
+  {
+    if ([[self valueForKey:@"Build" ofDeployment:deployment project:projectDict] isEqual:@"Container"]
+        && IsGNUstepKind([deployment objectForKey:@"Kind"]))
+    {
+      containers = YES;
+    }
+  }
+  if (containers)
+  {
+    NSString *sources = [[[NSUserDefaults standardUserDefaults] stringForKey:@"GNUstepSources"]
+                         stringByExpandingTildeInPath];
+
+    /* The container tool, whether it runs, and ProjectCenter's image, built
+     * once for each platform when it is missing (others are pulled). */
+    [main appendFormat:@"CONTAINER=${CONTAINER:-%@}\n", SQ(containerTool ? [containerTool lastPathComponent] : @"docker")];
+    [main appendFormat:@"GNUSTEP_SOURCES=${GNUSTEP_SOURCES:-%@}\n", SQ(sources)];
+    [main appendString:@"container_ready() {\n"
+     @"  if ! command -v \"$CONTAINER\" >/dev/null 2>&1; then\n"
+     @"    echo \"error: $CONTAINER is not installed (on a Mac: brew install colima docker)\" >&2\n"
+     @"    return 1\n"
+     @"  fi\n"
+     @"  if ! \"$CONTAINER\" info >/dev/null 2>&1; then\n"
+     @"    echo \"error: $CONTAINER is not running (on a Mac: colima start)\" >&2\n"
+     @"    return 1\n"
+     @"  fi\n"
+     @"}\n"
+     @"container_image() {\n"
+     @"  image=\"$1\"\n"
+     @"  platform=\"$2\"\n"
+     @"  if \"$CONTAINER\" image inspect \"$image\" >/dev/null 2>&1; then return 0; fi\n"
+     @"  case \"$image\" in\n"
+     @"    projectcenter-gnustep:debian-*) base=debian:trixie ;;\n"
+     @"    projectcenter-gnustep:ubuntu-*) base=ubuntu:noble ;;\n"
+     @"    projectcenter-gnustep:fedora-*) base=fedora:latest ;;\n"
+     @"    projectcenter-gnustep:*)\n"
+     @"      echo \"error: ProjectCenter makes the images projectcenter-gnustep:debian, :ubuntu and :fedora, not $image\" >&2\n"
+     @"      return 1 ;;\n"
+     @"    *) return 0 ;;\n"
+     @"  esac\n"
+     @"  context=\"$ROOT/build/Deployment/image\"\n"
+     @"  rm -rf \"$context\"\n"
+     @"  mkdir -p \"$context/sources\" || return 1\n"
+     @"  : > \"$context/sources/.keep\"\n"
+     @"  cp \"$ROOT/build/Deployment/GNUstep-image.Dockerfile\" \"$context/Dockerfile\" || return 1\n"
+     @"  cp \"$ROOT/build/Deployment/gnustep-image.sh\" \"$context/\" || return 1\n"
+     @"  from='clones of the GNUstep repositories'\n"
+     @"  if [ -n \"$GNUSTEP_SOURCES\" ] && [ -d \"$GNUSTEP_SOURCES\" ]; then\n"
+     @"    for source in \"$GNUSTEP_SOURCES\"/libobjc2 \"$GNUSTEP_SOURCES\"/tools-make \"$GNUSTEP_SOURCES\"/libs-base \\\n"
+     @"        \"$GNUSTEP_SOURCES\"/libs-gui \"$GNUSTEP_SOURCES\"/libs-back \"$GNUSTEP_SOURCES\"/[Gg][Tt][Kk]4[Nn]ative*; do\n"
+     @"      [ -d \"$source\" ] || continue\n"
+     @"      mkdir -p \"$context/sources/$(basename \"$source\")\"\n"
+     @"      (cd \"$source\" && tar -cf - --exclude .git --exclude ./build --exclude ./obj --exclude .DS_Store .) \\\n"
+     @"        | (cd \"$context/sources/$(basename \"$source\")\" && tar -xf -) || return 1\n"
+     @"    done\n"
+     @"    from=\"$GNUSTEP_SOURCES (clones for what it lacks)\"\n"
+     @"  fi\n"
+     @"  echo \"Building the image $image for $platform from $from; this is done once and takes a while...\"\n"
+     @"  \"$CONTAINER\" build --platform \"$platform\" --build-arg \"BASE=$base\" -t \"$image\" \"$context\"\n"
+     @"  status=$?\n"
+     @"  rm -rf \"$context\"\n"
+     @"  if [ \"$status\" != 0 ]; then echo \"error: the image $image could not be built\" >&2; fi\n"
+     @"  return \"$status\"\n"
+     @"}\n"];
+  }
 
   for (NSDictionary *deployment in deployments)
   {
@@ -1503,16 +1650,20 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
     if ([build isEqual:@"Container"] && IsGNUstepKind(kind))
     {
       NSString *setup = Trimmed([self valueForKey:@"Setup" ofDeployment:deployment project:projectDict]);
-      NSString *inner = [NSString stringWithFormat:@"%@/bin/sh /src/build/Deployment/%@ /src %@",
-                         [setup length] ? [setup stringByAppendingString:@" && "] : @"", file,
-                         SQ(relativeFolder ? [@"/src/" stringByAppendingString:relativeFolder] : @"/src/build/Archives")];
+      NSString *platform = ContainerPlatform([self valueForKey:@"Architecture" ofDeployment:deployment
+                                                       project:projectDict]);
+      NSString *image = ContainerImage([self valueForKey:@"Image" ofDeployment:deployment project:projectDict],
+                                       platform);
+      /* The project is mounted where it is on this computer, so the
+       * compiler's messages name its files as a native build does. */
+      NSString *inner = [NSString stringWithFormat:@"%@exec /bin/sh \"$0\" \"$1\" \"$2\"",
+                         [setup length] ? [setup stringByAppendingString:@" && "] : @""];
 
-      command = [NSString stringWithFormat:@"%@ run --rm --platform %@ -e HOST_UID=\"$(id -u)\" "
-                 @"-e HOST_GID=\"$(id -g)\" -v \"$ROOT:/src\" -w /src %@ /bin/sh -c %@",
-                 SQ(containerTool ? [containerTool lastPathComponent] : @"docker"),
-                 SQ(ContainerPlatform([self valueForKey:@"Architecture" ofDeployment:deployment
-                                                project:projectDict])),
-                 SQ([self valueForKey:@"Image" ofDeployment:deployment project:projectDict]), SQ(inner)];
+      command = [NSString stringWithFormat:@"container_ready && container_image %@ %@ && "
+                 @"\"$CONTAINER\" run --rm --platform %@ -e HOST_UID=\"$(id -u)\" -e HOST_GID=\"$(id -g)\" "
+                 @"-v \"$ROOT:$ROOT\"%@ -w \"$ROOT\" %@ /bin/sh -c %@ \"$ROOT/build/Deployment/\"%@ \"$ROOT\" \"$OUT\"",
+                 SQ(image), SQ(platform), SQ(platform), outInside ? @"" : @" -v \"$OUT:$OUT\"", SQ(image),
+                 SQ(inner), SQ(file)];
     }
     else
     {
@@ -1572,6 +1723,20 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
     [fm setAttributes:[NSDictionary dictionaryWithObject:[NSNumber numberWithShort:0755]
                                                   forKey:NSFilePosixPermissions]
          ofItemAtPath:path error:NULL];
+  }
+  /* ProjectCenter's compiler and image, where the container finds them. */
+  for (NSString *name in DeploymentResources())
+  {
+    NSString *source = [self pathOfResource:name];
+    NSString *path = [directory stringByAppendingPathComponent:name];
+
+    if (source == nil) continue;
+    [fm removeItemAtPath:path error:NULL];
+    if (![fm copyItemAtPath:source toPath:path error:NULL])
+    {
+      if (error) *error = [NSString stringWithFormat:@"Cannot copy %@ to %@.", name, directory];
+      return nil;
+    }
   }
   return [directory stringByAppendingPathComponent:@"archive.sh"];
 }

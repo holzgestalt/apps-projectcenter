@@ -113,6 +113,8 @@ ProjectCenter_OBJC_FILES = \
 #
 ProjectCenter_RESOURCE_FILES = \
   Resources/pc-xcode-build.py \
+  Resources/GNUstep-image.Dockerfile \
+  Resources/gnustep-image.sh \
   Resources/cfile.template \
   Resources/cheader.template \
   Resources/class.template \

@@ -139,7 +139,18 @@ class Build:
         self.args = args
         self.theme = args.theme or os.environ.get('GNUSTEP_APPLICATION_THEME', 'GTK4Native')
         self.sdk = None
-        module = output(['pkg-config', '--variable=xcode_sdk', 'gnustep-theme-' + self.theme])
+        # A theme that is not installed (as in a plain GNUstep, or Archive's
+        # container) leaves the application with GNUstep's own look.
+        self.theme_package = 'gnustep-theme-' + self.theme
+        try:
+            installed = subprocess.run(['pkg-config', '--exists', self.theme_package]).returncode == 0
+        except FileNotFoundError:
+            installed = False
+        if not installed:
+            if args.theme or os.environ.get('GNUSTEP_APPLICATION_THEME'):
+                print(f'warning: the theme {self.theme} is not installed; building without it', file=sys.stderr)
+            self.theme_package = None
+        module = output(['pkg-config', '--variable=xcode_sdk', self.theme_package]) if self.theme_package else ''
         if module:
             spec = importlib.util.spec_from_file_location('theme_sdk', module)
             self.sdk = importlib.util.module_from_spec(spec)
@@ -394,7 +405,7 @@ class Build:
             if not document.get('NSDocumentClass'):
                 document.pop('NSDocumentClass', None)
         (resources / 'Info-gnustep.plist').write_bytes(plistlib.dumps(info))
-        libs = words(output(['pkg-config', '--libs', 'gnustep-theme-' + self.theme]))
+        libs = words(output(['pkg-config', '--libs', self.theme_package])) if self.theme_package else []
         libs += words(output(['gnustep-config', '--gui-libs']))
         if self.sdk:
             libs += self.sdk.link_flags()
@@ -424,7 +435,8 @@ class Build:
         command += ['-o', str(executable), *libs]
         signature = self.build_dir / (name + '.link-command')
         inputs = [*target_objects[self.selected], *archives]
-        inputs += [Path(p) for p in words(output(['pkg-config', '--variable=archives', 'gnustep-theme-' + self.theme]))]
+        if self.theme_package:
+            inputs += [Path(p) for p in words(output(['pkg-config', '--variable=archives', self.theme_package]))]
         key = shlex.join(command)
         if not executable.exists() or not signature.exists() or signature.read_text() != key or any(p.stat().st_mtime_ns > executable.stat().st_mtime_ns for p in inputs):
             subprocess.run(command, check=True)

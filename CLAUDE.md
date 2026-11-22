@@ -59,8 +59,14 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
   `GNUSTEP_<DISTRIBUTION>_<SETTING>`, see `PCDeployment.h`), and writes the shell scripts that
   Archive (`PCProjectBuilder`) runs:
   `build/Deployment/archive.sh`, which builds and packages each platform natively, with a cross
-  toolchain's `GNUstep.sh` or in a Docker/Podman container. `XcodeProjectTests` runs them with a
-  stand-in toolchain. The XIB editor's
+  toolchain's `GNUstep.sh` or in a Docker/Podman container, with ProjectCenter's compiler
+  (`Framework/Resources/pc-xcode-build.py`) or the target's build script. Container builds use
+  ProjectCenter's image, made on demand from `Framework/Resources/GNUstep-image.Dockerfile` and
+  `gnustep-image.sh` (GNUstep with clang and libobjc2 in `/opt/gnustep`, as its own package).
+  `XcodeProjectTests` runs the scripts with a stand-in toolchain and a stand-in `docker`. The real
+  container run is not done yet: this Mac is a virtual machine on an M1 without nested
+  virtualization, so Colima can't start; `Tests/ArchiveDemo` and its `check-packages.sh` are for
+  that run. The XIB editor's
   model is `PCInterfaceDocument` (Foundation only): every edit changes only its own XML, and an
   unchanged XIB is written back byte for byte (`XcodeProjectTests` checks every `.xib`).
   `PCInterfaceInspector` is the editor's Xcode-style inspector, and `PCInterfaceRendering` draws

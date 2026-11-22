@@ -39,7 +39,12 @@
  *   package is made here.
  * - Container: in a Docker or Podman container of the target system
  *   (Image, prepared by the Setup command), which builds and packages, for
- *   any architecture the container tool can run.
+ *   any architecture the container tool can run. The default image is
+ *   ProjectCenter's own (GNUstep-image.Dockerfile, built by archive.sh when
+ *   it is missing), with GNUstep built with clang and libobjc2. The project
+ *   folder is mounted at its own path.
+ * Without a build script, GNUstep platforms build with ProjectCenter's
+ * compiler (pc-xcode-build.py), as Build does; else with make.
  * macOS is built with xcodebuild archive. */
 @interface PCDeployment : NSObject
 
@@ -144,6 +149,10 @@
  * says it (arm64, x86_64, aarch64...). */
 + (NSString *)hostPlatform;
 + (NSString *)hostMachine;
+/* A file of ProjectCenter's resources (pc-xcode-build.py,
+ * GNUstep-image.Dockerfile, gnustep-image.sh), else of the folder in the
+ * environment variable PROJECTCENTER_RESOURCES (for the tests), or nil. */
++ (NSString *)pathOfResource:(NSString *)file;
 /* A command line tool on the PATH or in the usual places of Homebrew,
  * MacPorts and Docker, or nil. */
 + (NSString *)pathOfTool:(NSString *)name;

@@ -337,9 +337,11 @@ target. A Windows target (`SDKROOT = windows`) is not supported yet.
 - **macOS** archives the target's scheme (else the toolbar's) in the scheme's
   Archive configuration, signed as the project's settings say, into a `.zip`.
   macOS platforms are archived on a Mac with Xcode.
-- **GNUstep platforms** build with the project's GNUmakefile or `BuildScript`
-  (`debug=no`, or `debug=yes` for a Debug configuration, plus the **Make
-  Arguments**), into `build/Deployment/<platform>`. **Build** chooses how:
+- **GNUstep platforms** build the Linux target with ProjectCenter's compiler,
+  as Build does on GNUstep (no GNUmakefile needed), or with the target's
+  `GNUSTEP_BUILD_SCRIPT` (`debug=no`, or `debug=yes` for a Debug
+  configuration, plus the **Make Arguments**), into
+  `build/Deployment/<platform>`. **Build** chooses how:
   - **Native**: with this computer's GNUstep, for its own system and
     architecture.
   - **Cross Toolchain**: with a GNUstep installation made for the target, such
@@ -347,12 +349,49 @@ target. A Windows target (`SDKROOT = windows`) is not supported yet.
     folder of its `GNUstep.sh`. The package is made on this computer, so it
     needs `dpkg-deb` or `rpmbuild` (on a Mac: `brew install dpkg`,
     `brew install rpm`).
-  - **Container**: in a Docker or Podman container of the **Container Image**
-    (`debian:stable`, `fedora:latest`), for any architecture the container tool
-    runs (`--platform linux/arm64` and so on, emulated where needed). The
-    **Container Setup** command installs GNUstep first; leave it empty for an
-    image that has everything, which is much faster. The container builds and
-    packages, so this computer needs only Docker or Podman.
+  - **Container**: in a Docker or Podman container, for any architecture the
+    container tool runs (`--platform linux/amd64` or `linux/arm64`, emulated
+    where it isn't this computer's). The container builds and packages, so
+    this computer needs only Docker or Podman. On a Mac:
+    `brew install colima docker`, then
+    `colima start --vm-type vz --vz-rosetta --cpu 4 --memory 8` (Rosetta
+    makes amd64 fast; it needs `softwareupdate --install-rosetta`). Colima
+    can't run inside a virtual Mac on M1, which has no nested
+    virtualization.
+    - The project folder is mounted at its own path, so the compiler's
+      messages name the project's files and appear in the build log and the
+      issue navigator as a native build's do. Colima shares only the home
+      folder by default, so the project must be in it.
+    - The **Container Image** is by default ProjectCenter's own,
+      `projectcenter-gnustep:debian` (`:fedora` for RPM; `:ubuntu` also
+      works). It is made from `GNUstep-image.Dockerfile` in ProjectCenter's
+      resources the first time it is missing, once for each architecture
+      (`projectcenter-gnustep:debian-arm64`, `...-amd64`), which takes a
+      while (tens of minutes natively, far longer emulated without Rosetta). It holds
+      GNUstep built with clang and libobjc2 (`ng-gnu-gnu`, as
+      `build-gnustep.sh` builds it) in `/opt/gnustep`, installed from its own
+      package, `projectcenter-gnustep`. The sources come from the user
+      default `GNUstepSources` (`defaults write ProjectCenter GNUstepSources
+      ~/Code/gnuStep`, or the environment variable `GNUSTEP_SOURCES` when
+      `archive.sh` is run by hand), including a `gtk4native*` theme there;
+      those it lacks are cloned (libs-base and libs-gui from holzgestalt).
+      Delete the image (`docker image rm projectcenter-gnustep:debian-arm64`)
+      to build it again from newer sources.
+    - Another image works too: it needs GNUstep, or a **Container Setup**
+      command that installs it on each run (`debian:stable` gets
+      `apt-get install gnustep-devel`, whose GNUstep is built with gcc and
+      lacks blocks and ARC).
+    - Debian and RPM packages built in ProjectCenter's image depend on
+      `projectcenter-gnustep` (found by **Find Dependencies**), so Archive
+      puts that package next to them; install both on the target system.
+      The `.tar.gz` needs the same GNUstep there.
+    - `Tests/ArchiveDemo` is a small project with a Mac and a Linux target
+      (Debian, RPM and Linux, `x86_64 aarch64`, all Container). Archive it,
+      then `Tests/ArchiveDemo/check-packages.sh` installs the packages into
+      clean `debian:trixie` and `fedora:latest` containers and starts the
+      application under Xvfb. Not yet run: the development Mac is a virtual
+      machine without nested virtualization, so only the scripts were
+      checked, with a stand-in `docker` in `XcodeProjectTests`.
 - **Debian** and **RPM** packages install the bundle in the **Install Folder**
   (`/usr/lib/GNUstep/Applications`), a command named after the package in
   `/usr/bin` and a desktop entry with the **Menu Categories** and **Icon**.

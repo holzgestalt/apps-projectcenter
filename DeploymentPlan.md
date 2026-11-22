@@ -1,6 +1,8 @@
 # Plan: cross compiling, and building with the Deployment settings
 
-Status: proposal, nothing of it is built yet. Since it was written, the
+Status: proposal, nothing of it is built yet. (Archive's Container way
+now has an image of its own and builds with ProjectCenter's compiler; see
+`XcodeProjects.md`. Build and Run in a container are still to do.) Since it was written, the
 Deployment settings moved into the targets' build settings: a Mac target
 (only `ARCHS`) and a Linux target (`SDKROOT = linux`) with its distributions;
 see `XcodeProjects.md`, "Deployment and Archive". A platform below is a
