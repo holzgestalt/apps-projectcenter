@@ -875,7 +875,7 @@ static NSString *ButtonTypeFlagsOf(NSXMLElement *behavior)
   return names;
 }
 
-- (void)addProperty:(const PCProperty *)property toForm:(PCInspectorForm *)form
+- (NSControl *)addProperty:(const PCProperty *)property toForm:(PCInspectorForm *)form
 {
   NSXMLElement       *element = [self elementOfProperty:property ofObject:_selected create:NO];
   NSString           *attribute = String(property->attribute);
@@ -889,13 +889,13 @@ static NSString *ButtonTypeFlagsOf(NSXMLElement *behavior)
   if (property->only && [[String(property->only) componentsSeparatedByString:@" "]
                          indexOfObject:[_selected name]] == NSNotFound)
   {
-    return;
+    return nil;
   }
   /* A cell's attributes need the cell; other elements are made on a change. */
   if (element == nil && [String(property->path) hasPrefix:@"cell"]
       && PCInterfaceChild(_selected, @"cell") == nil)
   {
-    return;
+    return nil;
   }
   ParseOptions(property->options, values, titles);
   switch (property->kind)
@@ -939,7 +939,7 @@ static NSString *ButtonTypeFlagsOf(NSXMLElement *behavior)
         [control setEnabled:editable];
         [form addRow:label views:@[name, control] height:22];
         [self markInspected:element attribute:nil];
-        return;
+        return control;
       }
       break;
     }
@@ -984,7 +984,7 @@ static NSString *ButtonTypeFlagsOf(NSXMLElement *behavior)
       [control setEnabled:editable];
       [form addRow:label views:@[control, size, stepper] height:22];
       [self markInspected:element attribute:nil];
-      return;
+      return control;
     }
     case PCImage:
     {
@@ -1101,6 +1101,7 @@ static NSString *ButtonTypeFlagsOf(NSXMLElement *behavior)
   [control setEnabled:editable];
   [self markInspected:element attribute:attribute];
   [form addRow:label views:@[control] height:property->kind == PCCheck ? 18 : 22];
+  return control;
 }
 
 // --- The panes
@@ -1124,8 +1125,8 @@ static NSString *ButtonTypeFlagsOf(NSXMLElement *behavior)
     return;
   }
   [form addHeader:@"Custom Class"];
-  [self addProperty:&classProperty toForm:form];
-  [[(NSTextField *)[[form subviews] lastObject] cell] setPlaceholderString:DefaultClassOfObject(object)];
+  NSTextField *classField = (NSTextField *)[self addProperty:&classProperty toForm:form];
+  [[classField cell] setPlaceholderString:DefaultClassOfObject(object)];
   [self addProperty:&moduleProperty toForm:form];
   if (FrameElement(object) || [[object name] isEqualToString:@"window"])
   {

@@ -399,6 +399,7 @@
                             </subviews>
                             <constraints>
                                 <constraint firstItem="e2" firstAttribute="top" secondItem="pane1" secondAttribute="top" constant="8" id="kp1"/>
+                                <constraint firstItem="e2" firstAttribute="height" constant="24" id="kp7"/>
                                 <constraint firstItem="e2" firstAttribute="centerX" secondItem="tabs31" secondAttribute="centerX" id="kp2"/>
                                 <constraint firstItem="tabs31" firstAttribute="leading" secondItem="pane1" secondAttribute="leading" id="kp3"/>
                                 <constraint firstAttribute="trailing" secondItem="tabs31" secondAttribute="trailing" id="kp4"/>
