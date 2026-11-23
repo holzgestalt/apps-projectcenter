@@ -13,7 +13,14 @@
 #
 # The context holds this file, gnustep-image.sh and sources/, with the
 # source folders to build from (libobjc2, tools-make, libs-base, libs-gui,
-# libs-back and a gtk4native* theme); the missing ones are cloned.
+# libs-back and a gtk4native* theme); the missing ones are cloned: from the
+# holzgestalt forks where there is one (libs-base, libs-gui, GTK4Native),
+# else from gnustep. THEME_URL= leaves the theme out.
+#
+# The image is made once and reused by every project: archive.sh rebuilds it
+# only when it is missing or its org.gnustep.projectcenter.image label is not
+# the version below (ImageVersion in PCDeployment.m), so raise both together
+# whenever what the image holds changes.
 #
 # This file is part of GNUstep ProjectCenter.
 #
@@ -35,6 +42,8 @@ ARG GUI_URL=https://github.com/holzgestalt/libs-gui.git
 ARG GUI_REF=
 ARG BACK_URL=https://github.com/gnustep/libs-back.git
 ARG BACK_REF=
+ARG THEME_URL=https://github.com/holzgestalt/GTK4Native.git
+ARG THEME_REF=
 
 ENV PREFIX=/opt/gnustep
 
@@ -46,6 +55,7 @@ RUN sh /usr/local/share/projectcenter/gnustep-image.sh gnustep
 RUN sh /usr/local/share/projectcenter/gnustep-image.sh runtime
 
 ENV GNUSTEP_MAKEFILES=/opt/gnustep/share/GNUstep/Makefiles \
+    PKG_CONFIG_PATH=/opt/gnustep/lib/pkgconfig \
     PATH=/usr/local/bin:/opt/gnustep/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin \
     CC=clang CXX=clang++ OBJC=clang
-LABEL org.gnustep.projectcenter.image="1"
+LABEL org.gnustep.projectcenter.image="2"

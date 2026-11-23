@@ -95,6 +95,11 @@ static BOOL IsGNUstepKind(NSString *kind)
 /* ProjectCenter's own image, made from GNUstep-image.Dockerfile. */
 static NSString *const OwnImagePrefix = @"projectcenter-gnustep:";
 
+/* The org.gnustep.projectcenter.image label of GNUstep-image.Dockerfile:
+ * archive.sh builds the image again when it has another one. Raise both
+ * together when what the image holds changes. */
+static NSString *const ImageVersion = @"2";
+
 static BOOL IsOwnImage(NSString *image)
 {
   return [image hasPrefix:OwnImagePrefix] && [image length] > [OwnImagePrefix length];
@@ -1571,6 +1576,7 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
      * once for each platform when it is missing (others are pulled). */
     [main appendFormat:@"CONTAINER=${CONTAINER:-%@}\n", SQ(containerTool ? [containerTool lastPathComponent] : @"docker")];
     [main appendFormat:@"GNUSTEP_SOURCES=${GNUSTEP_SOURCES:-%@}\n", SQ(sources)];
+    [main appendFormat:@"IMAGE_VERSION=%@\n", SQ(ImageVersion)];
     [main appendString:@"container_ready() {\n"
      @"  if ! command -v \"$CONTAINER\" >/dev/null 2>&1; then\n"
      @"    echo \"error: $CONTAINER is not installed (on a Mac: brew install colima docker)\" >&2\n"
@@ -1584,7 +1590,6 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
      @"container_image() {\n"
      @"  image=\"$1\"\n"
      @"  platform=\"$2\"\n"
-     @"  if \"$CONTAINER\" image inspect \"$image\" >/dev/null 2>&1; then return 0; fi\n"
      @"  case \"$image\" in\n"
      @"    projectcenter-gnustep:debian-*) base=debian:trixie ;;\n"
      @"    projectcenter-gnustep:ubuntu-*) base=ubuntu:noble ;;\n"
@@ -1593,6 +1598,12 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
      @"      echo \"error: ProjectCenter makes the images projectcenter-gnustep:debian, :ubuntu and :fedora, not $image\" >&2\n"
      @"      return 1 ;;\n"
      @"    *) return 0 ;;\n"
+     @"  esac\n"
+     @"  version=\"$(\"$CONTAINER\" image inspect --format '{{ index .Config.Labels \"org.gnustep.projectcenter.image\" }}' \"$image\" 2>/dev/null)\"\n"
+     @"  case \"$version\" in\n"
+     @"    \"$IMAGE_VERSION\") return 0 ;;\n"
+     @"    '') ;;\n"
+     @"    *) echo \"The image $image is of version $version, not $IMAGE_VERSION: building it again\" ;;\n"
      @"  esac\n"
      @"  context=\"$ROOT/build/Deployment/image\"\n"
      @"  rm -rf \"$context\"\n"

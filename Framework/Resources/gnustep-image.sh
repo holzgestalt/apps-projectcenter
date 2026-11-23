@@ -6,15 +6,16 @@
 #
 #   gnustep-image.sh packages   the system's compiler and -dev packages
 #   gnustep-image.sh gnustep    builds libobjc2, tools-make, libs-base,
-#                               libs-gui, libs-back (and a GTK4Native theme
-#                               found in /sources) with clang into $PREFIX
+#                               libs-gui, libs-back and the GTK4Native theme
+#                               with clang into $PREFIX
 #   gnustep-image.sh runtime    packages $PREFIX as projectcenter-gnustep
 #                               (.deb or .rpm, in /opt/projectcenter/packages)
 #                               and installs it from that package
 #
 # The sources are those in /sources (copied into the image's build context
 # by archive.sh, from GNUSTEP_SOURCES); missing ones are cloned from the
-# *_URL variables. The library combo is ng-gnu-gnu, as build-gnustep.sh
+# *_URL variables (the theme from THEME_URL; THEME_URL= leaves it out).
+# The library combo is ng-gnu-gnu, as build-gnustep.sh
 # builds it, so applications can use blocks, literals and ARC.
 #
 # This file is part of GNUstep ProjectCenter.
@@ -57,7 +58,7 @@ step_packages() {
       zlib1g-dev libgmp-dev libavahi-client-dev libcurl4-gnutls-dev \
       libjpeg-dev libtiff-dev libpng-dev libgif-dev libaspell-dev libcups2-dev \
       libfreetype-dev libfontconfig-dev libcairo2-dev libx11-dev libxext-dev \
-      libxt-dev libxft-dev libxrender-dev libxrandr-dev libxmu-dev
+      libxt-dev libxft-dev libxrender-dev libxrandr-dev libxmu-dev libgtk-4-dev
     rm -rf /var/lib/apt/lists/*
   else
     install_packages ca-certificates git make cmake pkgconf-pkg-config clang lld gcc-c++ python3 file \
@@ -66,7 +67,7 @@ step_packages() {
       zlib-devel gmp-devel avahi-devel libcurl-devel \
       libjpeg-turbo-devel libtiff-devel libpng-devel giflib-devel aspell-devel cups-devel \
       freetype-devel fontconfig-devel cairo-devel libX11-devel libXext-devel \
-      libXt-devel libXft-devel libXrender-devel libXrandr-devel libXmu-devel
+      libXt-devel libXft-devel libXrender-devel libXrandr-devel libXmu-devel gtk4-devel
     dnf clean all >/dev/null
   fi
 
@@ -96,6 +97,18 @@ source_of() {
   fi
 }
 
+# The theme: a gtk4native* folder in /sources, else cloned from THEME_URL.
+theme_source() {
+  theme="$(find "$SOURCES" -mindepth 1 -maxdepth 1 -type d -iname 'gtk4native*' | head -n 1)"
+  if [ -n "$theme" ]; then
+    echo "== $(basename "$theme") from the build context"
+    return 0
+  fi
+  [ -n "${THEME_URL:-}" ] || return 0
+  theme="$SOURCES/GTK4Native"
+  source_of GTK4Native "$THEME_URL" "${THEME_REF:-}"
+}
+
 step_gnustep() {
   mkdir -p "$SOURCES"
   source_of libobjc2 "$LIBOBJC2_URL" "${LIBOBJC2_REF:-}"
@@ -103,6 +116,8 @@ step_gnustep() {
   source_of libs-base "$BASE_URL" "${BASE_REF:-}"
   source_of libs-gui "$GUI_URL" "${GUI_REF:-}"
   source_of libs-back "$BACK_URL" "${BACK_REF:-}"
+  theme=""
+  theme_source
 
   export CC=clang CXX=clang++ OBJC=clang
   export PATH="/usr/local/bin:$PREFIX/bin:$PATH"
@@ -137,20 +152,32 @@ step_gnustep() {
     make install
   done
 
-  # A theme in the build context, as build-gnustep.sh finds it.
-  theme="$(find "$SOURCES" -mindepth 1 -maxdepth 1 -type d -iname 'gtk4native*' | head -n 1)"
+  # The theme, built as build-gnustep.sh builds it.
   if [ -n "$theme" ]; then
     echo "== Building the theme in $theme"
-    if [ "$SYSTEM" = debian ]; then install_packages libgtk-4-dev; else install_packages gtk4-devel; fi
     cd "$theme"
     if [ -f GNUmakefile ]; then
       make -j "$JOBS"
       make install
-    else
+    elif [ -x configure ]; then
       ./configure
       make -j "$JOBS"
       make install
+    else
+      echo "error: $theme has neither a GNUmakefile nor a configure script" >&2
+      exit 1
     fi
+    # A theme provider installs gnustep-theme-<Name>.pc, which
+    # pc-xcode-build.py finds on PKG_CONFIG_PATH ($PREFIX/lib/pkgconfig).
+    pcs="$(find "$PREFIX" -name 'gnustep-theme-*.pc' ! -name 'gnustep-theme-Classic.pc' ! -name 'gnustep-theme-Default.pc')"
+    if [ -z "$pcs" ]; then
+      echo "error: building $theme installed no gnustep-theme-*.pc into $PREFIX" >&2
+      exit 1
+    fi
+    mkdir -p "$PREFIX/lib/pkgconfig"
+    for pc in $pcs; do
+      [ -e "$PREFIX/lib/pkgconfig/$(basename "$pc")" ] || ln -s "$pc" "$PREFIX/lib/pkgconfig/"
+    done
   fi
   cd /
   rm -rf "$SOURCES"
@@ -191,7 +218,7 @@ step_runtime() {
       echo "Priority: optional"
       echo "Installed-Size: $(du -sk "$stage" | cut -f1)"
       if [ -n "$depends" ]; then echo "Depends: $depends"; fi
-      echo "Description: GNUstep (libobjc2, base, gui, back) for applications archived by ProjectCenter"
+      echo "Description: GNUstep (libobjc2, base, gui, back, GTK4Native) for applications archived by ProjectCenter"
     } > "$stage/DEBIAN/control"
     printf '#!/bin/sh\nldconfig\n' > "$stage/DEBIAN/postinst"
     printf '#!/bin/sh\nldconfig\n' > "$stage/DEBIAN/postrm"
@@ -209,7 +236,7 @@ step_runtime() {
       echo "Name: $name"
       echo "Version: $(echo "$version" | tr '+' '.')"
       echo "Release: 1"
-      echo "Summary: GNUstep (libobjc2, base, gui, back) for applications archived by ProjectCenter"
+      echo "Summary: GNUstep (libobjc2, base, gui, back, GTK4Native) for applications archived by ProjectCenter"
       echo "License: LGPL-2.1-or-later"
       echo; echo '%description'
       echo 'GNUstep built with clang and libobjc2, for applications archived by ProjectCenter.'
