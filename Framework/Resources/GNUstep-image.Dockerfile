@@ -12,10 +12,11 @@
 #     -t projectcenter-gnustep:debian-arm64 <context>
 #
 # The context holds this file, gnustep-image.sh and sources/, with the
-# source folders to build from (libobjc2, tools-make, libs-base, libs-gui,
-# libs-back and a gtk4native* theme); the missing ones are cloned: from the
-# holzgestalt forks where there is one (libs-base, libs-gui, GTK4Native),
-# else from gnustep. THEME_URL= leaves the theme out.
+# source folders to build from (libdispatch, libobjc2, tools-make,
+# libs-base, libs-gui, libs-back and a gtk4native* theme); the missing ones
+# are cloned: from the holzgestalt forks where there is one (libs-base,
+# libs-gui, GTK4Native), libdispatch from swiftlang (Debian doesn't package
+# it), the rest from gnustep. THEME_URL= leaves the theme out.
 #
 # The image is made once and reused by every project: archive.sh rebuilds it
 # only when it is missing or its org.gnustep.projectcenter.image label is not
@@ -32,6 +33,8 @@
 ARG BASE=debian:trixie
 FROM ${BASE}
 
+ARG DISPATCH_URL=https://github.com/swiftlang/swift-corelibs-libdispatch.git
+ARG DISPATCH_REF=
 ARG LIBOBJC2_URL=https://github.com/gnustep/libobjc2.git
 ARG LIBOBJC2_REF=
 ARG MAKE_URL=https://github.com/gnustep/tools-make.git
@@ -58,4 +61,4 @@ ENV GNUSTEP_MAKEFILES=/opt/gnustep/share/GNUstep/Makefiles \
     PKG_CONFIG_PATH=/opt/gnustep/lib/pkgconfig \
     PATH=/usr/local/bin:/opt/gnustep/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin \
     CC=clang CXX=clang++ OBJC=clang
-LABEL org.gnustep.projectcenter.image="3"
+LABEL org.gnustep.projectcenter.image="4"

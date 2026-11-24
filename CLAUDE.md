@@ -66,7 +66,11 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
   `XcodeProjectTests` runs the scripts with a stand-in toolchain and a stand-in `docker`. The real
   container run is not done yet: this Mac is a virtual machine on an M1 without nested
   virtualization, so Colima can't start; `Tests/ArchiveDemo` and its `check-packages.sh` are for
-  that run. The XIB editor's
+  that run. Without Docker, **Make Toolchain…** in the Deployment tab
+  (`PCDeploymentEditor`, run by `PCProjectBuilder`) makes a Cross Toolchain with
+  `Framework/Resources/make-toolchain.sh` for Debian on the Mac (`CrossToolchain.md`): a sysroot from Debian's packages, and GNUstep, libdispatch and
+  GTK4Native cross built into it, in `~/gnustep-toolchains/`. EditGlyphData archives to a
+  `.deb` with it; running the package needs a Debian machine. The XIB editor's
   model is `PCInterfaceDocument` (Foundation only): every edit changes only its own XML, and an
   unchanged XIB is written back byte for byte (`XcodeProjectTests` checks every `.xib`).
   `PCInterfaceInspector` is the editor's Xcode-style inspector, and `PCInterfaceRendering` draws

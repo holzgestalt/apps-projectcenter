@@ -127,6 +127,7 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
   RELEASE(buildArgs);
   RELEASE(archiveScript);
   RELEASE(archiveFolder);
+  RELEASE(toolchainArguments);
   RELEASE(buildOptions);
 
   RELEASE(successSound);
@@ -150,7 +151,7 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
 - (void)_updateBuildControls {
 	if (_isBuilding) {
 		SetBuildControl(buildButton, @"stop.fill", NSImageNameStopProgressTemplate,
-			_isArchiving ? @"Stop Archive" : @"Stop Build");
+			_isMakingToolchain ? @"Stop Making Toolchain" : _isArchiving ? @"Stop Archive" : @"Stop Build");
 	}
 	else {
 		SetBuildControl(buildButton, @"hammer", @"GSBuildTemplate", @"Build");
@@ -441,6 +442,54 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
 - (BOOL)isArchiving
 {
   return _isArchiving;
+}
+
+- (BOOL)isMakingToolchain
+{
+  return _isMakingToolchain;
+}
+
+- (void)performMakeToolchainForDeployment:(NSDictionary *)deployment
+{
+  NSDictionary *projectDict = [project projectDict];
+  NSArray      *arguments;
+  NSString     *folder;
+
+  if (_isBuilding || _isCleaning) return;
+  arguments = [PCDeployment makeToolchainArgumentsForDeployment:deployment project:projectDict];
+  if (arguments == nil)
+  {
+    NSRunAlertPanel(@"Make Toolchain", @"ProjectCenter makes cross toolchains for Debian packages and "
+                    @"Linux tarballs, on arm64 and amd64.", @"OK", nil, nil);
+    return;
+  }
+  folder = [arguments lastObject];
+  if (NSRunAlertPanel(@"Make Toolchain",
+                      @"Make the cross toolchain for %@ in %@?\n\nIt downloads Debian's packages (about "
+                      @"110 MB) and builds GNUstep, libdispatch and GTK4Native for it, which takes a "
+                      @"while. It needs LLVM, lld, GNU make, CMake, pkgconf and dpkg (brew install llvm "
+                      @"lld make cmake pkgconf dpkg). The build log shows its steps.",
+                      @"Make Toolchain", @"Cancel", nil,
+                      [PCDeployment valueForKey:@"Name" ofDeployment:deployment project:projectDict], folder)
+      != NSAlertDefaultReturn)
+  {
+    return;
+  }
+  ASSIGN(toolchainArguments, arguments);
+  DESTROY(archiveFolder);
+  currentEL = ELNone;
+  lastEL = ELNone;
+  nextEL = ELNone;
+  lastIndentString = @"";
+  [self _setTargetDescription:[folder lastPathComponent]];
+  buildStatus = @"Making toolchain…";
+  [buildStatusTarget setString:@"Make Toolchain"];
+  [buildButton setState:NSOnState];
+  [cleanButton setEnabled:NO];
+  _isBuilding = YES;
+  _isArchiving = YES;
+  _isMakingToolchain = YES;
+  [self build:self];
 }
 
 - (NSArray *)buildArguments
@@ -775,6 +824,7 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
   }
 
   _isArchiving = NO;
+  _isMakingToolchain = NO;
 	[self _updateBuildControls];
   [buildArgs removeAllObjects];
   [buildStatusTarget setString:@"Default"];
@@ -943,7 +993,11 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
     : [PCXcodeProject GNUstepBuildArgumentsForProject:[project projectDict]
         action:_isCleaning ? @"clean" : @"build"];
   _usesXcodebuild = (xcodebuildArgs != nil) && !_isArchiving;
-  if (_isArchiving)
+  if (_isMakingToolchain)
+  {
+    [makeTask setArguments:toolchainArguments];
+  }
+  else if (_isArchiving)
   {
     [makeTask setArguments:[NSArray arrayWithObject:archiveScript]];
   }
@@ -1060,7 +1114,7 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
   RELEASE(stdOutPipe);
   RELEASE(stdErrorPipe);
 
-	if (_isArchiving && status == 0) {
+	if (_isArchiving && !_isMakingToolchain && status == 0) {
 		NSURL *archiveURL = [NSURL fileURLWithPath:archiveFolder isDirectory:YES];
 		NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:archiveURL
 			includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles error:NULL];
@@ -1079,7 +1133,10 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
 	statusString = buildResult;
 	logString = [NSString stringWithFormat:@"=== %@ ===", buildResult];
 	[self logBuildString:logString newLine:YES];
-	if (_isArchiving) {
+	if (_isMakingToolchain) {
+		if (!buildSucceeded) [[project projectWindow] showProjectBuild:self];
+	}
+	else if (_isArchiving) {
 		if (buildSucceeded) {
 			[[NSWorkspace sharedWorkspace] selectFile:archiveFolder inFileViewerRootedAtPath:@""];
 		}

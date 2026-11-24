@@ -18,6 +18,8 @@
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCProject.h>
+#import <ProjectCenter/PCProjectBuilder.h>
+#import <ProjectCenter/PCProjectWindow.h>
 
 /* The form's document view, filled from the top. */
 @interface PCDeploymentForm : NSView
@@ -48,6 +50,11 @@ static const CGFloat Margin = 20;
   controls = [[NSMutableDictionary alloc] init];
   deployments = [[NSMutableArray alloc] init];
   [platformsTable setTarget:self];
+  /* Make Toolchain... is enabled while the builder is free. */
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(_builderChanged:)
+                                               name:PCProjectBuilderDidChangeNotification
+                                             object:nil];
   /* No project nor target yet: only the note. */
   [self _fillAddButton];
   [self _showSelection];
@@ -89,6 +96,28 @@ static const CGFloat Margin = 20;
 - (NSDictionary *)target { return target; }
 - (NSArray *)deployments { return deployments; }
 - (NSDictionary *)controls { return controls; }
+- (NSButton *)makeToolchainButton { return makeToolchainButton; }
+
+- (void)_builderChanged:(NSNotification *)notification
+{
+  if ([[notification object] respondsToSelector:@selector(project)] && [[notification object] project] == project)
+  {
+    /* A toolchain just made becomes the default. */
+    [self _updateForm];
+  }
+}
+
+- (void)makeToolchain:(id)sender
+{
+  NSInteger index = [self selectedIndex];
+
+  if (index < 0 || index >= (NSInteger)[deployments count]) return;
+  [[project projectBuilder] performMakeToolchainForDeployment:[deployments objectAtIndex:index]];
+  if ([[project projectBuilder] isMakingToolchain])
+  {
+    [[project projectWindow] showProjectBuild:self];
+  }
+}
 
 - (BOOL)_isLinuxTarget
 {
@@ -335,6 +364,7 @@ static const CGFloat Margin = 20;
     if ([control isKindOfClass:[NSTextField class]]) [control setDelegate:nil];
   }
   [controls removeAllObjects];
+  makeToolchainButton = nil;
   while ([[form subviews] count])
   {
     [[[form subviews] lastObject] removeFromSuperview];
@@ -404,6 +434,26 @@ static const CGFloat Margin = 20;
     }
     else
     {
+      if ([key isEqual:@"Toolchain"])
+      {
+        /* Make Toolchain... right of the field. */
+        NSRect buttonFrame = controlFrame;
+
+        buttonFrame.size.width = 140;
+        controlFrame.size.width -= NSWidth(buttonFrame) + 8;
+        buttonFrame.origin.x = NSMaxX(controlFrame) + 8;
+        makeToolchainButton = [[[NSButton alloc] initWithFrame:NSInsetRect(buttonFrame, 0, -3)] autorelease];
+        [makeToolchainButton setButtonType:NSMomentaryPushInButton];
+        [makeToolchainButton setBezelStyle:NSRoundedBezelStyle];
+        [makeToolchainButton setTitle:@"Make Toolchain…"];
+        [makeToolchainButton setTarget:self];
+        [makeToolchainButton setAction:@selector(makeToolchain:)];
+        [makeToolchainButton setAutoresizingMask:NSViewMinXMargin];
+        [makeToolchainButton setToolTip:@"Makes a GNUstep cross toolchain for this platform in "
+                             @"~/gnustep-toolchains (make-toolchain.sh): Debian's packages and GNUstep "
+                             @"built for them, without Docker."];
+        [form addSubview:makeToolchainButton];
+      }
       control = [[[NSTextField alloc] initWithFrame:controlFrame] autorelease];
       [(NSTextField *)control setDelegate:(id)self];
       [control setAction:@selector(_textChanged:)];
@@ -464,6 +514,16 @@ static const CGFloat Margin = 20;
       [control setState:[value boolValue] ? NSOnState : NSOffState];
     }
     [control setEnabled:![unused containsObject:key]];
+  }
+  if (makeToolchainButton)
+  {
+    PCProjectBuilder *builder = [project projectBuilder];
+
+    /* Also while Build is Container: a platform whose Build is the default
+     * builds with the toolchain once it is made. */
+    [makeToolchainButton setEnabled:deployment != nil
+     && [PCDeployment makeToolchainArgumentsForDeployment:deployment project:projectDict] != nil
+     && ![builder isBuilding] && ![builder isCleaning]];
   }
 
 	if (deployment == nil) {

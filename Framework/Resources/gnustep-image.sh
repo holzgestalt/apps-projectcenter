@@ -5,9 +5,9 @@
 # in. It runs as root inside the image while it is built:
 #
 #   gnustep-image.sh packages   the system's compiler and -dev packages
-#   gnustep-image.sh gnustep    builds libobjc2, tools-make, libs-base,
-#                               libs-gui, libs-back and the GTK4Native theme
-#                               with clang into $PREFIX
+#   gnustep-image.sh gnustep    builds libdispatch, libobjc2, tools-make,
+#                               libs-base, libs-gui, libs-back and the
+#                               GTK4Native theme with clang into $PREFIX
 #   gnustep-image.sh runtime    packages $PREFIX as projectcenter-gnustep
 #                               (.deb or .rpm, in /opt/projectcenter/packages)
 #                               and installs it from that package
@@ -16,7 +16,10 @@
 # by archive.sh, from GNUSTEP_SOURCES); missing ones are cloned from the
 # *_URL variables (the theme from THEME_URL; THEME_URL= leaves it out).
 # The library combo is ng-gnu-gnu, as build-gnustep.sh
-# builds it, so applications can use blocks, literals and ARC.
+# builds it, so applications can use blocks, literals and ARC. libdispatch
+# (Grand Central Dispatch, which GTK4Native's Xcode SDK and libs-base use)
+# brings the blocks runtime, libBlocksRuntime, which libobjc2 then uses
+# instead of its own, so there is only one.
 #
 # This file is part of GNUstep ProjectCenter.
 #
@@ -111,6 +114,7 @@ theme_source() {
 
 step_gnustep() {
   mkdir -p "$SOURCES"
+  source_of libdispatch "$DISPATCH_URL" "${DISPATCH_REF:-}"
   source_of libobjc2 "$LIBOBJC2_URL" "${LIBOBJC2_REF:-}"
   source_of tools-make "$MAKE_URL" "${MAKE_REF:-}"
   source_of libs-base "$BASE_URL" "${BASE_REF:-}"
@@ -125,19 +129,35 @@ step_gnustep() {
   export LDFLAGS="-L$PREFIX/lib -fuse-ld=lld"
   export LD_LIBRARY_PATH="$PREFIX/lib"
 
+  echo "== Building libdispatch"
+  cd "$SOURCES/libdispatch"
+  rm -rf build
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=OFF \
+    -DINSTALL_PRIVATE_HEADERS=YES -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld
+  cmake --build build -j "$JOBS"
+  cmake --install build
+
   echo "== Building libobjc2"
   cd "$SOURCES/libobjc2"
   rm -rf build
   cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTESTS=OFF \
     -DGNUSTEP_INSTALL_TYPE=NONE -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-    -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld
+    -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld \
+    -DEMBEDDED_BLOCKS_RUNTIME=OFF -DBlocksRuntime_INCLUDE_DIR="$PREFIX/include" \
+    -DBlocksRuntime_LIBRARIES="$PREFIX/lib/libBlocksRuntime.so"
   cmake --build build -j "$JOBS"
   cmake --install build
 
   echo "== Building tools-make"
   cd "$SOURCES/tools-make"
-  ./configure --prefix="$PREFIX" --with-layout=fhs --with-library-combo=ng-gnu-gnu --enable-objc-arc
+  # tools-make's configure (autoconf 2.73, since tools-make cffce46) adds
+  # -std=gnu23 to CC, then runs "${CC}" -v as one word to see if it is clang,
+  # so clang counts as an old GCC and is refused: it is clang.
+  ./configure --prefix="$PREFIX" --with-layout=fhs --with-library-combo=ng-gnu-gnu --enable-objc-arc \
+    _gs_cv_cc_is_clang=yes
   make install
 
   # GNUstep.sh reads unset variables.
@@ -218,7 +238,7 @@ step_runtime() {
       echo "Priority: optional"
       echo "Installed-Size: $(du -sk "$stage" | cut -f1)"
       if [ -n "$depends" ]; then echo "Depends: $depends"; fi
-      echo "Description: GNUstep (libobjc2, base, gui, back, GTK4Native) for applications archived by ProjectCenter"
+      echo "Description: GNUstep (libobjc2, libdispatch, base, gui, back, GTK4Native) for applications archived by ProjectCenter"
     } > "$stage/DEBIAN/control"
     printf '#!/bin/sh\nldconfig\n' > "$stage/DEBIAN/postinst"
     printf '#!/bin/sh\nldconfig\n' > "$stage/DEBIAN/postrm"
@@ -236,7 +256,7 @@ step_runtime() {
       echo "Name: $name"
       echo "Version: $(echo "$version" | tr '+' '.')"
       echo "Release: 1"
-      echo "Summary: GNUstep (libobjc2, base, gui, back, GTK4Native) for applications archived by ProjectCenter"
+      echo "Summary: GNUstep (libobjc2, libdispatch, base, gui, back, GTK4Native) for applications archived by ProjectCenter"
       echo "License: LGPL-2.1-or-later"
       echo; echo '%description'
       echo 'GNUstep built with clang and libobjc2, for applications archived by ProjectCenter.'

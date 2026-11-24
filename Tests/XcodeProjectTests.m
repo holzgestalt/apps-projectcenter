@@ -578,6 +578,8 @@ static void TestDeployment(void)
          [[repository stringByAppendingPathComponent:@"Framework/Resources"] fileSystemRepresentation], 1);
   [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:NULL];
   root = [root stringByResolvingSymlinksInPath];
+  /* No cross toolchains of this computer's (~/gnustep-toolchains). */
+  setenv("PROJECTCENTER_TOOLCHAINS", [[root stringByAppendingPathComponent:@"Toolchains"] fileSystemRepresentation], 1);
   bundle = [root stringByAppendingPathComponent:@"Sample.xcodeproj"];
   Write(root, @"Sample.xcodeproj/project.pbxproj", @"{objectVersion=77; rootObject=PROJ; objects={"
         "PROJ={isa=PBXProject;mainGroup=ROOT;targets=(APP, LNX);buildConfigurationList=PL;};"
@@ -750,9 +752,12 @@ static void TestDeployment(void)
           componentsJoinedByString:@" "] rangeOfString:@"need a Linux computer"].location != NSNotFound,
         @"no native Linux build on a Mac");
 #endif
-  Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Linux", @"Build": @"Toolchain"} project:projectDict]
+  Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Windows", @"Build": @"Toolchain"} project:projectDict]
           componentsJoinedByString:@" "] rangeOfString:@"Set Toolchain"].location != NSNotFound,
         @"a toolchain needs its folder");
+  Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Linux", @"Build": @"Toolchain"} project:projectDict]
+          componentsJoinedByString:@" "] rangeOfString:@"Make Toolchain"].location != NSNotFound,
+        @"Linux's standard toolchain, not made yet");
   container = @{@"Kind": @"RPM", @"Name": @"Fedora \"arm\"", @"Build": @"Container",
                 @"Architecture": @"aarch64", @"Setup": @"dnf install -y it's"};
 
@@ -837,6 +842,13 @@ static void TestDeployment(void)
         .location != NSNotFound,
         [NSString stringWithFormat:@"the Linux target, built by ProjectCenter's compiler: %@",
          [scripts objectForKey:@"1-Debian-arm64.sh"]]);
+  /* A cross toolchain (Tools/cross-toolchain) answers Depends from its
+   * sysroot and has GNUstep's package, where ldd and dpkg -S can't. */
+  Check([[scripts objectForKey:@"1-Debian-arm64.sh"] rangeOfString:
+         @"FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" \"$APP\")"].location != NSNotFound
+        && [[scripts objectForKey:@"1-Debian-arm64.sh"] rangeOfString:
+            @"${GNUSTEP_TOOLCHAIN:+\"$GNUSTEP_TOOLCHAIN\"/packages/*.deb}"].location != NSNotFound,
+        @"a cross toolchain's Depends and GNUstep package");
 
   /* A container build, with a stand-in docker that runs the command here
    * (the project is mounted at its own path) and records what it builds. */
@@ -853,6 +865,7 @@ static void TestDeployment(void)
         "    echo \"$*\" >> \"$log\"\n"
         "    [ -f \"$context/Dockerfile\" ] && [ -f \"$context/gnustep-image.sh\" ] && [ -f \"$context/sources/.keep\" ] || exit 1\n"
         "    [ -f \"$context/sources/libobjc2/README\" ] && [ ! -e \"$context/sources/libobjc2/.git\" ] || exit 1\n"
+        "    [ -f \"$context/sources/libdispatch/README\" ] || exit 1\n"
         "    sed -n 's/^LABEL org\\.gnustep\\.projectcenter\\.image=\"\\([0-9]*\\)\"$/\\1/p' \"$context/Dockerfile\" > \"$log.version\"\n"
         "    while [ $# -gt 0 ]; do [ \"$1\" = -t ] && echo \"$2\" >> \"$log.images\"; shift; done ;;\n"
         "  run)\n"
@@ -867,6 +880,7 @@ static void TestDeployment(void)
         "esac\n");
   Shell([NSString stringWithFormat:@"chmod 755 '%@/docker'", standIn]);
   Write(root, @"Sources/libobjc2/README", @"libobjc2\n");
+  Write(root, @"Sources/libdispatch/README", @"libdispatch\n");
   Write(root, @"Sources/libobjc2/.git/HEAD", @"ref\n");
   boxed = [NSMutableDictionary dictionaryWithDictionary:@{@"Kind": @"Linux", @"Name": @"Linux (aarch64)",
                                                           @"Architecture": @"aarch64", @"Build": @"Container"}];
@@ -900,6 +914,71 @@ static void TestDeployment(void)
 
 /* The General pane's edits: one entry of project.pbxproj or the Info.plist
  * at a time, the rest of the file unchanged. */
+/* Cross toolchains that Make Toolchain... makes (make-toolchain.sh): where,
+ * for which platforms, how it is run, and the defaults once one is there. */
+static void TestCrossToolchain(void)
+{
+  NSString     *root = [[NSTemporaryDirectory() stringByAppendingPathComponent:
+                         [[NSProcessInfo processInfo] globallyUniqueString]] stringByResolvingSymlinksInPath];
+  NSString     *resources = [[[[NSString stringWithUTF8String:__FILE__] stringByDeletingLastPathComponent]
+                              stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"Framework/Resources"];
+  NSString     *toolchains = [root stringByAppendingPathComponent:@"Toolchains"];
+  NSString     *arm64 = [toolchains stringByAppendingPathComponent:@"debian-trixie-arm64"];
+  NSDictionary *debian = @{@"Kind": @"Debian", @"Architecture": @"arm64"};
+  NSDictionary *linux = @{@"Kind": @"Linux", @"Architecture": @"aarch64"};
+  NSDictionary *amd64 = @{@"Kind": @"Debian", @"Architecture": @"amd64"};
+  NSArray      *arguments;
+  BOOL         linuxHost = [[PCDeployment hostPlatform] isEqual:@"Linux"];
+
+  setenv("PROJECTCENTER_RESOURCES", [resources fileSystemRepresentation], 1);
+  setenv("PROJECTCENTER_TOOLCHAINS", [toolchains fileSystemRepresentation], 1);
+  Check([[PCDeployment toolchainsFolder] isEqual:toolchains], @"the toolchains' folder");
+  Check([[PCDeployment standardToolchainForDeployment:debian project:nil] isEqual:arm64]
+        && [[PCDeployment standardToolchainForDeployment:linux project:nil] isEqual:arm64]
+        && [[[PCDeployment standardToolchainForDeployment:amd64 project:nil] lastPathComponent]
+            isEqual:@"debian-trixie-amd64"],
+        @"Debian packages and Linux tarballs share the toolchain of their architecture");
+  Check([PCDeployment standardToolchainForDeployment:@{@"Kind": @"RPM", @"Architecture": @"aarch64"} project:nil] == nil
+        && [PCDeployment standardToolchainForDeployment:@{@"Kind": @"Windows", @"Architecture": @"x86_64"} project:nil] == nil
+        && [PCDeployment standardToolchainForDeployment:@{@"Kind": @"Debian", @"Architecture": @"armhf"} project:nil] == nil
+        && [PCDeployment makeToolchainArgumentsForDeployment:@{@"Kind": @"RPM", @"Architecture": @"aarch64"} project:nil] == nil,
+        @"no toolchain for RPM, Windows or other architectures");
+  Check([[PCDeployment valueForKey:@"Toolchain" ofDeployment:debian project:nil] isEqual:arm64],
+        @"the default Toolchain is the standard one");
+  arguments = [PCDeployment makeToolchainArgumentsForDeployment:debian project:nil];
+  Check([arguments count] >= 6
+        && [[[arguments objectAtIndex:0] lastPathComponent] isEqual:@"make-toolchain.sh"]
+        && [[NSFileManager defaultManager] fileExistsAtPath:[arguments objectAtIndex:0]]
+        && [[arguments subarrayWithRange:NSMakeRange(1, 4)] isEqual:(@[@"--arch", @"arm64", @"--release", @"trixie"])]
+        && [[arguments lastObject] isEqual:arm64],
+        [NSString stringWithFormat:@"make-toolchain.sh's arguments: %@", arguments]);
+  if (!linuxHost)
+  {
+    Check([[PCDeployment valueForKey:@"Build" ofDeployment:debian project:nil] isEqual:@"Container"],
+          @"without a toolchain, Debian builds in a container");
+    Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Debian", @"Architecture": @"arm64", @"Build": @"Toolchain"}
+                                           project:nil] componentsJoinedByString:@" "]
+           rangeOfString:@"Make Toolchain"].location != NSNotFound,
+          @"a missing standard toolchain points to Make Toolchain...");
+  }
+  Write(arm64, @"GNUstep.sh", @"GNUSTEP_TOOLCHAIN=yes\n");
+  if (!linuxHost)
+  {
+    Check([[PCDeployment valueForKey:@"Build" ofDeployment:debian project:nil] isEqual:@"Toolchain"]
+          && [[PCDeployment valueForKey:@"Build" ofDeployment:linux project:nil] isEqual:@"Toolchain"]
+          && [[PCDeployment valueForKey:@"Build" ofDeployment:amd64 project:nil] isEqual:@"Container"],
+          @"once the toolchain is there, its platforms build with it");
+    Check([[PCDeployment valueForKey:@"Build" ofDeployment:@{@"Kind": @"Debian", @"Architecture": @"arm64",
+                                                            @"Build": @"Container"} project:nil] isEqual:@"Container"],
+          @"a chosen Build stays");
+  }
+  Check([[[PCDeployment problemsWithDeployment:@{@"Kind": @"Debian", @"Architecture": @"arm64", @"Build": @"Toolchain"}
+                                         project:nil] componentsJoinedByString:@" "]
+         rangeOfString:@"toolchain"].location == NSNotFound,
+        @"a toolchain that is there is no problem");
+  [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+}
+
 static void TestProjectEditing(void)
 {
   NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:
@@ -1256,6 +1335,7 @@ int main(int argc, char **argv)
     TestConvertToXIB();
     TestGNUstepSettings();
     TestDeployment();
+    TestCrossToolchain();
     TestProjectEditing();
     TestGNUstepOnMac();
     TestGormArchives();

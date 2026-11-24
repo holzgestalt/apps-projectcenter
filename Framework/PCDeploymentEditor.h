@@ -32,6 +32,7 @@
   NSArray             *fields;      // of the selected platform
   NSMutableDictionary *controls;    // setting key -> control of the form
   NSView              *form;        // the form scroll view's document
+  NSButton            *makeToolchainButton; // next to Toolchain, in the form
 
   IBOutlet NSTableView   *platformsTable;
   IBOutlet NSPopUpButton *addButton;
@@ -58,6 +59,11 @@
 - (BOOL)setValue:(NSString *)value forSetting:(NSString *)key ofDeploymentAtIndex:(NSUInteger)index;
 - (void)addPlatformOfKind:(NSString *)kind;
 - (void)removePlatformAtIndex:(NSUInteger)index;
+
+/* Make Toolchain..., next to the Toolchain field: makes the selected
+ * platform's cross toolchain with the project's builder. */
+- (IBAction)makeToolchain:(id)sender;
+- (NSButton *)makeToolchainButton;
 
 - (IBAction)addPlatform:(id)sender;
 - (IBAction)removePlatform:(id)sender;

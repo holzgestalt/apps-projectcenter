@@ -115,6 +115,11 @@ ProjectCenter_RESOURCE_FILES = \
   Resources/pc-xcode-build.py \
   Resources/GNUstep-image.Dockerfile \
   Resources/gnustep-image.sh \
+  Resources/make-toolchain.sh \
+  Resources/debian-sysroot.py \
+  Resources/debian-depends.py \
+  Resources/plmerge.py \
+  Resources/libs-base-cross.config \
   Resources/cfile.template \
   Resources/cheader.template \
   Resources/class.template \

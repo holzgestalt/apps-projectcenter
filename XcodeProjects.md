@@ -348,7 +348,17 @@ target (`SDKROOT = windows`) is not supported yet.
     as a cross compiled sysroot or an MSYS2 MinGW tree; **Toolchain** is the
     folder of its `GNUstep.sh`. The package is made on this computer, so it
     needs `dpkg-deb` or `rpmbuild` (on a Mac: `brew install dpkg`,
-    `brew install rpm`).
+    `brew install rpm`). For Debian and Linux
+    tarballs on arm64 and amd64, **Make Toolchain…** next to **Toolchain**
+    makes one on the Mac, without Docker. It downloads Debian's packages into
+    a sysroot and cross-builds GNUstep, libdispatch and GTK4Native into it,
+    with its steps in the build log. It makes the toolchain in
+    `~/gnustep-toolchains/debian-trixie-<arch>`, the default **Toolchain**.
+    Once that is there, a platform whose **Build** is left at its default
+    builds with it rather than in a container. The toolchain's
+    `bin/debian-depends` gives the package's **Find Dependencies**, and its
+    GNUstep package goes next to the application's, as with Container. See
+    `CrossToolchain.md`.
   - **Container**: in a Docker or Podman container, for any architecture the
     container tool runs (`--platform linux/amd64` or `linux/arm64`, emulated
     where it isn't this computer's). The container builds and packages, so

@@ -155,6 +155,18 @@
  * GNUstep-image.Dockerfile, gnustep-image.sh), else of the folder in the
  * environment variable PROJECTCENTER_RESOURCES (for the tests), or nil. */
 + (NSString *)pathOfResource:(NSString *)file;
+/* Cross toolchains (Make Toolchain..., make-toolchain.sh): the folder they
+ * are made in, ~/gnustep-toolchains (or $PROJECTCENTER_TOOLCHAINS, for the
+ * tests); the one for a deployment (debian-trixie-arm64), which is the
+ * default Toolchain, nil for kinds and architectures it doesn't make
+ * (only Debian and Linux, on arm64 and amd64); and the arguments for
+ * /bin/sh that make it, or nil. The default Build of a Debian or Linux
+ * platform is Cross Toolchain once its toolchain is there, else Container. */
++ (NSString *)toolchainsFolder;
++ (NSString *)standardToolchainForDeployment:(NSDictionary *)deployment
+                                     project:(NSDictionary *)projectDict;
++ (NSArray *)makeToolchainArgumentsForDeployment:(NSDictionary *)deployment
+                                         project:(NSDictionary *)projectDict;
 /* A command line tool on the PATH or in the usual places of Homebrew,
  * MacPorts and Docker, or nil. */
 + (NSString *)pathOfTool:(NSString *)name;

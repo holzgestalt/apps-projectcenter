@@ -80,6 +80,8 @@ typedef enum _ErrorLevel {
   BOOL            _isArchiving;
   NSString        *archiveScript;
   NSString        *archiveFolder;
+  BOOL            _isMakingToolchain; // with _isArchiving: runs make-toolchain.sh
+  NSArray         *toolchainArguments;
 
   // Component view
   BOOL            _isCVLoaded;
@@ -128,6 +130,11 @@ typedef enum _ErrorLevel {
 /* Archive builds the selected scheme's deployments into build/Archives. */
 - (void)performStartArchive;
 - (BOOL)isArchiving;
+/* Make Toolchain... of the Deployment tab: makes the deployment's cross
+ * toolchain (+[PCDeployment makeToolchainArgumentsForDeployment:project:])
+ * after asking, with its output in the build log, as Archive does. */
+- (void)performMakeToolchainForDeployment:(NSDictionary *)deployment;
+- (BOOL)isMakingToolchain;
 - (NSArray *)buildArguments;
 
 // --- Issues of the last build, for the issue navigator

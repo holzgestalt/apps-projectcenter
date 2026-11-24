@@ -86,6 +86,21 @@ static NSString *ContainerPlatform(NSString *architecture)
   return [platforms objectForKey:architecture];
 }
 
+/* The Debian architecture of ProjectCenter's cross toolchain for an
+ * architecture of a kind (make-toolchain.sh --arch), or nil: it makes them
+ * for Debian packages and Linux tarballs, which run on Debian's glibc. */
+static NSString *ToolchainArchitecture(NSString *kind, NSString *architecture)
+{
+  NSDictionary *architectures = @{@"amd64": @"amd64", @"x86_64": @"amd64", @"arm64": @"arm64",
+                                  @"aarch64": @"arm64"};
+
+  if (![kind isEqual:@"Debian"] && ![kind isEqual:@"Linux"]) return nil;
+  return [architectures objectForKey:architecture];
+}
+
+/* The Debian release of the toolchains make-toolchain.sh makes. */
+static NSString *const ToolchainRelease = @"trixie";
+
 static BOOL IsGNUstepKind(NSString *kind)
 {
   return [kind isEqual:@"Debian"] || [kind isEqual:@"RPM"] || [kind isEqual:@"Linux"]
@@ -98,7 +113,7 @@ static NSString *const OwnImagePrefix = @"projectcenter-gnustep:";
 /* The org.gnustep.projectcenter.image label of GNUstep-image.Dockerfile:
  * archive.sh builds the image again when it has another one. Raise both
  * together when what the image holds changes. */
-static NSString *const ImageVersion = @"3";
+static NSString *const ImageVersion = @"4";
 
 static BOOL IsOwnImage(NSString *image)
 {
@@ -211,7 +226,8 @@ static NSString *RootPath(NSString *path, NSString *root)
                          @"Debug builds with debug=yes, any other configuration with debug=no.")];
   [fields addObject:Text(@"Toolchain", @"Toolchain",
                          @"For Cross Toolchain: the folder of GNUstep.sh of a GNUstep installation "
-                         @"made for the target, such as a sysroot's Makefiles folder.")];
+                         @"made for the target. For Debian and Linux, Make Toolchain... makes one "
+                         @"(make-toolchain.sh), which is the default once it is there.")];
   if (![kind isEqual:@"Windows"])
   {
     [fields addObject:Text(@"Image", @"Container Image",
@@ -796,9 +812,25 @@ static NSString *PackageName(NSString *name)
   }
   if ([key isEqual:@"Build"])
   {
+    NSString *toolchain;
+
     if (!IsGNUstepKind(kind)) return @"";
     if ([[self hostPlatform] isEqual:platform]) return @"Native";
-    return [kind isEqual:@"Windows"] ? @"Toolchain" : @"Container";
+    if ([kind isEqual:@"Windows"]) return @"Toolchain";
+    /* A toolchain made with Make Toolchain... is used once it is there. */
+    toolchain = [self standardToolchainForDeployment:deployment project:projectDict];
+    if (toolchain && [[NSFileManager defaultManager]
+                      fileExistsAtPath:[toolchain stringByAppendingPathComponent:@"GNUstep.sh"]])
+    {
+      return @"Toolchain";
+    }
+    return @"Container";
+  }
+  if ([key isEqual:@"Toolchain"])
+  {
+    NSString *toolchain = [self standardToolchainForDeployment:deployment project:projectDict];
+
+    return toolchain ? toolchain : @"";
   }
   if ([key isEqual:@"Architecture"])
   {
@@ -976,6 +1008,46 @@ static NSString *PackageName(NSString *name)
   return path && [[NSFileManager defaultManager] fileExistsAtPath:path] ? path : nil;
 }
 
++ (NSString *)toolchainsFolder
+{
+  NSString *folder = [[[NSProcessInfo processInfo] environment] objectForKey:@"PROJECTCENTER_TOOLCHAINS"];
+
+  if ([folder length]) return [folder stringByExpandingTildeInPath];
+  return [NSHomeDirectory() stringByAppendingPathComponent:@"gnustep-toolchains"];
+}
+
++ (NSString *)standardToolchainForDeployment:(NSDictionary *)deployment
+                                     project:(NSDictionary *)projectDict
+{
+  NSString *kind = [deployment objectForKey:@"Kind"];
+  NSString *architecture = ToolchainArchitecture(kind, [self valueForKey:@"Architecture"
+                                                             ofDeployment:deployment project:projectDict]);
+
+  if (architecture == nil) return nil;
+  return [[self toolchainsFolder] stringByAppendingPathComponent:
+          [NSString stringWithFormat:@"debian-%@-%@", ToolchainRelease, architecture]];
+}
+
++ (NSArray *)makeToolchainArgumentsForDeployment:(NSDictionary *)deployment
+                                         project:(NSDictionary *)projectDict
+{
+  NSString       *kind = [deployment objectForKey:@"Kind"];
+  NSString       *architecture = ToolchainArchitecture(kind, [self valueForKey:@"Architecture"
+                                                                   ofDeployment:deployment project:projectDict]);
+  NSString       *script = [self pathOfResource:@"make-toolchain.sh"];
+  NSString       *folder = [[self valueForKey:@"Toolchain" ofDeployment:deployment project:projectDict]
+                            stringByExpandingTildeInPath];
+  NSString       *sources = [[[NSUserDefaults standardUserDefaults] stringForKey:@"GNUstepSources"]
+                             stringByExpandingTildeInPath];
+  NSMutableArray *arguments;
+
+  if (architecture == nil || script == nil || ![folder length]) return nil;
+  arguments = [NSMutableArray arrayWithObjects:script, @"--arch", architecture, @"--release", ToolchainRelease, nil];
+  if ([sources length]) [arguments addObjectsFromArray:@[@"--sources", sources]];
+  [arguments addObject:folder];
+  return arguments;
+}
+
 + (NSString *)_containerTool
 {
   NSString *tool = [self pathOfTool:@"docker"];
@@ -1062,7 +1134,12 @@ static NSString *PackageName(NSString *name)
     }
     else if (![[NSFileManager defaultManager] fileExistsAtPath:[toolchain stringByAppendingPathComponent:@"GNUstep.sh"]])
     {
-      [problems addObject:[NSString stringWithFormat:@"There is no GNUstep.sh in %@.", toolchain]];
+      BOOL standard = [toolchain isEqual:[self standardToolchainForDeployment:deployment project:projectDict]];
+
+      [problems addObject:[NSString stringWithFormat:standard
+                           ? @"There is no toolchain in %@ yet: make it with Make Toolchain... (next to "
+                             @"Toolchain)."
+                           : @"There is no GNUstep.sh in %@.", toolchain]];
     }
   }
   else if ([build isEqual:@"Container"])
@@ -1296,12 +1373,13 @@ static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDic
  * application's package depends on: it goes next to it. */
 static void AppendRuntimePackage(NSMutableString *s, NSString *extension)
 {
-  [s appendFormat:@"for runtime in /opt/projectcenter/packages/*.%@; do\n"
+  /* The container's, or a cross toolchain's (make-toolchain.sh). */
+  [s appendFormat:@"for runtime in /opt/projectcenter/packages/*.%@ ${GNUSTEP_TOOLCHAIN:+\"$GNUSTEP_TOOLCHAIN\"/packages/*.%@}; do\n"
    @"  if [ -f \"$runtime\" ]; then\n"
    @"    cp \"$runtime\" \"$OUT/\"\n"
    @"    echo \"Copied GNUstep's package $(basename \"$runtime\"), which the application needs\"\n"
    @"  fi\n"
-   @"done\n", extension];
+   @"done\n", extension, extension];
 }
 
 static NSString *DebianScript(NSDictionary *deployment, NSDictionary *projectDict)
@@ -1318,8 +1396,12 @@ static NSString *DebianScript(NSDictionary *deployment, NSDictionary *projectDic
   [s appendFormat:@"DEPENDS=%@\n", SQ(value(@"Depends"))];
   if ([value(@"AutomaticDependencies") boolValue])
   {
-    /* The packages of the linked libraries and of GNUstep's back end. */
-    [s appendString:@"if command -v dpkg-query >/dev/null 2>&1 && command -v ldd >/dev/null 2>&1; then\n"
+    /* The packages of the linked libraries and of GNUstep's back end: a
+     * cross toolchain's debian-depends answers from its sysroot. */
+    [s appendString:@"if [ -n \"${GNUSTEP_TOOLCHAIN:-}\" ] && [ -x \"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" ]; then\n"
+     @"  FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" \"$APP\")\n"
+     @"  if [ -n \"$FOUND\" ]; then DEPENDS=\"${DEPENDS:+$DEPENDS, }$FOUND\"; fi\n"
+     @"elif command -v dpkg-query >/dev/null 2>&1 && command -v ldd >/dev/null 2>&1; then\n"
      @"  FOUND=$( {\n"
      @"    for binary in \"$APP/$EXE\" $(find \"$APP\" -type f -name '*.so*'); do\n"
      @"      ldd \"$binary\" 2>/dev/null | awk '$3 ~ /^\\// { print $3 }'\n"
@@ -1639,7 +1721,7 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
      @"  cp \"$ROOT/build/Deployment/gnustep-image.sh\" \"$context/\" || return 1\n"
      @"  from='clones of the GNUstep repositories'\n"
      @"  if [ -n \"$GNUSTEP_SOURCES\" ] && [ -d \"$GNUSTEP_SOURCES\" ]; then\n"
-     @"    for source in \"$GNUSTEP_SOURCES\"/libobjc2 \"$GNUSTEP_SOURCES\"/tools-make \"$GNUSTEP_SOURCES\"/libs-base \\\n"
+     @"    for source in \"$GNUSTEP_SOURCES\"/libdispatch \"$GNUSTEP_SOURCES\"/libobjc2 \"$GNUSTEP_SOURCES\"/tools-make \"$GNUSTEP_SOURCES\"/libs-base \\\n"
      @"        \"$GNUSTEP_SOURCES\"/libs-gui \"$GNUSTEP_SOURCES\"/libs-back \"$GNUSTEP_SOURCES\"/[Gg][Tt][Kk]4[Nn]ative*; do\n"
      @"      [ -d \"$source\" ] || continue\n"
      @"      mkdir -p \"$context/sources/$(basename \"$source\")\"\n"
