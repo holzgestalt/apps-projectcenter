@@ -98,7 +98,7 @@ static NSString *const OwnImagePrefix = @"projectcenter-gnustep:";
 /* The org.gnustep.projectcenter.image label of GNUstep-image.Dockerfile:
  * archive.sh builds the image again when it has another one. Raise both
  * together when what the image holds changes. */
-static NSString *const ImageVersion = @"2";
+static NSString *const ImageVersion = @"3";
 
 static BOOL IsOwnImage(NSString *image)
 {
@@ -487,6 +487,30 @@ static NSArray *ArchiveDeployments(NSDictionary *deployment, NSUInteger macTarge
     }
   }
   return deployments;
+}
+
++ (NSArray *)deploymentsForProject:(NSDictionary *)project scheme:(NSDictionary *)scheme {
+	NSArray *targets = [scheme objectForKey:@"ArchiveTargets"];
+	if (targets == nil) {
+		NSString *runTarget = [scheme objectForKey:@"RunTarget"];
+		targets = runTarget ? @[runTarget] : [scheme objectForKey:@"Targets"];
+	}
+	NSMutableArray *deployments = [NSMutableArray array];
+	BOOL addedMacArchive = NO;
+	for (NSDictionary *deployment in [self deploymentsOfProjectAtPath:[project objectForKey:@"XCODE_PROJECT_PATH"]]) {
+		if (![targets containsObject:[deployment objectForKey:@"Target"]]) continue;
+		if ([[deployment objectForKey:@"Kind"] isEqual:@"macOS"]) {
+			if (addedMacArchive) continue;
+			NSMutableDictionary *entry = [NSMutableDictionary dictionaryWithDictionary:deployment];
+			[entry setObject:[scheme objectForKey:@"Name"] forKey:@"Scheme"];
+			[deployments addObject:entry];
+			addedMacArchive = YES;
+		}
+		else {
+			[deployments addObject:deployment];
+		}
+	}
+	return deployments;
 }
 
 + (BOOL)setValue:(NSString *)value
@@ -1128,6 +1152,7 @@ static void AppendGNUstepBuild(NSMutableString *s, NSDictionary *deployment, NSD
   NSString *script = [projectDict objectForKey:@"XCODE_BuildScript"];
   NSString *executable = [projectDict objectForKey:@"XCODE_Executable"];
   NSString *target = [[PCDeployment productOfProject:projectDict] objectForKey:@"Target"];
+	NSString *archiveTarget = Trimmed([deployment objectForKey:@"Target"]);
   NSString *configuration = [PCDeployment valueForKey:@"Configuration" ofDeployment:deployment project:projectDict];
   NSString *arguments = Trimmed([deployment objectForKey:@"MakeArguments"]);
   NSString *makefiles = nil;
@@ -1162,18 +1187,18 @@ static void AppendGNUstepBuild(NSMutableString *s, NSDictionary *deployment, NSD
    @"set -e\n"
    @"rm -rf \"$BUILD\"\n"
    @"mkdir -p \"$BUILD\" \"$OUT\"\n"];
-  [s appendFormat:@"echo \"Building %@ (%@)...\"\n", target, configuration];
+	[s appendFormat:@"echo %@\n", SQ([NSString stringWithFormat:@"Building %@ (%@)...",
+		[archiveTarget length] ? archiveTarget : target, configuration])];
   if (script == nil && [PCDeployment pathOfResource:@"pc-xcode-build.py"]
       && [projectDict objectForKey:@"XCODE_PROJECT_PATH"])
   {
     /* ProjectCenter's compiler, as Build uses it: the target's sources and
      * settings from the Xcode project, no GNUmakefile. */
-    NSString *linuxTarget = Trimmed([deployment objectForKey:@"Target"]);
     NSString *theme = Trimmed([projectDict objectForKey:@"XCODE_Theme"]);
 
     [s appendFormat:@"python3 \"$ROOT/build/Deployment/pc-xcode-build.py\" --project %@ --configuration %@",
      RootPath([projectDict objectForKey:@"XCODE_PROJECT_PATH"], root), SQ(configuration)];
-    if ([linuxTarget length]) [s appendFormat:@" --target %@", SQ(linuxTarget)];
+	if ([archiveTarget length]) [s appendFormat:@" --target %@", SQ(archiveTarget)];
     if ([theme length]) [s appendFormat:@" --theme %@", SQ(theme)];
     [s appendString:@" --build-dir \"$BUILD/obj\" --action build\n"];
   }
@@ -1556,7 +1581,7 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
    @"/Applications/Docker.app/Contents/Resources/bin\"\n"
    @"export PATH\n"];
   [main appendFormat:@"ROOT=%@\nOUT=%@\n", SQ(root), SQ(folder)];
-  [main appendString:@"mkdir -p \"$OUT\"\n"
+  [main appendString:@"mkdir -p \"$OUT\" || exit 1\n"
    @"FAILED=''\n"
    @"DONE=0\n"];
   for (NSDictionary *deployment in deployments)
@@ -1582,8 +1607,9 @@ static NSString *Identifier(NSDictionary *deployment, NSUInteger index)
      @"    echo \"error: $CONTAINER is not installed (on a Mac: brew install colima docker)\" >&2\n"
      @"    return 1\n"
      @"  fi\n"
-     @"  if ! \"$CONTAINER\" info >/dev/null 2>&1; then\n"
-     @"    echo \"error: $CONTAINER is not running (on a Mac: colima start)\" >&2\n"
+     @"  if ! diagnostic=$(\"$CONTAINER\" info 2>&1 >/dev/null); then\n"
+     @"    echo \"error: cannot connect to $CONTAINER. Check that its engine is running.\" >&2\n"
+     @"    if [ -n \"$diagnostic\" ]; then printf '%s\\n' \"$diagnostic\" >&2; fi\n"
      @"    return 1\n"
      @"  fi\n"
      @"}\n"

@@ -38,7 +38,6 @@
   IBOutlet NSButton      *removeButton;
   IBOutlet NSScrollView  *formScroll;
   IBOutlet NSTextField   *statusField;
-  IBOutlet NSButton      *archiveButton;
 }
 
 - (void)setProject:(PCProject *)aProject;
@@ -62,6 +61,5 @@
 
 - (IBAction)addPlatform:(id)sender;
 - (IBAction)removePlatform:(id)sender;
-- (IBAction)archive:(id)sender;
 
 @end

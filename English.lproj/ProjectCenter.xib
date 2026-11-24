@@ -247,12 +247,6 @@
                                                 <action selector="startClean:" target="g227" id="x45"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem isSeparatorItem="YES" id="pcArchiveSeparator"/>
-                                        <menuItem title="Archive" id="pcArchive">
-                                            <connections>
-                                                <action selector="startArchive:" target="g227" id="pcArchiveAction"/>
-                                            </connections>
-                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>

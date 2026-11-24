@@ -38,9 +38,9 @@
                             <autoresizingMask key="autoresizingMask"/>
                             <subviews>
                                 <button id="g11" customClass="PCButton">
-                                    <rect key="frame" x="0" y="295" width="44" height="43"/>
+                                    <rect key="frame" x="0" y="302" width="38" height="32"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                    <buttonCell key="cell" type="push" title="Build" imagePosition="noImage" bezelStyle="regularSquare" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g14">
+                                    <buttonCell key="cell" type="push" title="Build" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g14">
                                         <behavior key="behavior" pushIn="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                         <modifierMask key="keyEquivalentModifierMask" command="YES"/>
@@ -50,9 +50,9 @@
                                     </connections>
                                 </button>
                                 <button id="g26" customClass="PCButton">
-                                    <rect key="frame" x="44" y="295" width="44" height="43"/>
+                                    <rect key="frame" x="43" y="302" width="38" height="32"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                    <buttonCell key="cell" type="push" title="Clean" imagePosition="noImage" bezelStyle="regularSquare" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g29">
+                                    <buttonCell key="cell" type="push" title="Clean" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g29">
                                         <behavior key="behavior" pushIn="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="system"/>
                                         <modifierMask key="keyEquivalentModifierMask" command="YES"/>
@@ -62,9 +62,9 @@
                                     </connections>
                                 </button>
                                 <button id="g38" customClass="PCButton">
-                                    <rect key="frame" x="88" y="295" width="44" height="43"/>
+                                    <rect key="frame" x="86" y="302" width="38" height="32"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                    <buttonCell key="cell" type="push" title="Options" imagePosition="noImage" bezelStyle="regularSquare" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g41">
+                                    <buttonCell key="cell" type="push" title="Build Options" imagePosition="noImage" bezelStyle="rounded" borderStyle="border" alignment="center" imageScaling="proportionallyDown" inset="2" id="g41">
                                         <behavior key="behavior" lightByContents="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="system"/>
                                         <modifierMask key="keyEquivalentModifierMask" command="YES"/>
@@ -78,36 +78,36 @@
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 </customView>
                                 <textField id="g49">
-                                    <rect key="frame" x="180" y="320" width="64" height="18"/>
+                                    <rect key="frame" x="139" y="320" width="58" height="18"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Target:" id="g51">
+                                    <textFieldCell key="cell" alignment="right" title="Target" id="g51">
                                         <font key="font" metaFont="system" size="12"/>
-                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
                                 <textField id="g60">
-                                    <rect key="frame" x="181" y="295" width="63" height="18"/>
+                                    <rect key="frame" x="139" y="298" width="58" height="18"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="right" title="Status:" id="g62">
+                                    <textFieldCell key="cell" alignment="right" title="Status" id="g62">
                                         <font key="font" metaFont="system" size="12"/>
-                                        <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
                                 <textField id="g69">
-                                    <rect key="frame" x="249" y="320" width="215" height="18"/>
+                                    <rect key="frame" x="204" y="320" width="260" height="18"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
-                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="left" title="Default with args ' '" id="g71">
+                                    <textFieldCell key="cell" lineBreakMode="truncatingTail" alignment="left" title="" id="g71">
                                         <font key="font" metaFont="system" size="12"/>
                                         <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
                                 <textField id="g78">
-                                    <rect key="frame" x="249" y="295" width="215" height="18"/>
+                                    <rect key="frame" x="204" y="298" width="260" height="18"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
-                                    <textFieldCell key="cell" lineBreakMode="wordWrapping" alignment="left" title="Waiting..." id="g80">
+                                    <textFieldCell key="cell" lineBreakMode="truncatingTail" alignment="left" title="Ready" id="g80">
                                         <font key="font" metaFont="system" size="12"/>
                                         <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>

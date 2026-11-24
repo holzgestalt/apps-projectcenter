@@ -1195,7 +1195,7 @@ static NSArray *Elements(NSXMLNode *node, NSString *query)
   return nodes ? nodes : [NSArray array];
 }
 
-/* {Name, Shared, Targets, RunTarget, Configurations} from an .xcscheme. */
+/* {Name, Shared, Targets, RunTarget, ArchiveTargets, Configurations} from an .xcscheme. */
 static NSMutableDictionary *ReadScheme(NSString *file, BOOL shared)
 {
   NSData              *data = [NSData dataWithContentsOfFile:file];
@@ -1203,6 +1203,7 @@ static NSMutableDictionary *ReadScheme(NSString *file, BOOL shared)
   NSXMLElement        *root;
   NSMutableArray      *targets = [NSMutableArray array];
   NSMutableArray      *allTargets = [NSMutableArray array];
+	NSMutableArray *archiveTargets = nil;
   NSMutableDictionary *configurations = [NSMutableDictionary dictionary];
   NSMutableDictionary *scheme;
   NSDictionary        *actions;
@@ -1228,6 +1229,11 @@ static NSMutableDictionary *ReadScheme(NSString *file, BOOL shared)
       continue;
     }
     [allTargets addObject:name];
+	NSString *archive = Attribute(entry, @"buildForArchiving");
+	if (archive) {
+		if (archiveTargets == nil) archiveTargets = [NSMutableArray array];
+		if ([archive isEqual:@"YES"]) [archiveTargets addObject:name];
+	}
     if ([Attribute(entry, @"buildForRunning") isEqual:@"YES"])
     {
       [targets addObject:name];
@@ -1259,6 +1265,7 @@ static NSMutableDictionary *ReadScheme(NSString *file, BOOL shared)
   {
     [scheme setObject:runTarget forKey:@"RunTarget"];
   }
+	if (archiveTargets) [scheme setObject:archiveTargets forKey:@"ArchiveTargets"];
   return scheme;
 }
 

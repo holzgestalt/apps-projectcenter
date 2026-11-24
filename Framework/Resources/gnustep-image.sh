@@ -53,7 +53,7 @@ install_packages() {
 step_packages() {
   if [ "$SYSTEM" = debian ]; then
     install_packages ca-certificates git make cmake pkg-config clang lld g++ python3 file \
-      dpkg-dev xvfb xauth libtsl-robin-map-dev \
+      dpkg-dev xvfb xauth robin-map-dev \
       libffi-dev libicu-dev libgnutls28-dev libssl-dev libxml2-dev libxslt1-dev \
       zlib1g-dev libgmp-dev libavahi-client-dev libcurl4-gnutls-dev \
       libjpeg-dev libtiff-dev libpng-dev libgif-dev libaspell-dev libcups2-dev \

@@ -96,6 +96,8 @@
 - (void)executeBuild:(id)sender;
 - (void)stopBuild:(id)sender;
 - (void)startClean:(id)sender;
+// Product
+- (void)addProductMenu;
 - (void)startArchive:(id)sender;
 // Loaded Files
 - (void)showLoadedFilesPanel:(id)sender;

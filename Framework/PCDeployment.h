@@ -76,6 +76,8 @@
  * every distribution of each Linux target once for each architecture, with
  * Name and Architecture. */
 + (NSArray *)deploymentsOfProjectAtPath:(NSString *)path;
+/* The deployments for the targets that the toolbar scheme archives. */
++ (NSArray *)deploymentsForProject:(NSDictionary *)project scheme:(NSDictionary *)scheme;
 
 /* Edits, written into the target's build settings at once. An empty or nil
  * value removes the setting. */

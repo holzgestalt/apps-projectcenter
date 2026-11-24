@@ -48,15 +48,26 @@
 
 #import "../Modules/Preferences/Build/PCBuildPrefs.h"
 
-#ifndef IMAGE
-#define IMAGE(X) [NSImage imageNamed: X]
-#endif
-
 #ifndef NOTIFICATION_CENTER
 #define NOTIFICATION_CENTER [NSNotificationCenter defaultCenter]
 #endif
 
 NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNotification";
+
+static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallback, NSString *label) {
+	NSImage *image = nil;
+#ifndef GNUSTEP
+	image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:label];
+	image = [image imageWithSymbolConfiguration:
+		[NSImageSymbolConfiguration configurationWithPointSize:15 weight:NSFontWeightMedium]];
+	[button setAccessibilityLabel:label];
+#endif
+	if (image == nil) image = [NSImage imageNamed:fallback];
+	[button setTitle:label];
+	[button setImage:image];
+	[button setImagePosition:image ? NSImageOnly : NSNoImage];
+	[button setToolTip:label];
+}
 
 @implementation PCProjectBuilder
 
@@ -136,6 +147,22 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   [super dealloc];
 }
 
+- (void)_updateBuildControls {
+	if (_isBuilding) {
+		SetBuildControl(buildButton, @"stop.fill", NSImageNameStopProgressTemplate,
+			_isArchiving ? @"Stop Archive" : @"Stop Build");
+	}
+	else {
+		SetBuildControl(buildButton, @"hammer", @"GSBuildTemplate", @"Build");
+	}
+	if (_isCleaning) {
+		SetBuildControl(cleanButton, @"stop.fill", NSImageNameStopProgressTemplate, @"Stop Clean");
+	}
+	else {
+		SetBuildControl(cleanButton, @"eraser", NSImageNameTrashEmpty, @"Clean");
+	}
+}
+
 - (void)awakeFromNib
 {
   NSScrollView *logScroll;
@@ -153,17 +180,9 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   //  NSLog(@"ProjectBuilder awakeFromNib: componentView RC:%i",
   //	[componentView retainCount]);
 
-  /*
-   * 4 build Buttons
-   */
-  [buildButton setToolTip:@"Build"];
-  [buildButton setImage:IMAGE(@"Build")];
-
-  [cleanButton setToolTip:@"Clean"];
-  [cleanButton setImage:IMAGE(@"Clean")];
-
-  [optionsButton setToolTip:@"Build Options"];
-  [optionsButton setImage:IMAGE(@"Options")];
+	[self _updateBuildControls];
+	SetBuildControl(optionsButton, @"slider.horizontal.3", NSImageNameAdvanced, @"Build Options");
+	[statusField setStringValue:@"Ready"];
 
   [errorsCountField setStringValue:@""];
   [self updateTargetField];
@@ -348,31 +367,28 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   promptOnClean = [prefs boolForKey:PromptOnClean];
 }
 
-- (void)updateTargetField
-{
-  NSString *s;
-  NSString *args;
-  id       argsValue;
+- (NSString *)_selectedTargetDescription {
+	NSDictionary *metadata = [project projectDict];
+	NSString *script = [metadata objectForKey:@"XCODE_BuildScript"];
+	if (script) return [NSString stringWithFormat:@"Build script (%@)", [script lastPathComponent]];
 
-  argsValue = [[project projectDict] objectForKey:PCBuilderArguments];
-  if ([argsValue isKindOfClass:[NSArray class]])
-  {
-    args = [argsValue componentsJoinedByString:@" "];
-  }
-  else if ([argsValue isKindOfClass:[NSString class]])
-  {
-    args = argsValue;
-  }
-  else
-  {
-    args = nil;
-  }
+	NSDictionary *scheme = [[PCXcodeProject buildSelectionForProject:metadata] objectForKey:@"Scheme"];
+	NSArray *targets = [scheme objectForKey:@"Targets"];
+	if ([targets count]) return [targets componentsJoinedByString:@", "];
+	if ([scheme objectForKey:@"Name"]) return [scheme objectForKey:@"Name"];
 
-  if (!args) args = @" ";
+	return [NSString stringWithFormat:@"%@ (GNUmakefile)", _isCleaning ? @"clean" : buildTarget];
+}
 
-  s = [NSString stringWithFormat:@"%@ with args '%@'", buildTarget, args];
+- (void)_setTargetDescription:(NSString *)description {
+	[targetField setStringValue:description];
+	[targetField setToolTip:description];
+}
 
-  [targetField setStringValue:s];
+- (void)updateTargetField {
+	if (!_isBuilding && !_isCleaning && buildResult == nil) {
+		[self _setTargetDescription:[self _selectedTargetDescription]];
+	}
 }
 
 // --- Accessory
@@ -579,7 +595,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   nextEL = ELNone;
   lastIndentString = @"";
 
-  buildStatus = @"Building...";
+  buildStatus = @"Building…";
   [buildStatusTarget setString:@"Build"];
   [cleanButton setEnabled:NO];
   _isBuilding = YES;
@@ -609,7 +625,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   [buildArgs addObject:@"clean"];
   [buildArgs addObjectsFromArray:[self buildArguments]];
 
-  buildStatus = @"Cleaning...";
+  buildStatus = @"Cleaning…";
   [buildStatusTarget setString:@"Clean"];
   [buildButton setEnabled:NO];
   _isCleaning = YES;
@@ -618,8 +634,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 
 /* Archive runs one script, build/Deployment/archive.sh, which builds and
  * packages each platform in turn; its output is the build log. */
-- (void)startArchive:(id)sender
-{
+- (void)startArchive:(id)sender {
   NSDictionary    *projectDict = [project projectDict];
   NSString        *path = [projectDict objectForKey:@"XCODE_PROJECT_PATH"];
   NSMutableArray  *ready = [NSMutableArray array];
@@ -635,7 +650,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
                     @"OK", nil, nil);
     return;
   }
-  for (NSDictionary *deployment in [PCDeployment deploymentsOfProjectAtPath:path])
+	NSDictionary *scheme = [[PCXcodeProject buildSelectionForProject:projectDict] objectForKey:@"Scheme"];
+	for (NSDictionary *deployment in [PCDeployment deploymentsForProject:projectDict scheme:scheme])
   {
     NSArray *found;
 
@@ -659,8 +675,8 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   if (enabled == 0)
   {
     NSRunAlertPanel(@"Archive",
-                    @"No platform is set up for Archive. Select the project in the navigator and add "
-                    @"platforms in the Deployment tab.", @"OK", nil, nil);
+                    @"The selected scheme has no platforms for Archive. Choose a scheme with a "
+                    @"deployment or add platforms in the Deployment tab.", @"OK", nil, nil);
     return;
   }
   if ([problems count] && [ready count] == 0)
@@ -696,7 +712,9 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   lastEL = ELNone;
   nextEL = ELNone;
   lastIndentString = @"";
-  buildStatus = @"Archiving...";
+	NSArray *targets = [[NSOrderedSet orderedSetWithArray:[ready valueForKey:@"Target"]] array];
+	[self _setTargetDescription:[targets componentsJoinedByString:@", "]];
+  buildStatus = @"Archiving…";
   [buildStatusTarget setString:@"Archive"];
   [buildButton setState:NSOnState];
   [cleanButton setEnabled:NO];
@@ -757,6 +775,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   }
 
   _isArchiving = NO;
+	[self _updateBuildControls];
   [buildArgs removeAllObjects];
   [buildStatusTarget setString:@"Default"];
 
@@ -883,10 +902,11 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   // Checking build conditions (Archive checked its platforms)
   if (!_isArchiving && [self prebuildCheck] == NO)
   {
-    [self cleanupAfterMake:[NSString stringWithFormat:
-                            @"%@ - %@ terminated", [project projectName], buildStatusTarget]];
+    [self cleanupAfterMake:[NSString stringWithFormat:@"%@ cancelled", buildStatusTarget]];
     return;
   }
+
+	if (!_isArchiving) [self _setTargetDescription:[self _selectedTargetDescription]];
 
   // Prepearing to building
   stdOutPipe = [[NSPipe alloc] init];
@@ -901,6 +921,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 
   [statusField setStringValue:buildStatus];
   [[project projectWindow] updateStatusLineWithText:buildStatus];
+	[self _updateBuildControls];
 
   // Run make task
   [logOutput setString:@""];
@@ -916,7 +937,7 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 
   makeTask = [[NSTask alloc] init];
   NSString *script = [[project projectDict] objectForKey:@"XCODE_BuildScript"];
-  NSArray  *xcodebuildArgs = [self _xcodebuildArgumentsForAction:
+  NSArray  *xcodebuildArgs = _isArchiving ? nil : [self _xcodebuildArgumentsForAction:
                               _isCleaning ? @"clean" : @"build"];
   NSArray *nativeArgs = _isArchiving ? nil
     : [PCXcodeProject GNUstepBuildArgumentsForProject:[project projectDict]
@@ -928,6 +949,10 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   }
   else if (_usesXcodebuild)
   {
+	NSUInteger index = [xcodebuildArgs indexOfObject:@"-target"];
+	if (index != NSNotFound && index + 1 < [xcodebuildArgs count]) {
+		[self _setTargetDescription:[xcodebuildArgs objectAtIndex:index + 1]];
+	}
     [makeTask setArguments:xcodebuildArgs];
   }
   else if (nativeArgs)
@@ -1035,46 +1060,33 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
   RELEASE(stdOutPipe);
   RELEASE(stdErrorPipe);
 
+	if (_isArchiving && status == 0) {
+		NSURL *archiveURL = [NSURL fileURLWithPath:archiveFolder isDirectory:YES];
+		NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:archiveURL
+			includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles error:NULL];
+		if ([files count] == 0) {
+			[self logBuildString:@"error: Archive produced no packages." newLine:YES];
+			status = 1;
+		}
+	}
+
   [self updateErrorsCountField];
 
-  if (status == 0)
-  {
-    logString = [NSString stringWithFormat:@"=== %@ succeeded! ===",
-                 buildStatusTarget];
-    statusString = [NSString stringWithFormat:@"%@ - %@ succeeded",
-                    [project projectName], buildStatusTarget];
-  }
-  else
-  {
-    logString = [NSString stringWithFormat:@"=== %@ terminated! ===",
-                 buildStatusTarget];
-    if (errorsCount > 0)
-    {
-      statusString = [NSString stringWithFormat:
-                      @"%@ - %@ failed (%i errors)",
-                      [project projectName], buildStatusTarget, errorsCount];
-    }
-    else
-    {
-      statusString = [NSString stringWithFormat:@"%@ - %@ failed",
-                      [project projectName], buildStatusTarget];
-    }
-  }
-  [statusField setStringValue:statusString];
-  [[project projectWindow] updateStatusLineWithText:statusString];
-  [self logBuildString:logString newLine:YES];
-
-  buildSucceeded = (status == 0);
-  RELEASE(buildResult);
-  buildResult = [[NSString alloc] initWithFormat:@"%@ %@",
-                 [buildStatusTarget isEqualToString:@"Clean"] ? @"Clean"
-                 : _isArchiving ? @"Archive" : @"Build",
-                 buildSucceeded ? @"succeeded" : @"failed"];
-  /* Show the packages, as Xcode shows a new archive. */
-  if (_isArchiving && [[NSFileManager defaultManager] fileExistsAtPath:archiveFolder])
-  {
-    [[NSWorkspace sharedWorkspace] selectFile:archiveFolder inFileViewerRootedAtPath:@""];
-  }
+	buildSucceeded = (status == 0);
+	RELEASE(buildResult);
+	buildResult = [[NSString alloc] initWithFormat:@"%@ %@", buildStatusTarget,
+		buildSucceeded ? @"succeeded" : @"failed"];
+	statusString = buildResult;
+	logString = [NSString stringWithFormat:@"=== %@ ===", buildResult];
+	[self logBuildString:logString newLine:YES];
+	if (_isArchiving) {
+		if (buildSucceeded) {
+			[[NSWorkspace sharedWorkspace] selectFile:archiveFolder inFileViewerRootedAtPath:@""];
+		}
+		else {
+			[[project projectWindow] showProjectBuild:self];
+		}
+	}
 
   // Run post process if configured
   /*  if (status && postProcess)
@@ -1402,7 +1414,6 @@ NSString *PCProjectBuilderDidChangeNotification = @"PCProjectBuilderDidChangeNot
 
   if (parsedString && ![self line:parsedString startsWithString:@"==="])
   {
-    [statusField setStringValue:parsedString];
     [[project projectWindow] updateStatusLineWithText:parsedString];
   }
 

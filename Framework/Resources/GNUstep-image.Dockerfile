@@ -58,4 +58,4 @@ ENV GNUSTEP_MAKEFILES=/opt/gnustep/share/GNUstep/Makefiles \
     PKG_CONFIG_PATH=/opt/gnustep/lib/pkgconfig \
     PATH=/usr/local/bin:/opt/gnustep/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin \
     CC=clang CXX=clang++ OBJC=clang
-LABEL org.gnustep.projectcenter.image="2"
+LABEL org.gnustep.projectcenter.image="3"

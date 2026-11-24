@@ -18,8 +18,6 @@
 
 #import <ProjectCenter/PCDefines.h>
 #import <ProjectCenter/PCProject.h>
-#import <ProjectCenter/PCProjectBuilder.h>
-#import <ProjectCenter/PCProjectWindow.h>
 
 /* The form's document view, filled from the top. */
 @interface PCDeploymentForm : NSView
@@ -239,14 +237,6 @@ static const CGFloat Margin = 20;
   if ([self selectedIndex] >= 0) [self removePlatformAtIndex:[self selectedIndex]];
 }
 
-- (void)archive:(id)sender
-{
-  PCProjectBuilder *builder = [project projectBuilder];
-
-  [[project projectWindow] showProjectBuild:self];
-  [builder performStartArchive];
-}
-
 - (BOOL)setValue:(NSString *)value forSetting:(NSString *)key ofDeploymentAtIndex:(NSUInteger)index
 {
   NSMutableDictionary *deployment = index < [deployments count] ? [deployments objectAtIndex:index] : nil;
@@ -447,7 +437,6 @@ static const CGFloat Margin = 20;
   NSDictionary *projectDict = [project projectDict];
   NSSet        *unused = [PCDeployment unusedKeysOfDeployment:deployment];
   NSArray      *problems;
-  NSUInteger   enabled = 0;
 
   for (NSString *key in controls)
   {
@@ -477,16 +466,11 @@ static const CGFloat Margin = 20;
     [control setEnabled:![unused containsObject:key]];
   }
 
-  /* Archive makes all of the project's, not only this target's. */
-  enabled = [self _projectPath] ? [[PCDeployment deploymentsOfProjectAtPath:[self _projectPath]] count] : 0;
-  [archiveButton setEnabled:(enabled > 0)];
-  if (deployment == nil)
-  {
-    [statusField setStringValue:enabled ? [NSString stringWithFormat:@"Archive makes %lu package%@.",
-                                           (unsigned long)enabled, enabled == 1 ? @"" : @"s"] : @""];
-    [statusField setToolTip:nil];
-    return;
-  }
+	if (deployment == nil) {
+		[statusField setStringValue:@""];
+		[statusField setToolTip:nil];
+		return;
+	}
   problems = [PCDeployment problemsWithDeployment:deployment project:projectDict];
   if ([problems count] == 0)
   {

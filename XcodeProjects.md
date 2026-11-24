@@ -322,9 +322,9 @@ was changed, such as `GNUSTEP_DEBIAN_MAINTAINER` (`DEBIAN`, `RPM`, or
 `TARBALL` for the Linux `.tar.gz`). An empty field takes the default shown in
 grey, mostly from the project (product name, version), and is not written.
 
-Archive makes the macOS entry of every Mac application target (with the
-target's own scheme where it has one) and every distribution of each Linux
-target. A Windows target (`SDKROOT = windows`) is not supported yet.
+Archive makes the macOS archive for a Mac application in the selected scheme
+and packages the configured distributions of its Linux targets. A Windows
+target (`SDKROOT = windows`) is not supported yet.
 
 | Platform | Makes | Built with |
 | --- | --- | --- |
@@ -334,7 +334,7 @@ target. A Windows target (`SDKROOT = windows`) is not supported yet.
 | Linux | a `.tar.gz` of the application bundle | GNUstep |
 | Windows (not yet for targets) | a `.zip` of a folder with the application bundle and its DLLs | GNUstep |
 
-- **macOS** archives the target's scheme (else the toolbar's) in the scheme's
+- **macOS** archives the selected scheme in the scheme's
   Archive configuration, signed as the project's settings say, into a `.zip`.
   macOS platforms are archived on a Mac with Xcode.
 - **GNUstep platforms** build the Linux target with ProjectCenter's compiler,
@@ -405,15 +405,16 @@ target. A Windows target (`SDKROOT = windows`) is not supported yet.
 The line below the settings says whether this computer can archive the
 selected platform, or what is missing (a tool, Docker, a toolchain folder).
 
-**Project Build → Archive**, or the **Archive** button of the Deployment tab,
-builds and packages every platform that is turned on, one after the other. It
-leaves out, after asking, the platforms this computer can't archive. The output
-appears in the build log, and a platform that fails doesn't stop the others.
+**Product → Archive** uses the toolbar scheme's targets marked for Archive.
+For a Linux-only archive, select the Linux scheme before choosing Archive.
+Use the Deployment tab to configure its distributions and architectures.
+Archive leaves out, after asking, the platforms this computer can't archive.
+The output appears in the build log, and a platform that fails doesn't stop
+the others.
 The packages go to a new folder, `build/Archives/<Product> <date time>`,
 which is shown when Archive finishes. The scripts Archive runs are written to
 `build/Deployment` (`archive.sh` and one for each platform), and can be run
-again from a shell. The GNUstep build has the Archive button but not yet the
-menu item, which is only in the XIB of the main menu.
+again from a shell.
 
 ## GNUstep build and debug integration
 

@@ -296,6 +296,31 @@
   [[[projectManager rootActiveProject] projectBuilder] performStartClean];
 }
 
+/* Both the Cocoa and GNUstep main menus get the Product menu. */
+- (void)addProductMenu {
+	NSMenu *mainMenu = [NSApp mainMenu];
+	if (mainMenu == nil || [mainMenu itemWithTitle:@"Product"]) return;
+
+	NSMenu *product = [[[NSMenu alloc] initWithTitle:@"Product"] autorelease];
+	NSMenu *tools = [[mainMenu itemWithTitle:@"Tools"] submenu];
+	NSMenu *projectBuild = [[tools itemWithTitle:@"Project Build"] submenu];
+	for (NSString *title in @[@"Build", @"Clean"]) {
+		NSMenuItem *command = [projectBuild itemWithTitle:title];
+		if (command == nil) continue;
+
+		[command retain];
+		[projectBuild removeItem:command];
+		[product addItem:command];
+		[command release];
+	}
+	NSMenuItem *archive = [product addItemWithTitle:@"Archive" action:@selector(startArchive:) keyEquivalent:@""];
+	[archive setTarget:self];
+	NSMenuItem *item = [[[NSMenuItem alloc] initWithTitle:@"Product" action:NULL keyEquivalent:@""] autorelease];
+	[item setSubmenu:product];
+	NSInteger index = [mainMenu indexOfItemWithTitle:@"Tools"];
+	[mainMenu insertItem:item atIndex:index < 0 ? [mainMenu numberOfItems] : index];
+}
+
 - (void)startArchive:(id)sender
 {
   [self showBuildPanel:self];
@@ -357,6 +382,14 @@
   PCProjectEditor  *projectEditor = [aProject projectEditor];
   PCProjectBrowser *projectBrowser = [aProject projectBrowser];
 
+	SEL action = [menuItem action];
+	if (action == @selector(executeBuild:) || action == @selector(startClean:) || action == @selector(startArchive:)) {
+		PCProject *rootProject = [projectManager rootActiveProject];
+		PCProjectBuilder *builder = [rootProject projectBuilder];
+		return builder != nil && ![builder isBuilding] && ![builder isCleaning]
+			&& (action != @selector(startArchive:) || [[rootProject projectDict] objectForKey:@"XCODE_PROJECT_PATH"] != nil);
+	}
+
   if ([menuItem action] == @selector(convertToXIB:))
   {
     return [projectManager rootActiveProject] != nil;
@@ -412,10 +445,7 @@
     if ([menuTitle isEqualToString: @"Project Build"])
     {
       if ([[menuItem title] isEqualToString:@"Show Panel..."]) return NO;
-      if ([[menuItem title] isEqualToString:@"Build"]) return NO;
       if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
-      if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
-      if ([[menuItem title] isEqualToString:@"Archive"]) return NO;
       if ([[menuItem title] isEqualToString:@"Next Error"]) return NO;
       if ([[menuItem title] isEqualToString:@"Previous Error"]) return NO;
     }
@@ -518,21 +548,12 @@
     if ([[[projectManager activeProject] projectBuilder] isBuilding]
         || [[[projectManager activeProject] projectBuilder] isCleaning])
     {
-      if ([[menuItem title] isEqualToString:@"Build"]) return NO;
-      if ([[menuItem title] isEqualToString:@"Clean"]) return NO;
-      if ([[menuItem title] isEqualToString:@"Archive"]) return NO;
       if ([[menuItem title] isEqualToString:@"Next error"]) return NO;
       if ([[menuItem title] isEqualToString:@"Previous error"]) return NO;
     }
     else
     {
       if ([[menuItem title] isEqualToString:@"Stop Build"]) return NO;
-    }
-    /* Archive builds the Deployment of an Xcode project. */
-    if ([[menuItem title] isEqualToString:@"Archive"]
-        && [[[projectManager rootActiveProject] projectDict] objectForKey:@"XCODE_PROJECT_PATH"] == nil)
-    {
-      return NO;
     }
   }
 

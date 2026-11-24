@@ -676,6 +676,20 @@ static void TestDeployment(void)
         [NSString stringWithFormat:@"Archive: each distribution once per architecture, in its words: %@",
          [list valueForKey:@"Name"]]);
 
+	Write(root, @"Sample.xcodeproj/xcshareddata/xcschemes/Linux Archive.xcscheme", @"<Scheme><BuildAction><BuildActionEntries>"
+		"<BuildActionEntry buildForRunning=\"YES\" buildForArchiving=\"NO\"><BuildableReference BlueprintName=\"Sample\"/></BuildActionEntry>"
+		"<BuildActionEntry buildForRunning=\"NO\" buildForArchiving=\"YES\"><BuildableReference BlueprintName=\"Sample Linux\"/></BuildActionEntry>"
+		"</BuildActionEntries></BuildAction></Scheme>");
+	NSDictionary *linuxScheme = [[[PCXcodeProject schemesOfProjectAtPath:bundle] filteredArrayUsingPredicate:
+		[NSPredicate predicateWithFormat:@"Name == %@", @"Linux Archive"]] firstObject];
+	NSArray *linuxArchives = [PCDeployment deploymentsForProject:projectDict scheme:linuxScheme];
+	Check([linuxArchives isEqual:[list subarrayWithRange:NSMakeRange(1, 4)]],
+		@"Product Archive uses the scheme's archive targets, separate from its run targets");
+	NSArray *macArchives = [PCDeployment deploymentsForProject:projectDict scheme:@{@"Name": @"Mac Release", @"RunTarget": @"Sample"}];
+	Check([macArchives count] == 1 && [[[macArchives firstObject] objectForKey:@"Scheme"] isEqual:@"Mac Release"]
+		&& [[PCDeployment deploymentsForProject:projectDict scheme:@{@"RunTarget": @"Sample", @"ArchiveTargets": @[]}] count] == 0,
+		@"A Mac archive uses the selected scheme, and a disabled archive has no deployments");
+
   /* Changing and removing a distribution takes its settings along. */
   Check(![PCDeployment changeDistribution:[[PCDeployment deploymentsOfTarget:linuxTarget] objectAtIndex:1]
                                    toKind:@"Debian" ofTarget:linuxTarget projectAtPath:bundle error:&error],
@@ -833,12 +847,13 @@ static void TestDeployment(void)
         "  info) exit 0 ;;\n"
         "  image)\n"
         "    for argument; do image=\"$argument\"; done\n"
-        "    [ -f \"$log.images\" ] && grep -qx \"$image\" \"$log.images\" && echo 2 ;;\n"
+        "    [ -f \"$log.images\" ] && grep -qx \"$image\" \"$log.images\" && cat \"$log.version\" ;;\n"
         "  build)\n"
         "    for argument; do context=\"$argument\"; done\n"
         "    echo \"$*\" >> \"$log\"\n"
         "    [ -f \"$context/Dockerfile\" ] && [ -f \"$context/gnustep-image.sh\" ] && [ -f \"$context/sources/.keep\" ] || exit 1\n"
         "    [ -f \"$context/sources/libobjc2/README\" ] && [ ! -e \"$context/sources/libobjc2/.git\" ] || exit 1\n"
+        "    sed -n 's/^LABEL org\\.gnustep\\.projectcenter\\.image=\"\\([0-9]*\\)\"$/\\1/p' \"$context/Dockerfile\" > \"$log.version\"\n"
         "    while [ $# -gt 0 ]; do [ \"$1\" = -t ] && echo \"$2\" >> \"$log.images\"; shift; done ;;\n"
         "  run)\n"
         "    echo \"$*\" >> \"$log\"\n"

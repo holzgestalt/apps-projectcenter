@@ -378,6 +378,7 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
   {
     [[self _toolbarPopUp:identifier] setEnabled:enabled];
   }
+	[builder updateTargetField];
   [[projectWindow toolbar] validateVisibleItems];
 }
 

@@ -52,7 +52,6 @@
         <customObject id="dpE" userLabel="Deployment Editor" customClass="PCDeploymentEditor">
             <connections>
                 <outlet property="addButton" destination="dp20" id="dp02"/>
-                <outlet property="archiveButton" destination="dp50" id="dp03"/>
                 <outlet property="formScroll" destination="dp60" id="dp04"/>
                 <outlet property="platformsTable" destination="dp11" id="dp05"/>
                 <outlet property="removeButton" destination="dp30" id="dp06"/>
@@ -355,23 +354,13 @@
                                                         </scroller>
                                                     </scrollView>
                                                     <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="dp40">
-                                                        <rect key="frame" x="112" y="14" width="370" height="16"/>
+                                                        <rect key="frame" x="112" y="14" width="474" height="16"/>
                                                         <textFieldCell key="cell" selectable="YES" title="Status" id="dp41">
                                                             <font key="font" metaFont="smallSystem"/>
                                                             <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                         </textFieldCell>
                                                     </textField>
-                                                    <button toolTip="Build and package every platform that is turned on (Project Build → Archive)" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dp50">
-                                                        <rect key="frame" x="490" y="9" width="96" height="25"/>
-                                                        <buttonCell key="cell" type="push" title="Archive" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="dp51">
-                                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                            <font key="font" metaFont="system"/>
-                                                        </buttonCell>
-                                                        <connections>
-                                                            <action selector="archive:" target="dpE" id="dp52"/>
-                                                        </connections>
-                                                    </button>
                                                 </subviews>
                                                 <constraints>
                                                     <constraint firstItem="dp10" firstAttribute="leading" secondItem="dp81" secondAttribute="leading" constant="20" id="dpk1"/>
@@ -387,10 +376,8 @@
                                                     <constraint firstAttribute="trailing" secondItem="dp60" secondAttribute="trailing" id="dpk11"/>
                                                     <constraint firstItem="dp60" firstAttribute="bottom" secondItem="dp10" secondAttribute="bottom" id="dpk12"/>
                                                     <constraint firstItem="dp40" firstAttribute="leading" secondItem="dp30" secondAttribute="trailing" constant="16" id="dpk13"/>
-                                                    <constraint firstItem="dp40" firstAttribute="centerY" secondItem="dp50" secondAttribute="centerY" id="dpk14"/>
-                                                    <constraint firstItem="dp50" firstAttribute="leading" secondItem="dp40" secondAttribute="trailing" constant="12" id="dpk15"/>
-                                                    <constraint firstAttribute="trailing" secondItem="dp50" secondAttribute="trailing" constant="20" id="dpk16"/>
-                                                    <constraint firstItem="dp50" firstAttribute="centerY" secondItem="dp20" secondAttribute="centerY" id="dpk17"/>
+                                                    <constraint firstItem="dp40" firstAttribute="centerY" secondItem="dp20" secondAttribute="centerY" id="dpk14"/>
+                                                    <constraint firstAttribute="trailing" secondItem="dp40" secondAttribute="trailing" constant="20" id="dpk16"/>
                                                 </constraints>
                                             </view>
                                         </tabViewItem>

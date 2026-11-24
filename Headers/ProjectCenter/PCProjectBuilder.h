@@ -125,8 +125,7 @@ typedef enum _ErrorLevel {
 - (void)performStartBuild;
 - (void)performStartClean;
 - (void)performStopBuild;
-/* Archive: builds and packages every platform of the project's Deployment
- * that is turned on (see PCDeployment), into build/Archives. */
+/* Archive builds the selected scheme's deployments into build/Archives. */
 - (void)performStartArchive;
 - (BOOL)isArchiving;
 - (NSArray *)buildArguments;
