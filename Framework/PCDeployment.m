@@ -269,6 +269,10 @@ static NSString *RootPath(NSString *path, NSString *root)
     [fields addObject:Section(@"Installation")];
     [fields addObject:Text(@"InstallFolder", @"Install Folder", installHelp)];
     [fields addObject:Check(@"Launcher", @"Command", @"Installs a command in /usr/bin that starts the application.")];
+    [fields addObject:Check(@"IncludeGNUstep", @"Include GNUstep",
+                            @"Puts the GNUstep the application is built with (its libraries, back end, resources and tools) "
+                           @"inside the bundle, with GNUstep/run to start it: the package needs no GNUstep of its own. "
+                           @"Off, it depends on projectcenter-gnustep, which Archive puts next to it.")];
     [fields addObject:Text(@"Categories", @"Menu Categories",
                            @"Categories of the desktop entry, separated by semicolons; empty makes no entry.")];
     [fields addObject:Text(@"Icon", @"Icon", @"A PNG or SVG file of the project for the desktop entry.")];
@@ -277,6 +281,12 @@ static NSString *RootPath(NSString *path, NSString *root)
   {
     [fields addObject:Section(@"Package")];
     [fields addObject:Text(@"Version", @"Version", @"The version in the file name; by default the project's.")];
+    if ([kind isEqual:@"Linux"])
+    {
+      [fields addObject:Check(@"IncludeGNUstep", @"Include GNUstep",
+                              @"Puts the GNUstep the application is built with inside the bundle, with "
+                              @"GNUstep/run to start it, so it runs where no GNUstep is installed.")];
+    }
     if ([kind isEqual:@"Windows"])
     {
       [fields addObject:Check(@"IncludeLibraries", @"Include DLLs",
@@ -806,7 +816,7 @@ static NSString *PackageName(NSString *name)
 
   if ([key isEqual:@"Name"]) return [[self kindNamed:kind] objectForKey:@"Title"];
   if ([key isEqual:@"Enabled"] || [key isEqual:@"AutomaticDependencies"] || [key isEqual:@"Launcher"]
-      || [key isEqual:@"IncludeLibraries"])
+      || [key isEqual:@"IncludeLibraries"] || [key isEqual:@"IncludeGNUstep"])
   {
     return @"YES";
   }
@@ -1318,6 +1328,89 @@ static void AppendGNUstepBuild(NSMutableString *s, NSDictionary *deployment, NSD
    @"echo \"Built $APP\"\n", candidates];
 }
 
+static BOOL IncludesGNUstep(NSDictionary *deployment, NSDictionary *projectDict)
+{
+  return [[PCDeployment valueForKey:@"IncludeGNUstep" ofDeployment:deployment project:projectDict] boolValue];
+}
+
+/* GNUstep inside the bundle $BUNDLE, in $BUNDLE/GNUstep: the shared
+ * libraries, the Library folder (the back end, fonts, images, the
+ * libraries' resources) and the tools the libraries start (gpbs, gdnc), of
+ * the GNUstep the application was built with: a cross toolchain's in its
+ * sysroot. Its GNUstep.conf names them relative to itself, and
+ * GNUstep/run starts the application with it and its libraries. */
+static void AppendIncludeGNUstep(NSMutableString *s)
+{
+  [s appendString:@"RUNTIME=\"$BUNDLE/GNUstep\"\n"
+   @"rm -rf \"$RUNTIME\"\n"
+   @"mkdir -p \"$RUNTIME/lib/GNUstep\" \"$RUNTIME/bin\" \"$RUNTIME/etc/GNUstep\"\n"
+   @"copied=' '\n"
+   @"for domain in SYSTEM NETWORK LOCAL; do\n"
+   @"  for kind in LIBRARIES LIBRARY TOOLS; do\n"
+   @"    folder=$(gnustep-config --variable=\"GNUSTEP_${domain}_$kind\" 2>/dev/null)\n"
+   @"    [ -n \"$folder\" ] || continue\n"
+   @"    folder=\"${GNUSTEP_SYSROOT:-}$folder\"\n"
+   @"    case \"$copied\" in *\" $kind:$folder \"*) continue ;; esac\n"
+   @"    copied=\"$copied$kind:$folder \"\n"
+   @"    [ -d \"$folder\" ] || continue\n"
+   @"    case $kind in\n"
+   @"      LIBRARIES)\n"
+   @"        find \"$folder/\" -maxdepth 1 -name 'lib*.so*' \\( -type f -o -type l \\) -exec cp -P {} \"$RUNTIME/lib/\" \\; ;;\n"
+   @"      LIBRARY)\n"
+   @"        (cd \"$folder\" && tar -cf - --exclude ThemeSDK --exclude Headers --exclude Makefiles \\\n"
+   @"          --exclude Documentation --exclude Applications --exclude WebApplications --exclude '*.a' \\\n"
+   @"          --exclude .DS_Store .) | (cd \"$RUNTIME/lib/GNUstep\" && tar -xf -) ;;\n"
+   @"      TOOLS)\n"
+   @"        for tool in gpbs gdnc gdomap make_services; do\n"
+   @"          if [ -f \"$folder/$tool\" ]; then cp \"$folder/$tool\" \"$RUNTIME/bin/\"; fi\n"
+   @"        done ;;\n"
+   @"    esac\n"
+   @"  done\n"
+   @"done\n"
+   @"if ! ls \"$RUNTIME/lib\"/libgnustep-base.so* >/dev/null 2>&1; then\n"
+   @"  echo \"error: no GNUstep libraries in gnustep-config's GNUSTEP_SYSTEM_LIBRARIES; turn off Include GNUstep\" >&2\n"
+   @"  exit 1\n"
+   @"fi\n"
+   @"{\n"
+   @"  echo '# The GNUstep inside the application bundle (written by ProjectCenter):'\n"
+   @"  echo '# its folders, relative to this one.'\n"
+   @"  echo 'GNUSTEP_USER_CONFIG_FILE=.GNUstep.conf'\n"
+   @"  echo 'GNUSTEP_USER_DEFAULTS_DIR=GNUstep/Defaults'\n"
+   @"  for domain in SYSTEM NETWORK LOCAL; do\n"
+   @"    echo \"GNUSTEP_${domain}_USERS_DIR=/home\"\n"
+   @"    echo \"GNUSTEP_${domain}_APPS=../../lib/GNUstep/Applications\"\n"
+   @"    echo \"GNUSTEP_${domain}_ADMIN_APPS=../../lib/GNUstep/Applications\"\n"
+   @"    echo \"GNUSTEP_${domain}_WEB_APPS=../../lib/GNUstep/WebApplications\"\n"
+   @"    echo \"GNUSTEP_${domain}_TOOLS=../../bin\"\n"
+   @"    echo \"GNUSTEP_${domain}_ADMIN_TOOLS=../../bin\"\n"
+   @"    echo \"GNUSTEP_${domain}_LIBRARY=../../lib/GNUstep\"\n"
+   @"    echo \"GNUSTEP_${domain}_HEADERS=../../include\"\n"
+   @"    echo \"GNUSTEP_${domain}_LIBRARIES=../../lib\"\n"
+   @"    echo \"GNUSTEP_${domain}_RESOURCES=../../share\"\n"
+   @"    echo \"GNUSTEP_${domain}_DOC=../../share/doc\"\n"
+   @"    echo \"GNUSTEP_${domain}_DOC_MAN=../../share/man\"\n"
+   @"    echo \"GNUSTEP_${domain}_DOC_INFO=../../share/info\"\n"
+   @"  done\n"
+   @"  for dir in APPS:Applications ADMIN_APPS:Applications/Admin WEB_APPS:WebApplications TOOLS:Tools \\\n"
+   @"      ADMIN_TOOLS:Tools/Admin LIBRARY:Library HEADERS:Library/Headers LIBRARIES:Library/Libraries \\\n"
+   @"      RESOURCES:Library/Resources DOC:Library/Documentation DOC_MAN:Library/Documentation/man \\\n"
+   @"      DOC_INFO:Library/Documentation/info; do\n"
+   @"    echo \"GNUSTEP_USER_DIR_${dir%%:*}=GNUstep/${dir#*:}\"\n"
+   @"  done\n"
+   @"} > \"$RUNTIME/etc/GNUstep/GNUstep.conf\"\n"
+   @"{\n"
+   @"  echo '#!/bin/sh'\n"
+   @"  echo '# Starts the application with the GNUstep inside its bundle (written by ProjectCenter).'\n"
+   @"  echo 'here=$(dirname \"$(readlink -f \"$0\")\")'\n"
+   @"  echo 'GNUSTEP_CONFIG_FILE=\"$here/etc/GNUstep/GNUstep.conf\"'\n"
+   @"  echo 'LD_LIBRARY_PATH=\"$here/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}\"'\n"
+   @"  echo 'export GNUSTEP_CONFIG_FILE LD_LIBRARY_PATH'\n"
+   @"  echo \"exec \\\"\\$here/../$EXE\\\" \\\"\\$@\\\"\"\n"
+   @"} > \"$RUNTIME/run\"\n"
+   @"chmod 755 \"$RUNTIME/run\"\n"
+   @"echo \"Included GNUstep in $(basename \"$BUNDLE\")/GNUstep ($(du -sk \"$RUNTIME\" | cut -f1) KB)\"\n"];
+}
+
 /* The files of a Linux package in $STAGE: the bundle in the install
  * folder, the command and the desktop entry. */
 static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDictionary *projectDict)
@@ -1327,22 +1420,26 @@ static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDic
   NSString *icon = Trimmed([deployment objectForKey:@"Icon"]);
   NSString *display = [[PCDeployment productOfProject:projectDict] objectForKey:@"DisplayName"];
   BOOL     launcher = [[PCDeployment valueForKey:@"Launcher" ofDeployment:deployment project:projectDict] boolValue];
+  BOOL     included = IncludesGNUstep(deployment, projectDict);
+  NSString *start = included ? @"$DEST/$APPNAME/GNUstep/run" : @"$DEST/$APPNAME/$EXE";
 
   if (![install hasPrefix:@"/"]) install = [@"/" stringByAppendingString:install];
   [s appendFormat:@"DEST=%@\n", SQ(install)];
   [s appendString:@"STAGE=\"$BUILD/package\"\n"
    @"mkdir -p \"$STAGE$DEST\"\n"
-   @"cp -R \"$APP\" \"$STAGE$DEST/\"\n"];
+   @"cp -R \"$APP\" \"$STAGE$DEST/\"\n"
+   @"BUNDLE=\"$STAGE$DEST/$APPNAME\"\n"];
+  if (included) AppendIncludeGNUstep(s);
   if (launcher)
   {
-    [s appendString:@"mkdir -p \"$STAGE/usr/bin\"\n"
-     @"printf '#!/bin/sh\\nexec \"%s\" \"$@\"\\n' \"$DEST/$APPNAME/$EXE\" > \"$STAGE/usr/bin/$PKG\"\n"
+    [s appendFormat:@"mkdir -p \"$STAGE/usr/bin\"\n"
+     @"printf '#!/bin/sh\\nexec \"%%s\" \"$@\"\\n' \"%@\" > \"$STAGE/usr/bin/$PKG\"\n"
      @"chmod 755 \"$STAGE/usr/bin/$PKG\"\n"
-     @"COMMAND=\"$PKG\"\n"];
+     @"COMMAND=\"$PKG\"\n", start];
   }
   else
   {
-    [s appendString:@"COMMAND=\"$DEST/$APPNAME/$EXE\"\n"];
+    [s appendFormat:@"COMMAND=\"%@\"\n", start];
   }
   if ([categories length])
   {
@@ -1396,21 +1493,29 @@ static NSString *DebianScript(NSDictionary *deployment, NSDictionary *projectDic
   [s appendFormat:@"DEPENDS=%@\n", SQ(value(@"Depends"))];
   if ([value(@"AutomaticDependencies") boolValue])
   {
-    /* The packages of the linked libraries and of GNUstep's back end: a
-     * cross toolchain's debian-depends answers from its sysroot. */
+    BOOL included = IncludesGNUstep(deployment, projectDict);
+
+    /* The packages of the linked libraries and of GNUstep's back end, other
+     * than the libraries in the bundle: a cross toolchain's debian-depends
+     * answers from its sysroot. */
     [s appendString:@"if [ -n \"${GNUSTEP_TOOLCHAIN:-}\" ] && [ -x \"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" ]; then\n"
-     @"  FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" \"$APP\")\n"
+     @"  FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" \"$BUNDLE\")\n"
      @"  if [ -n \"$FOUND\" ]; then DEPENDS=\"${DEPENDS:+$DEPENDS, }$FOUND\"; fi\n"
      @"elif command -v dpkg-query >/dev/null 2>&1 && command -v ldd >/dev/null 2>&1; then\n"
      @"  FOUND=$( {\n"
-     @"    for binary in \"$APP/$EXE\" $(find \"$APP\" -type f -name '*.so*'); do\n"
-     @"      ldd \"$binary\" 2>/dev/null | awk '$3 ~ /^\\// { print $3 }'\n"
+     @"    for binary in \"$BUNDLE/$EXE\" $(find \"$BUNDLE\" -type f \\( -name '*.so*' -o -path '*/GNUstep/bin/*' \\)); do\n"
+     @"      LD_LIBRARY_PATH=\"$BUNDLE/GNUstep/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}\" ldd \"$binary\" 2>/dev/null \\\n"
+     @"        | awk '$3 ~ /^\\// { print $3 }'\n"
      @"    done | sort -u | while read -r library; do\n"
      @"      [ -n \"$library\" ] || continue\n"
+     @"      [ -e \"$BUNDLE/GNUstep/lib/$(basename \"$library\")\" ] && continue\n"
      @"      dpkg -S \"$library\" 2>/dev/null || dpkg -S \"$(readlink -f \"$library\")\" 2>/dev/null\n"
-     @"    done\n"
-     @"    dpkg -S '*/Bundles/libgnustep-back*' 2>/dev/null | head -n 1\n"
-     @"  } | cut -d: -f1 | sort -u | paste -sd, - | sed 's/,/, /g')\n"
+     @"    done\n"];
+    if (!included)
+    {
+      [s appendString:@"    dpkg -S '*/Bundles/libgnustep-back*' 2>/dev/null | head -n 1\n"];
+    }
+    [s appendString:@"  } | cut -d: -f1 | sort -u | paste -sd, - | sed 's/,/, /g')\n"
      @"  if [ -n \"$FOUND\" ]; then DEPENDS=\"${DEPENDS:+$DEPENDS, }$FOUND\"; fi\n"
      @"fi\n"];
   }
@@ -1435,7 +1540,7 @@ static NSString *DebianScript(NSDictionary *deployment, NSDictionary *projectDic
    @"else\n"
    @"  dpkg-deb --build \"$STAGE\" \"$OUT/$FILE\"\n"
    @"fi\n"];
-  AppendRuntimePackage(s, @"deb");
+  if (!IncludesGNUstep(deployment, projectDict)) AppendRuntimePackage(s, @"deb");
   return s;
 }
 
@@ -1452,12 +1557,22 @@ static NSString *RPMScript(NSDictionary *deployment, NSDictionary *projectDict)
   [s appendFormat:@"PKG=%@\nVERSION=%@\nARCH=%@\n", SQ(value(@"PackageName")),
    SQ([value(@"Version") stringByReplacingOccurrencesOfString:@"-" withString:@"_"]), SQ(value(@"Architecture"))];
   AppendLinuxStage(s, deployment, projectDict);
+  if (IncludesGNUstep(deployment, projectDict))
+  {
+    [s appendString:@"OWN=$(ls \"$BUNDLE/GNUstep/lib\" | sed 's/\\.so.*//' | sort -u | paste -sd'|' -)\n"];
+  }
   [s appendString:@"TOP=\"$BUILD/rpm\"\n"
    @"mkdir -p \"$TOP/SPECS\" \"$TOP/RPMS\" \"$TOP/BUILD\"\n"
    @"SPEC=\"$TOP/SPECS/$PKG.spec\"\n"
    @"{\n"
    @"  echo \"Name: $PKG\"\n"
    @"  echo \"Version: $VERSION\"\n"];
+  if (IncludesGNUstep(deployment, projectDict))
+  {
+    /* GNUstep in the bundle: its libraries are the package's own. */
+    [s appendString:@"  echo \"%global __provides_exclude_from ^$DEST/$APPNAME/GNUstep/\"\n"
+     @"  echo \"%global __requires_exclude ^($OWN)\\\\.so\"\n"];
+  }
   [s appendFormat:@"  echo %@\n", SQ([@"Release: " stringByAppendingString:value(@"Release")])];
   [s appendFormat:@"  echo %@\n", SQ([@"Summary: " stringByAppendingString:value(@"Summary")])];
   [s appendFormat:@"  echo %@\n", SQ([@"License: " stringByAppendingString:value(@"License")])];
@@ -1485,16 +1600,29 @@ static NSString *RPMScript(NSDictionary *deployment, NSDictionary *projectDict)
    @"MADE=$(find \"$TOP/RPMS\" -type f -name '*.rpm' | head -n 1)\n"
    @"if [ -z \"$MADE\" ]; then echo \"error: rpmbuild made no package\" >&2; exit 1; fi\n"
    @"cp \"$MADE\" \"$OUT/$FILE\"\n"];
-  AppendRuntimePackage(s, @"rpm");
+  if (!IncludesGNUstep(deployment, projectDict)) AppendRuntimePackage(s, @"rpm");
   return s;
 }
 
 static NSString *TarScript(NSDictionary *deployment, NSDictionary *projectDict)
 {
-  return [NSString stringWithFormat:@"FILE=%@\n"
-          @"echo \"Packaging $FILE...\"\n"
-          @"tar -czf \"$OUT/$FILE\" -C \"$(dirname \"$APP\")\" \"$APPNAME\"\n",
-          SQ([PCDeployment fileNameOfDeployment:deployment project:projectDict])];
+  NSMutableString *s = [NSMutableString string];
+
+  [s appendString:@"TARDIR=\"$(dirname \"$APP\")\"\n"];
+  if (IncludesGNUstep(deployment, projectDict))
+  {
+    [s appendString:@"TARDIR=\"$BUILD/tar\"\n"
+     @"rm -rf \"$TARDIR\"\n"
+     @"mkdir -p \"$TARDIR\"\n"
+     @"cp -R \"$APP\" \"$TARDIR/\"\n"
+     @"BUNDLE=\"$TARDIR/$APPNAME\"\n"];
+    AppendIncludeGNUstep(s);
+  }
+  [s appendFormat:@"FILE=%@\n"
+   @"echo \"Packaging $FILE...\"\n"
+   @"tar -czf \"$OUT/$FILE\" -C \"$TARDIR\" \"$APPNAME\"\n",
+   SQ([PCDeployment fileNameOfDeployment:deployment project:projectDict])];
+  return s;
 }
 
 static NSString *WindowsScript(NSDictionary *deployment, NSDictionary *projectDict)

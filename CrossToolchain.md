@@ -22,7 +22,8 @@ brew install llvm lld make cmake pkgconf dpkg
 4. **Archive** builds and packages on the Mac.
 
 The GNUstep sources are the folders in the `GNUstepSources` user default, as for the
-container (`defaults write ProjectCenter GNUstepSources ~/Code/gnuStep`). Missing ones
+container (`defaults write org.gnustep.ProjectCenter GNUstepSources ~/Code/gnuStep` for
+the Xcode build of ProjectCenter, domain `ProjectCenter` for the GNUstep build). Missing ones
 are cloned: from the holzgestalt forks where there is one, libdispatch from swiftlang,
 the rest from gnustep.
 
@@ -68,19 +69,20 @@ defaults to `$GNUSTEP_SOURCES`. `--from STEP` starts again at a step after one f
    - libs-base can't run its configure tests on the target. `libs-base-cross.config`
      gives the answers a native configure gets on Debian with libobjc2.
 5. **package**: `packages/projectcenter-gnustep_<version>_<arch>.deb`, the runtime
-   package, as the container makes it. Its `Depends` come from the sysroot, via
-   `debian-depends.py`.
+   package, as the container makes it, for applications archived with **Include
+   GNUstep** off. Its `Depends` come from the sysroot, via `debian-depends.py`.
 
 `GNUstep.sh` in the folder sets up a cross build: compilers, `pkg-config`, the target's
 gnustep-make. Archive sources it, then builds with `pc-xcode-build.py`. On a Mac,
 `ldd` and `dpkg -S` can't answer, so Archive takes the application package's
-`Depends` from `bin/debian-depends`. It puts `projectcenter-gnustep` next to the
-package, as it does for container builds.
+`Depends` from `bin/debian-depends`. With **Include GNUstep** (the default), the
+sysroot's GNUstep goes inside the application's bundle; otherwise Archive puts
+`projectcenter-gnustep` next to the package, as it does for container builds.
 
 Tried on a Mac (Apple silicon, Homebrew LLVM 23): EditGlyphData with GTK4Native
-archived to `editglyphdata_1.0_arm64.deb` and `projectcenter-gnustep_…_arm64.deb`.
-Every library the application and GNUstep need is either in the package or in a
-Debian package of its `Depends`.
+archived to a 10 MB `editglyphdata_1.0_arm64.deb` with GNUstep inside, 40 MB
+installed. Every library the application and GNUstep need is either in the package
+or in a Debian package of its `Depends`. Not yet installed on a Debian machine.
 
 The wrapper keeps `-Wincompatible-pointer-types` a warning. Newer clang makes it an
 error, while Debian's clang 19 warns. EditGlyphData needs that: it assigns

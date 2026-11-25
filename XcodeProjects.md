@@ -356,8 +356,7 @@ target (`SDKROOT = windows`) is not supported yet.
     `~/gnustep-toolchains/debian-trixie-<arch>`, the default **Toolchain**.
     Once that is there, a platform whose **Build** is left at its default
     builds with it rather than in a container. The toolchain's
-    `bin/debian-depends` gives the package's **Find Dependencies**, and its
-    GNUstep package goes next to the application's, as with Container. See
+    `bin/debian-depends` gives the package's **Find Dependencies**. See
     `CrossToolchain.md`.
   - **Container**: in a Docker or Podman container, for any architecture the
     container tool runs (`--platform linux/amd64` or `linux/arm64`, emulated
@@ -382,7 +381,8 @@ target (`SDKROOT = windows`) is not supported yet.
       `build-gnustep.sh` builds it) in `/opt/gnustep`, installed from its own
       package, `projectcenter-gnustep`. The sources come from the user
       default `GNUstepSources` (`defaults write ProjectCenter GNUstepSources
-      ~/Code/gnuStep`, or the environment variable `GNUSTEP_SOURCES` when
+      ~/Code/gnuStep`, domain `org.gnustep.ProjectCenter` for the Xcode
+      build, or the environment variable `GNUSTEP_SOURCES` when
       `archive.sh` is run by hand), including a `gtk4native*` theme there;
       those it lacks are cloned (libs-base and libs-gui from holzgestalt).
       Delete the image (`docker image rm projectcenter-gnustep:debian-arm64`)
@@ -391,10 +391,11 @@ target (`SDKROOT = windows`) is not supported yet.
       command that installs it on each run (`debian:stable` gets
       `apt-get install gnustep-devel`, whose GNUstep is built with gcc and
       lacks blocks and ARC).
-    - Debian and RPM packages built in ProjectCenter's image depend on
-      `projectcenter-gnustep` (found by **Find Dependencies**), so Archive
-      puts that package next to them; install both on the target system.
-      The `.tar.gz` needs the same GNUstep there.
+    - With **Include GNUstep** off, Debian and RPM packages built in
+      ProjectCenter's image depend on `projectcenter-gnustep` (found by
+      **Find Dependencies**), so Archive puts that package next to them;
+      install both on the target system. The `.tar.gz` needs the same GNUstep
+      there.
     - `Tests/ArchiveDemo` is a small project with a Mac and a Linux target
       (Debian, RPM and Linux, `x86_64 aarch64`, all Container). Archive it,
       then `Tests/ArchiveDemo/check-packages.sh` installs the packages into
@@ -408,6 +409,24 @@ target (`SDKROOT = windows`) is not supported yet.
   **Find Dependencies** adds the packages of the libraries the application
   links and of GNUstep's back end where `dpkg` knows them (native and container
   builds), or lets `rpmbuild` find them; **Depends** adds more.
+- **Include GNUstep** (on by default, for Debian, RPM and Linux tarballs) puts
+  the GNUstep the application is built with inside its bundle, in
+  `<App>.app/GNUstep`, so the package needs no GNUstep package and each
+  application ships its own. It holds:
+  - the shared libraries of GNUstep's Libraries folders: base, gui, libobjc2,
+    libdispatch and its blocks runtime;
+  - the Library folder: the back end bundle, fonts, images, color pickers and
+    the libraries' resources. ThemeSDK, headers, makefiles and static
+    libraries are left out;
+  - the tools the libraries start: `gpbs`, `gdnc`, `gdomap`, `make_services`;
+  - a `GNUstep.conf` whose folders are relative to it.
+
+  `GNUstep/run` starts the application with `GNUSTEP_CONFIG_FILE` and
+  `LD_LIBRARY_PATH` set to them. The command in `/usr/bin` and the desktop
+  entry run it, so start the application with it, not with the executable
+  itself. The package then depends only on the system's libraries; an RPM
+  neither provides nor requires the bundled ones.
+  Turned off, the package depends on `projectcenter-gnustep`.
 - **Windows** copies the DLLs the executable needs, found with `objdump` in
   GNUstep's folders and the **Library Folders**. GNUstep's back end bundle and
   its other resources are not included.

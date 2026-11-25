@@ -598,7 +598,22 @@ static void TestDeployment(void)
   /* A build script that makes the bundle where GNUSTEP_BUILD_DIR says. */
   Write(root, @"build.sh", @"for argument; do case \"$argument\" in GNUSTEP_BUILD_DIR=*) dir=${argument#*=};; esac; done\n"
         "mkdir -p \"$dir/Sample.app\" && echo binary > \"$dir/Sample.app/Sample\" && echo exe > \"$dir/Sample.app/Sample.exe\"\n");
-  Write(root, @"Toolchain/GNUstep.sh", @"PC_TOOLCHAIN=yes\n");
+  /* The stand-in toolchain's GNUstep, which Include GNUstep copies. */
+  Write(root, @"Toolchain/GNUstep.sh", [NSString stringWithFormat:@"PC_TOOLCHAIN=yes\nPATH='%@/Toolchain/bin':\"$PATH\"\n",
+                                        root]);
+  Write(root, @"Toolchain/bin/gnustep-config", [NSString stringWithFormat:@"#!/bin/sh\n"
+        "case \"$1\" in\n"
+        "  --variable=GNUSTEP_*_LIBRARIES) echo '%@/GS/lib' ;;\n"
+        "  --variable=GNUSTEP_*_LIBRARY) echo '%@/GS/lib/GNUstep' ;;\n"
+        "  --variable=GNUSTEP_*_TOOLS) echo '%@/GS/bin' ;;\n"
+        "esac\n", root, root, root]);
+  Shell([NSString stringWithFormat:@"chmod 755 '%@/Toolchain/bin/gnustep-config'", root]);
+  Write(root, @"GS/lib/libgnustep-base.so.1.31", @"base\n");
+  Write(root, @"GS/lib/libgnustep-theme-GTK4Native.a", @"theme\n");
+  Write(root, @"GS/lib/GNUstep/Bundles/libgnustep-back-032.bundle/libgnustep-back-032.so", @"back\n");
+  Write(root, @"GS/lib/GNUstep/ThemeSDK/GTK4Native/Theme.h", @"header\n");
+  Write(root, @"GS/bin/gpbs", @"gpbs\n");
+  Write(root, @"GS/bin/gnustep-tests", @"tests\n");
   Write(root, @"GNUstep/ProjectCenter.plist", @"{BuildScript=build.sh;}");
   projectDict = [PCXcodeProject projectAtPath:bundle error:&error];
   Check(projectDict != nil, error);
@@ -790,7 +805,9 @@ static void TestDeployment(void)
                                   project:projectDict] hasPrefix:@"apt-get"],
         @"ProjectCenter's image needs no setup; another one installs GNUstep");
   Check([[scripts objectForKey:@"2-Fedora-arm.sh"] rangeOfString:@"/opt/projectcenter/packages/*.rpm"].location
-        != NSNotFound, @"the RPM gets GNUstep's package from the image next to it");
+        == NSNotFound
+        && [[scripts objectForKey:@"2-Fedora-arm.sh"] rangeOfString:@"__requires_exclude ^($OWN)"].location != NSNotFound,
+        @"the RPM has GNUstep inside, whose libraries it neither provides nor requires");
   Check([[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"hdiutil create"].location != NSNotFound
         && [[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"--sign \"$IDENTITY\""].location != NSNotFound,
         @"the macOS disk image, signed");
@@ -821,6 +838,15 @@ static void TestDeployment(void)
   Check(Shell([NSString stringWithFormat:@"tar -tzf '%@/%@' | grep -q '^Sample.app/Sample$'", folder,
                [PCDeployment fileNameOfDeployment:tarball project:projectDict]]) == 0,
         @"the tar.gz holds the application");
+  text = [NSString stringWithFormat:@"cd '%@' && rm -rf Unpacked && mkdir Unpacked && tar -xzf '%@/%@' -C Unpacked && "
+          @"cd Unpacked/Sample.app/GNUstep && [ -f lib/libgnustep-base.so.1.31 ] "
+          @"&& [ -f lib/GNUstep/Bundles/libgnustep-back-032.bundle/libgnustep-back-032.so ] && [ -f bin/gpbs ] "
+          @"&& [ ! -e lib/GNUstep/ThemeSDK ] && [ ! -e lib/libgnustep-theme-GTK4Native.a ] && [ ! -e bin/gnustep-tests ] "
+          @"&& grep -qx 'GNUSTEP_SYSTEM_LIBRARY=../../lib/GNUstep' etc/GNUstep/GNUstep.conf "
+          @"&& grep -qx 'GNUSTEP_USER_DIR_LIBRARY=GNUstep/Library' etc/GNUstep/GNUstep.conf "
+          @"&& [ -x run ] && grep -qx 'exec \"$here/../Sample\" \"$@\"' run",
+          root, folder, [PCDeployment fileNameOfDeployment:tarball project:projectDict]];
+  Check(Shell(text) == 0, @"the tar.gz has GNUstep inside the bundle: libraries, back end, tools, GNUstep.conf, run");
   Check(Shell([NSString stringWithFormat:@"unzip -l '%@/SampleApp-2.1-windows-x86_64.zip' | grep -q 'Sample/Sample.app/Sample.exe'",
                folder]) == 0, @"the Windows zip holds the application in its folder");
   [windows setObject:[root stringByAppendingPathComponent:@"Missing"] forKey:@"Toolchain"];
@@ -842,13 +868,24 @@ static void TestDeployment(void)
         .location != NSNotFound,
         [NSString stringWithFormat:@"the Linux target, built by ProjectCenter's compiler: %@",
          [scripts objectForKey:@"1-Debian-arm64.sh"]]);
-  /* A cross toolchain (Tools/cross-toolchain) answers Depends from its
-   * sysroot and has GNUstep's package, where ldd and dpkg -S can't. */
-  Check([[scripts objectForKey:@"1-Debian-arm64.sh"] rangeOfString:
-         @"FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" \"$APP\")"].location != NSNotFound
-        && [[scripts objectForKey:@"1-Debian-arm64.sh"] rangeOfString:
-            @"${GNUSTEP_TOOLCHAIN:+\"$GNUSTEP_TOOLCHAIN\"/packages/*.deb}"].location != NSNotFound,
-        @"a cross toolchain's Depends and GNUstep package");
+  /* A cross toolchain (make-toolchain.sh) answers Depends from its sysroot,
+   * where ldd and dpkg -S can't; GNUstep is inside the bundle. */
+  script = [scripts objectForKey:@"1-Debian-arm64.sh"];
+  Check([script rangeOfString:@"FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/debian-depends\" \"$BUNDLE\")"].location != NSNotFound
+        && [script rangeOfString:@"exec \"%s\" \"$@\"\\n' \"$DEST/$APPNAME/GNUstep/run\""].location != NSNotFound
+        && [script rangeOfString:@"/packages/*.deb"].location == NSNotFound
+        && [script rangeOfString:@"Bundles/libgnustep-back"].location == NSNotFound,
+        [NSString stringWithFormat:@"a cross toolchain's Depends, with GNUstep in the bundle: %@", script]);
+  scripts = [PCDeployment archiveScriptsForProject:compiled
+                                       deployments:@[@{@"Kind": @"Debian", @"Name": @"Debian (arm64)",
+                                                       @"Architecture": @"arm64", @"Build": @"Container",
+                                                       @"IncludeGNUstep": @"NO"}]
+                                            folder:folder makeTool:@"/usr/bin/make"];
+  script = [scripts objectForKey:@"1-Debian-arm64.sh"];
+  Check([script rangeOfString:@"${GNUSTEP_TOOLCHAIN:+\"$GNUSTEP_TOOLCHAIN\"/packages/*.deb}"].location != NSNotFound
+        && [script rangeOfString:@"GNUstep/run"].location == NSNotFound
+        && [script rangeOfString:@"exec \"%s\" \"$@\"\\n' \"$DEST/$APPNAME/$EXE\""].location != NSNotFound,
+        @"without GNUstep inside, the package depends on GNUstep's, which goes next to it");
 
   /* A container build, with a stand-in docker that runs the command here
    * (the project is mounted at its own path) and records what it builds. */
