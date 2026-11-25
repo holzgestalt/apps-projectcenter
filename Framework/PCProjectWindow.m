@@ -302,6 +302,11 @@ static NSString * const PCToolbarScheme = @"PCToolbarScheme";
 static NSString * const PCToolbarDestination = @"PCToolbarDestination";
 static NSString * const PCToolbarConfiguration = @"PCToolbarConfiguration";
 
+static NSArray *BuildSelectionToolbarItems(void)
+{
+  return @[PCToolbarScheme, PCToolbarDestination, PCToolbarConfiguration];
+}
+
 /* An Xcode project chooses a scheme, a build configuration and, where
  * xcodebuild builds it, a run destination, as in Xcode's toolbar. */
 - (BOOL)_hasBuildSelection
@@ -361,6 +366,20 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
   {
     return;
   }
+  NSToolbar *toolbar = [projectWindow toolbar];
+  NSArray *identifiers = [[toolbar items] valueForKey:@"itemIdentifier"];
+  NSUInteger buildIndex = [identifiers indexOfObject:PCToolbarBuild];
+  NSUInteger index = buildIndex == NSNotFound ? 0 : buildIndex + 1;
+  for (NSString *identifier in BuildSelectionToolbarItems())
+  {
+    NSUInteger existing = [identifiers indexOfObject:identifier];
+    if (existing == NSNotFound)
+    {
+      [toolbar insertItemWithItemIdentifier:identifier atIndex:index++];
+      identifiers = [[toolbar items] valueForKey:@"itemIdentifier"];
+    }
+    else index = existing + 1;
+  }
   selection = [PCXcodeProject buildSelectionForProject:projectDict];
   scheme = [selection objectForKey:@"Scheme"];
   FillPopUp([self _toolbarPopUp:PCToolbarScheme],
@@ -384,7 +403,7 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
     [[scheme objectForKey:@"Configurations"] objectForKey:@"Run"]]];
   [[self _toolbarPopUp:PCToolbarDestination] setToolTip:
    @"Run destination: the architectures to build, and where Run starts the product"];
-  for (NSString *identifier in @[PCToolbarScheme, PCToolbarConfiguration, PCToolbarDestination])
+  for (NSString *identifier in BuildSelectionToolbarItems())
   {
     [[self _toolbarPopUp:identifier] setEnabled:enabled];
   }
@@ -419,6 +438,13 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
   [self updateBuildSelection];
 }
 
+- (void)toolbarDidRemoveItem:(NSNotification *)notification
+{
+  NSToolbarItem *item = [[notification userInfo] objectForKey:@"item"];
+  if ([self _hasBuildSelection] && [BuildSelectionToolbarItems() containsObject:[item itemIdentifier]])
+    [self performSelector:@selector(updateBuildSelection) withObject:nil afterDelay:0];
+}
+
 - (void)_createToolbar
 {
   NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:
@@ -442,11 +468,7 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
   if ([self _hasBuildSelection])
   {
-    [identifiers addObjectsFromArray:@[PCToolbarScheme, PCToolbarConfiguration]];
-  }
-  if ([self _buildsWithXcodebuild])
-  {
-    [identifiers addObject:PCToolbarDestination];
+    [identifiers addObjectsFromArray:BuildSelectionToolbarItems()];
   }
   return identifiers;
 }
@@ -457,14 +479,9 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
                                  PCToolbarStop, PCToolbarBuild, nil];
 
   /* Xcode's scheme and destination picker follows Run and Stop. */
-  if ([self _buildsWithXcodebuild])
+  if ([self _hasBuildSelection])
   {
-    [identifiers addObjectsFromArray:@[PCToolbarScheme, PCToolbarDestination,
-                                       PCToolbarConfiguration]];
-  }
-  else if ([self _hasBuildSelection])
-  {
-    [identifiers addObject:PCToolbarConfiguration];
+    [identifiers addObjectsFromArray:BuildSelectionToolbarItems()];
   }
   [identifiers addObjectsFromArray:@[NSToolbarFlexibleSpaceItemIdentifier, PCToolbarNavigator,
                                      PCToolbarBottomArea, PCToolbarInspector]];
@@ -502,6 +519,7 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
     [popUp setAction:NSSelectorFromString([popUpDescription objectAtIndex:1])];
     [item setLabel:[popUpDescription objectAtIndex:0]];
     [item setPaletteLabel:[popUpDescription objectAtIndex:0]];
+    [item setVisibilityPriority:NSToolbarItemVisibilityPriorityHigh];
     [item setView:popUp];
 #ifdef GNUSTEP
     [item setMinSize:NSMakeSize(width, 24)];
@@ -817,6 +835,7 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
 - (void)dealloc
 {
+  [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(updateBuildSelection) object:nil];
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [h_split setDelegate:nil];
   [v_split setDelegate:nil];

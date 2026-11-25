@@ -373,10 +373,13 @@ int main(int argc, char **argv)
     PCProjectWindow *projectWindow = [project projectWindow];
     NSToolbar *toolbar = [window toolbar];
     Check(toolbar != nil && [[[toolbar items] valueForKey:@"itemIdentifier"] isEqual:
-                             (@[@"PCToolbarRun", @"PCToolbarStop", @"PCToolbarBuild", NSToolbarFlexibleSpaceItemIdentifier,
-                                @"PCToolbarNavigator", @"PCToolbarBottomArea", @"PCToolbarInspector"])], @"window toolbar holds run, stop, build and pane toggles");
+                             (@[@"PCToolbarRun", @"PCToolbarStop", @"PCToolbarBuild", @"PCToolbarScheme",
+                                @"PCToolbarDestination", @"PCToolbarConfiguration", NSToolbarFlexibleSpaceItemIdentifier,
+                                @"PCToolbarNavigator", @"PCToolbarBottomArea", @"PCToolbarInspector"])], @"window toolbar holds the actions and build selectors");
     for (NSToolbarItem *item in [toolbar items])
-      if (![[item itemIdentifier] isEqual:NSToolbarFlexibleSpaceItemIdentifier])
+    if ([[item view] isKindOfClass:[NSPopUpButton class]])
+      Check([[(NSPopUpButton *)[item view] titleOfSelectedItem] length] > 0, @"toolbar selectors show their current values");
+    else if (![[item itemIdentifier] isEqual:NSToolbarFlexibleSpaceItemIdentifier])
         Check([item image] != nil && [item action] != NULL && [[item toolTip] length], @"toolbar items have image, action and tooltip");
     Check(fabs([mainSplit frame].size.height - [[window contentView] bounds].size.height) < 1, @"panes fill the window below the toolbar");
     Check(![projectWindow isBottomAreaVisible], @"bottom area starts hidden");

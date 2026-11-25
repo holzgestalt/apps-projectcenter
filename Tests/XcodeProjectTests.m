@@ -1257,9 +1257,14 @@ static void TestBuildSelection(void)
         && [[[tool objectForKey:@"Configurations"] objectForKey:@"Archive"] isEqual:@"Release"], @"implicit scheme for a tool");
   Check([[PCXcodeProject configurationsOfProjectAtPath:bundle] isEqual:(@[@"Debug", @"Release"])], @"project configurations");
   NSArray *destinations = [PCXcodeProject runDestinations];
+#ifdef __APPLE__
   Check([[[destinations objectAtIndex:0] objectForKey:@"Name"] isEqual:@"My Mac"]
         && [[[destinations lastObject] objectForKey:@"BuildOnly"] boolValue]
         && [[[destinations lastObject] objectForKey:@"Destination"] isEqual:@"generic/platform=macOS"], @"run destinations");
+#else
+  Check([destinations count] == 1 && [[[destinations firstObject] objectForKey:@"GNUstep"] boolValue]
+        && ![[[destinations firstObject] objectForKey:@"BuildOnly"] boolValue], @"local GNUstep run destination");
+#endif
 
   NSError *error = nil;
   NSString *problem = nil;
@@ -1269,12 +1274,14 @@ static void TestBuildSelection(void)
   NSDictionary *selection = [PCXcodeProject buildSelectionForProject:dict];
   Check([[[selection objectForKey:@"Scheme"] objectForKey:@"Name"] isEqual:@"App"]
         && [[selection objectForKey:@"Configuration"] isEqual:@"Debug"]
-        && [[[selection objectForKey:@"Destination"] objectForKey:@"Name"] isEqual:@"My Mac"],
-        @"default selection: the application's scheme, its Run configuration, My Mac");
+        && [[selection objectForKey:@"Destination"] isEqual:[destinations firstObject]],
+        @"default selection: the application's scheme, its Run configuration and the local destination");
   NSArray *arguments = [PCXcodeProject xcodebuildArgumentsForProject:dict action:@"build"
                                                            selection:selection knownSchemes:@[@"App"]];
-  NSArray *expected = @[@"-project", bundle, @"-scheme", @"App", @"-configuration", @"Debug", @"-destination",
-                        [[destinations objectAtIndex:0] objectForKey:@"Destination"], @"-quiet", @"build"];
+  NSMutableArray *expected = [NSMutableArray arrayWithArray:@[@"-project", bundle, @"-scheme", @"App", @"-configuration", @"Debug"]];
+  NSString *destinationArgument = [[destinations firstObject] objectForKey:@"Destination"];
+  if (destinationArgument) [expected addObjectsFromArray:@[@"-destination", destinationArgument]];
+  [expected addObjectsFromArray:@[@"-quiet", @"build"]];
   Check([arguments isEqual:expected], [NSString stringWithFormat:@"xcodebuild arguments for a scheme: %@", arguments]);
 
   [PCXcodeProject selectScheme:@"Tool" configuration:nil destination:nil forProject:dict];
@@ -1293,8 +1300,9 @@ static void TestBuildSelection(void)
   Check([[[defaults objectForKey:@"PCXcodeBuildSelections"] objectForKey:bundle] objectForKey:@"Configurations"] != nil
         && [[[[defaults objectForKey:@"PCXcodeBuildSelections"] objectForKey:bundle] objectForKey:@"Configurations"] count] == 0,
         @"choosing the scheme's own configuration removes the override");
-  Check([PCXcodeProject canRunProject:dict], @"a tool scheme runs on My Mac");
+  Check([PCXcodeProject canRunProject:dict], @"a tool scheme runs at the local destination");
 
+#ifdef __APPLE__
   [PCXcodeProject selectScheme:nil configuration:nil destination:@"Any Mac (arm64, x86_64)" forProject:dict];
   selection = [PCXcodeProject buildSelectionForProject:dict];
   Check(![PCXcodeProject canRunProject:dict], @"Any Mac only builds");
@@ -1305,7 +1313,9 @@ static void TestBuildSelection(void)
                                                   selection:selection knownSchemes:@[]];
   Check([arguments containsObject:@"ONLY_ACTIVE_ARCH=NO"] && ![arguments containsObject:@"-destination"],
         @"Any Mac without a scheme builds every architecture");
-  [PCXcodeProject selectScheme:@"Lib Release" configuration:nil destination:@"My Mac" forProject:dict];
+#endif
+  [PCXcodeProject selectScheme:@"Lib Release" configuration:nil
+                   destination:[[destinations firstObject] objectForKey:@"Name"] forProject:dict];
   Check(![PCXcodeProject canRunProject:dict], @"a scheme without a run target doesn't run");
   Check([[[PCXcodeProject buildSelectionForProject:dict] objectForKey:@"Configuration"] isEqual:@"Release"],
         @"the scheme's own Run configuration");

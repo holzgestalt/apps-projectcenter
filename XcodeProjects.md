@@ -235,7 +235,8 @@ As in Xcode, the toolbar of an Xcode project chooses what Build and Run do:
   hides schemes. A scheme without a run target (a framework, say) only
   builds. Schemes added or changed in Xcode appear the next time the menu
   opens.
-- **Destination** (macOS only): **My Mac** builds for this Mac's architecture,
+- **Destination**: On GNUstep, **This Computer** shows the architecture used
+  for local builds. On macOS, **My Mac** builds for this Mac's architecture,
   **My Mac (Rosetta)** for x86_64 on Apple silicon with Rosetta installed, and
   **Any Mac (arm64, x86_64)** builds both. Any Mac is for building only, so Run
   is disabled, as in Xcode. With Xcode's usual settings, Debug builds only the

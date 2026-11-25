@@ -1514,6 +1514,10 @@ static NSString *NativeArchitecture(void)
 + (NSArray *)runDestinations
 {
   NSString       *native = NativeArchitecture();
+#ifndef __APPLE__
+  return @[@{@"Name": [NSString stringWithFormat:@"This Computer (%@)", native],
+             @"Architecture": native, @"BuildOnly": @NO, @"GNUstep": @YES}];
+#else
   NSMutableArray *destinations = [NSMutableArray array];
   NSNumber       *no = [NSNumber numberWithBool:NO];
 
@@ -1536,6 +1540,7 @@ static NSString *NativeArchitecture(void)
                             @"BuildOnly": [NSNumber numberWithBool:YES],
                             @"Destination": @"generic/platform=macOS"}];
   return destinations;
+#endif
 }
 
 static NSDictionary *Named(NSArray *entries, NSString *name)
