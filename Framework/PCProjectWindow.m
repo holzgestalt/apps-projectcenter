@@ -113,6 +113,7 @@ static NSString * const PCRestorableWindowedFilesKey = @"PCWindowedFiles";
    * only while it is shown. */
   contentSplit = [[NSSplitView alloc] initWithFrame:NSMakeRect(0,0,562,252)];
   [contentSplit setVertical:NO];
+  [contentSplit setDividerStyle:NSSplitViewDividerStyleThin];
   [contentSplit setDelegate:self];
   [contentSplit setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable];
   [contentSplit addSubview:customView];
@@ -152,7 +153,16 @@ static NSString * const PCRestorableWindowedFilesKey = @"PCWindowedFiles";
   [navigatorSelector setSegmentCount:[images count]];
   for (i = 0; i < [images count]; i++)
   {
-    [navigatorSelector setImage:[NSImage imageNamed:[images objectAtIndex:i]] forSegment:i];
+    // The artwork is 32 px at 72 dpi, so it would draw at 32 points and
+    // overflow the 24 point control. Draw a copy at 16 points instead,
+    // leaving the shared named image alone for the navigator rows.
+    NSImage *image = [[[NSImage imageNamed:[images objectAtIndex:i]] copy] autorelease];
+
+    [image setSize:NSMakeSize(16, 16)];
+#ifndef GNUSTEP
+    [image setTemplate:YES];
+#endif
+    [navigatorSelector setImage:image forSegment:i];
     [navigatorSelector setWidth:36 forSegment:i];
     [[navigatorSelector cell] setToolTip:[labels objectAtIndex:i] forSegment:i];
   }
@@ -629,6 +639,7 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
   [self updateBuildSelection];
   [h_split setDelegate:self];
   [h_split setVertical:YES];
+  [h_split setDividerStyle:NSSplitViewDividerStyleThin];
 
   /*
    * Vertical split view
@@ -639,6 +650,7 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
   v_split = [[NSSplitView alloc] initWithFrame:rect];
   [v_split setAutoresizingMask:NSViewHeightSizable];
   [v_split setVertical:NO];
+  [v_split setDividerStyle:NSSplitViewDividerStyleThin];
   [v_split setDelegate:self];
 
   /*
@@ -929,9 +941,10 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
 
   //  PCLogInfo(self, @"showProjectLoadedFiles");
 
+  /* No border: docked, the split view's divider separates it. */
+  [componentView setBorderType:NSNoBorder];
   if ([prefs boolForKey:UseTearOffWindows])
   {
-    [componentView setBorderType:NSNoBorder];
     [componentView removeFromSuperview];
     if (rootActiveProject == project)
     {
@@ -946,7 +959,6 @@ static void FillPopUp(NSPopUpButton *popUp, NSArray *titles, NSString *selected)
       [panel close];
     }
 
-    [componentView setBorderType:NSBezelBorder];
     // Preserve width of view in panel
     //      [componentView setFrame:NSMakeRect(0,0,128,130)];
     [v_split addSubview:componentView];

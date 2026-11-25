@@ -180,7 +180,7 @@
   _intScrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,16,512,320-16-PCJumpBarHeight)];
   [_intScrollView setHasHorizontalScroller:NO];
   [_intScrollView setHasVerticalScroller:YES];
-  [_intScrollView setBorderType:NSBezelBorder];
+  [_intScrollView setBorderType:NSNoBorder];
   [_intScrollView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
   rect = [[_intScrollView contentView] frame];
 

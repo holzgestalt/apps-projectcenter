@@ -39,11 +39,7 @@
 
 - (id)initWithProject:(PCProject *)aProj
 {
-  id <PCPreferences> prefs;
-
   NSAssert(aProj, @"Project is mandatory!");
-
-  prefs = [[aProj projectManager] prefController];
 
   PCLogStatus(self, @"init");
 
@@ -80,10 +76,7 @@
     [filesScroll setDocumentView:filesList];
     [filesScroll setHasHorizontalScroller:NO];
     [filesScroll setHasVerticalScroller:YES];
-    if (![prefs boolForKey:UseTearOffWindows])
-    {
-      [filesScroll setBorderType:NSBezelBorder];
-    }
+    [filesScroll setBorderType:NSNoBorder];
 
     sortType = PHSortByTime;
 

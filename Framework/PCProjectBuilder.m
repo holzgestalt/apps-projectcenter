@@ -203,7 +203,7 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
   logScroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,480,133)];
   [logScroll setHasHorizontalScroller:NO];
   [logScroll setHasVerticalScroller:YES];
-  [logScroll setBorderType:NSBezelBorder];
+  [logScroll setBorderType:NSNoBorder];
   [logScroll setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
 
   logOutput = [[NSTextView alloc]

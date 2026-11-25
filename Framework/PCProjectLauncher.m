@@ -108,7 +108,7 @@ enum {
 
   [scrollView setHasHorizontalScroller:NO];
   [scrollView setHasVerticalScroller:YES];
-  [scrollView setBorderType: NSBezelBorder];
+  [scrollView setBorderType: NSNoBorder];
   [scrollView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
 
   stdOut=[[NSTextView alloc] initWithFrame:[[scrollView contentView] frame]];
