@@ -1684,7 +1684,7 @@ static NSDictionary *SavedSelection(NSString *path)
 
 // --- Building with xcodebuild
 
-static NSData *RunTool(NSString *tool, NSArray *arguments)
+static NSData *RunToolWithEnvironment(NSString *tool, NSArray *arguments, NSDictionary *environment)
 {
   NSTask *task = [[NSTask alloc] init];
   NSPipe *output = [NSPipe pipe];
@@ -1692,6 +1692,7 @@ static NSData *RunTool(NSString *tool, NSArray *arguments)
 
   [task setLaunchPath:PCLaunchPath(tool)];
   [task setArguments:arguments];
+  if (environment) [task setEnvironment:environment];
   [task setStandardOutput:output];
   [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
   @try
@@ -1710,6 +1711,11 @@ static NSData *RunTool(NSString *tool, NSArray *arguments)
   }
   [task release];
   return data;
+}
+
+static NSData *RunTool(NSString *tool, NSArray *arguments)
+{
+  return RunToolWithEnvironment(tool, arguments, nil);
 }
 
 static id JSONFromTool(NSString *tool, NSArray *arguments)
@@ -1963,7 +1969,10 @@ static NSString *XcodebuildOfDeveloperFolder(NSString *folder)
   {
     if (![[[self buildSelectionForProject:projectDict] objectForKey:@"Scheme"] objectForKey:@"RunTarget"]) return nil;
     NSArray *arguments = [self GNUstepBuildArgumentsForProject:projectDict action:@"describe"];
-    return arguments ? [JSONFromTool(@"/usr/bin/env", arguments) objectForKey:@"executable"] : nil;
+    if (!arguments) return nil;
+    NSData *data = RunToolWithEnvironment(@"/usr/bin/env", arguments, [self buildEnvironmentForProject:projectDict]);
+    NSDictionary *description = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL] : nil;
+    return [description objectForKey:@"executable"];
   }
   if (path == nil || [self xcodebuildPath] == nil)
   {

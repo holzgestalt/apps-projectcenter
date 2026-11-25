@@ -494,10 +494,16 @@ enum {
   fm = [NSFileManager defaultManager];
   if (![fm isExecutableFileAtPath:executablePath])
   {
-    NSRunAlertPanel(@"Run",
-                    @"The project does not have an executable",
-                    @"Close", nil, nil, nil);
+    if ([executablePath length])
+      NSRunAlertPanel(@"Run",
+                      @"The executable is missing or cannot be run at:\n%@\n\nCheck the Build Log for the current configuration.",
+                      @"Close", nil, nil, executablePath);
+    else
+      NSRunAlertPanel(@"Run",
+                      @"ProjectCenter could not find an executable for the selected scheme.",
+                      @"Close", nil, nil);
     [runButton setState:NSOffState];
+    RELEASE(args);
     return;
   }
 
