@@ -363,7 +363,9 @@ target (`SDKROOT = windows`) is not supported yet.
   - **Container**: in a Docker or Podman container, for any architecture the
     container tool runs (`--platform linux/amd64` or `linux/arm64`, emulated
     where it isn't this computer's). The container builds and packages, so
-    this computer needs only Docker or Podman. On a Mac:
+    this computer needs only Docker or Podman. On Debian 13, run
+    `bash Tools/install-archive-dependencies.sh` from the ProjectCenter
+    checkout and check that `docker info` works as your regular user. On a Mac:
     `brew install colima docker`, then
     `colima start --vm-type vz --vz-rosetta --cpu 4 --memory 8` (Rosetta
     makes amd64 fast; it needs `softwareupdate --install-rosetta`). Colima
