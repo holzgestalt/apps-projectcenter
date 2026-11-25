@@ -412,9 +412,9 @@ step_package() {
   name=projectcenter-gnustep
   version="1.0+$(date +%Y%m%d)"
   stage="$WORK/package"
-  rm -rf "$stage"
+  rm -rf "$stage" 2>/dev/null || true
   mkdir -p "$stage$PREFIX" "$stage/etc/ld.so.conf.d" "$stage/DEBIAN" "$DEST/packages"
-  (cd "$SYSROOT$PREFIX" && tar -cf - .) | (cd "$stage$PREFIX" && tar -xf -)
+  (cd "$SYSROOT$PREFIX" && tar -cf - --exclude .DS_Store .) | (cd "$stage$PREFIX" && tar -xf -)
   echo "$PREFIX/lib" > "$stage/etc/ld.so.conf.d/$name.conf"
   depends="$(python3 -I "$HERE/debian-depends.py" "$SYSROOT" "$stage$PREFIX")"
   # For Archive (PCDeployment): the Depends of an application built here.
@@ -440,10 +440,13 @@ EOF
   printf '#!/bin/sh\nldconfig\n' > "$stage/DEBIAN/postinst"
   printf '#!/bin/sh\nldconfig\n' > "$stage/DEBIAN/postrm"
   chmod 755 "$stage/DEBIAN/postinst" "$stage/DEBIAN/postrm"
+  # Finder writes .DS_Store into folders open in a window, even while this runs.
+  find "$stage" -name .DS_Store -delete
   rm -f "$DEST/packages/${name}_"*.deb
   dpkg-deb --root-owner-group -Zxz --build "$stage" "$DEST/packages/${name}_${version}_${ARCH}.deb"
   cat "$stage/DEBIAN/control"
-  rm -rf "$stage"
+  # The package is made; a folder Finder is writing into can't fail the step.
+  rm -rf "$stage" 2>/dev/null || echo "note: couldn't remove $stage"
 }
 
 step sysroot step_sysroot
