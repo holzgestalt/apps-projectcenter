@@ -164,7 +164,8 @@
 
 /* Building with Xcode's own tools, where they are installed (macOS). */
 
-/* Path of xcodebuild, or nil without the Xcode tools. */
+/* Path of Xcode's xcodebuild, or nil without Xcode. It is found also when
+ * xcode-select points at the Command Line Tools. */
 + (NSString *)xcodebuildPath;
 /* Arguments for xcodebuild to run `action` ("build" or "clean") for the
  * selection of +buildSelectionForProject:. A scheme that xcodebuild knows

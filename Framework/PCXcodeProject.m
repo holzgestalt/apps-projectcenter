@@ -1667,11 +1667,70 @@ static id JSONFromTool(NSString *tool, NSArray *arguments)
   return [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
 }
 
+/* The xcodebuild of a developer folder (Contents/Developer of Xcode), or
+ * nil: the Command Line Tools have none. */
+static NSString *XcodebuildOfDeveloperFolder(NSString *folder)
+{
+  NSString *path = [folder stringByAppendingPathComponent:@"usr/bin/xcodebuild"];
+
+  return [folder length] && [[NSFileManager defaultManager] isExecutableFileAtPath:path] ? path : nil;
+}
+
+/* Xcode's own xcodebuild, which runs with its Xcode: DEVELOPER_DIR's, else
+ * xcode-select's, else an Xcode in an Applications folder, as
+ * /usr/bin/xcodebuild only works when xcode-select points at an Xcode and
+ * not at the Command Line Tools. */
 + (NSString *)xcodebuildPath
 {
-  NSString *path = @"/usr/bin/xcodebuild";
+  static NSString *found = nil;
+  static BOOL     looked = NO;
 
-  return [[NSFileManager defaultManager] isExecutableFileAtPath:path] ? path : nil;
+  if (!looked)
+  {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString      *folder = [[[NSProcessInfo processInfo] environment] objectForKey:@"DEVELOPER_DIR"];
+    NSData        *selected;
+    NSString      *path = XcodebuildOfDeveloperFolder(folder);
+
+    looked = YES;
+    if (path == nil && [fm isExecutableFileAtPath:@"/usr/bin/xcode-select"]
+        && (selected = RunTool(@"/usr/bin/xcode-select", @[@"-p"])) != nil)
+    {
+      folder = [[[[NSString alloc] initWithData:selected encoding:NSUTF8StringEncoding] autorelease]
+                stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+      path = XcodebuildOfDeveloperFolder(folder);
+    }
+    if (path == nil)
+    {
+      NSArray *applications = @[@"/Applications", [NSHomeDirectory() stringByAppendingPathComponent:@"Applications"]];
+
+      for (NSString *applicationsFolder in applications)
+      {
+        NSMutableArray *names = [NSMutableArray array];
+
+        for (NSString *name in [fm contentsOfDirectoryAtPath:applicationsFolder error:NULL])
+        {
+          if ([name hasPrefix:@"Xcode"] && [[name pathExtension] isEqual:@"app"]) [names addObject:name];
+        }
+        /* Xcode.app before Xcode-beta.app and others. */
+        [names sortUsingSelector:@selector(compare:)];
+        if ([names containsObject:@"Xcode.app"])
+        {
+          [names removeObject:@"Xcode.app"];
+          [names insertObject:@"Xcode.app" atIndex:0];
+        }
+        for (NSString *name in names)
+        {
+          path = XcodebuildOfDeveloperFolder([[applicationsFolder stringByAppendingPathComponent:name]
+                                              stringByAppendingPathComponent:@"Contents/Developer"]);
+          if (path) break;
+        }
+        if (path) break;
+      }
+    }
+    found = [path copy];
+  }
+  return found;
 }
 
 /* The schemes that xcodebuild can build, asked again when the project's
