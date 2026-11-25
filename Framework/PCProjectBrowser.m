@@ -37,6 +37,7 @@
 
 #import "Modules/Preferences/Misc/PCMiscPrefs.h"
 #import "PCFileTypeIcon.h"
+#import "PCNavigators.h"
 
 NSString *PCBrowserDidSetPathNotification = @"PCBrowserDidSetPathNotification";
 
@@ -124,10 +125,9 @@ static NSTableCellView *SourceCell(void)
   NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(22,0,206,20)] autorelease];
   [label setEditable:NO]; [label setSelectable:NO]; [label setBezeled:NO]; [label setBordered:NO]; [label setDrawsBackground:NO];
   [label setFont:[NSFont systemFontOfSize:12]];
-  [[label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
-  [label setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [cell addSubview:icon]; [cell addSubview:label];
   [cell setImageView:icon]; [cell setTextField:label];
+	PCAlignNavigatorCell(cell);
   [label bind:NSValueBinding toObject:cell withKeyPath:@"objectValue.title" options:nil];
   [icon bind:NSValueBinding toObject:cell withKeyPath:@"objectValue.icon" options:nil];
   [icon bind:@"symbolicIconName" toObject:cell withKeyPath:@"objectValue.symbolicIconName" options:nil];

@@ -50,6 +50,27 @@
 }
 @end
 
+void PCAlignNavigatorCell(NSTableCellView *cell) {
+	NSImageView *image = [cell imageView];
+	NSTextField *label = [cell textField];
+	NSRect imageFrame = [image frame];
+	CGFloat spacing = NSMinX([label frame]) - NSMaxX(imageFrame);
+
+	[image setTranslatesAutoresizingMaskIntoConstraints:NO];
+	[label setTranslatesAutoresizingMaskIntoConstraints:NO];
+	[[label cell] setUsesSingleLineMode:YES];
+	[[label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
+	[cell addConstraints:@[
+		[[image leadingAnchor] constraintEqualToAnchor:[cell leadingAnchor] constant:NSMinX(imageFrame)],
+		[[image centerYAnchor] constraintEqualToAnchor:[cell centerYAnchor]],
+		[[image widthAnchor] constraintEqualToConstant:NSWidth(imageFrame)],
+		[[image heightAnchor] constraintEqualToConstant:NSHeight(imageFrame)],
+		[[label leadingAnchor] constraintEqualToAnchor:[image trailingAnchor] constant:spacing],
+		[[label trailingAnchor] constraintEqualToAnchor:[cell trailingAnchor] constant:-2],
+		[[label centerYAnchor] constraintEqualToAnchor:[image centerYAnchor]]
+	]];
+}
+
 static NSTableCellView *NavigatorCell(void)
 {
   NSTableCellView *cell = [[[NSTableCellView alloc] initWithFrame:NSMakeRect(0,0,230,24)] autorelease];
@@ -60,10 +81,9 @@ static NSTableCellView *NavigatorCell(void)
   [label setEditable:NO]; [label setSelectable:NO];
   [label setBezeled:NO]; [label setBordered:NO]; [label setDrawsBackground:NO];
   [label setFont:[NSFont systemFontOfSize:12]];
-  [[label cell] setLineBreakMode:NSLineBreakByTruncatingTail];
-  [label setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [cell addSubview:image]; [cell addSubview:label];
   [cell setImageView:image]; [cell setTextField:label];
+	PCAlignNavigatorCell(cell);
   [label bind:NSValueBinding toObject:cell withKeyPath:@"objectValue.title" options:nil];
   [image bind:NSValueBinding toObject:cell withKeyPath:@"objectValue.icon" options:nil];
   return cell;

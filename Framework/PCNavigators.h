@@ -16,6 +16,9 @@
 
 @class PCProject;
 
+/* Describe the layout of a navigator's icon and label. */
+void PCAlignNavigatorCell(NSTableCellView *cell);
+
 /* One row in a navigator outline. */
 @interface PCNavigatorItem : NSObject
 {
