@@ -82,6 +82,13 @@ int main(void) { @autoreleasepool {
     objects['MAC_SOURCES'] = {'isa':'PBXSourcesBuildPhase','files':['EXCLUDED_BUILD']}
     (root/'Images.xcassets/AppIcon.appiconset').mkdir(parents=True)
     (root/'Images.xcassets/AppIcon.appiconset/icon.png').write_bytes(b'fixture-raster-resource')
+    (root/'Images.xcassets/AppIcon.appiconset/icon_512.png').write_bytes(b'fixture-app-icon')
+    (root/'Images.xcassets/AppIcon.appiconset/icon_1024.png').write_bytes(b'fixture-large-icon')
+    (root/'Images.xcassets/AppIcon.appiconset/Contents.json').write_text(json.dumps({'images': [
+        {'size':'16x16','scale':'1x','filename':'icon.png'}, {'size':'256x256','scale':'2x','filename':'icon_512.png'},
+        {'size':'512x512','scale':'2x','filename':'icon_1024.png'}, {'size':'32x32','scale':'1x'}]}))
+    for name in ('DEBUG','RELEASE'):
+        objects[name]['buildSettings']['ASSETCATALOG_COMPILER_APPICON_NAME'] = 'AppIcon'
     objects['GROUP']['children'].append('ASSETS')
     objects['ASSETS'] = {'isa':'PBXFileReference','path':'Images.xcassets','sourceTree':'<group>'}
     objects['ASSETS_BUILD'] = {'isa':'PBXBuildFile','fileRef':'ASSETS'}
@@ -100,6 +107,8 @@ int main(void) { @autoreleasepool {
     assert (resources/'icon.png').read_bytes() == b'fixture-raster-resource'
     info = plistlib.loads((resources/'Info-gnustep.plist').read_bytes())
     assert info['CFBundleIconFile']=='icon.png'
+    # The app icon set's largest image up to 512 pixels is the application's icon.
+    assert info['NSIcon']=='AppIcon.png' and (resources/'AppIcon.png').read_bytes()==b'fixture-app-icon'
     assert info['CFBundleDocumentTypes'][0]['CFBundleTypeName']=='org.fixture.text'
     assert info['CFBundleDocumentTypes'][0]['CFBundleTypeExtensions']==['fixture']
     before=executable.stat().st_mtime_ns

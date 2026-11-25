@@ -347,6 +347,46 @@ class Build:
             else:
                 shutil.copy2(source, target)
 
+    def app_icon(self, project, ref, settings, destination):
+        """Copies the largest image of the target's app icon set
+        (ASSETCATALOG_COMPILER_APPICON_NAME) as <name>.<extension> and
+        returns its file name, or None."""
+        name = project.expand(settings.get('ASSETCATALOG_COMPILER_APPICON_NAME', ''), ref, settings)
+        if not name:
+            return None
+        for fileid, _ in project.files(ref, 'PBXResourcesBuildPhase'):
+            catalog = project.paths[fileid]
+            folder = catalog / (name + '.appiconset')
+            if catalog.suffix != '.xcassets' or not folder.is_dir():
+                continue
+            def pixels(entry):
+                try:
+                    size = float(str(entry.get('size', '0')).split('x')[0])
+                    scale = float(str(entry.get('scale', '1x')).rstrip('x'))
+                except ValueError:
+                    return 0
+                return size * scale
+            try:
+                entries = json.loads((folder / 'Contents.json').read_text()).get('images', [])
+            except (OSError, ValueError):
+                entries = []
+            images = [(pixels(e), folder / e['filename']) for e in entries
+                      if e.get('filename') and (folder / e['filename']).is_file()]
+            images += [(0, f) for f in sorted(folder.iterdir())
+                       if f.suffix.lower() in ('.png', '.svg') and f not in [i for _, i in images]]
+            images = [i for i in images if i[1].suffix.lower() in ('.png', '.svg')]
+            if not images:
+                break
+            # Desktops show icons up to 512 pixels; a larger one is only bigger.
+            fitting = [i for i in images if i[0] <= 512]
+            _, image = max(fitting or images, key=lambda i: i[0])
+            icon = name + image.suffix.lower()
+            shutil.copy2(image, destination / icon)
+            print(f'note: application icon: {image.relative_to(project.root)}', file=sys.stderr)
+            return icon
+        print(f'warning: the app icon set {name} is not in an asset catalog of the target', file=sys.stderr)
+        return None
+
     def build(self):
         include = self.prepare_headers()
         target_objects = {(p, r): self.compile_target(p, r, include) for p, r in self.ordered}
@@ -377,6 +417,7 @@ class Build:
             self.resources(p, r, resources)
         if self.sdk:
             self.sdk.prepare_resources(resources)
+        icon = self.app_icon(project, ref, settings, resources)
         info = read_plist(project.root / project.expand(settings['INFOPLIST_FILE'], ref, settings)) if settings.get('INFOPLIST_FILE') else {}
         name = self.name(project, ref)
         settings = dict(settings, PRODUCT_NAME=name, EXECUTABLE_NAME=name)
@@ -391,6 +432,10 @@ class Build:
         info.update({key[len('INFOPLIST_KEY_'):]: value for key, value in settings.items() if key.startswith('INFOPLIST_KEY_')})
         info = expand_info(info)
         info.update(CFBundleExecutable=name, NSExecutable=name, NSPrincipalClass=info.get('NSPrincipalClass', 'NSApplication'))
+        if icon and not info.get('NSIcon'):
+            # GNUstep's application icon. A CFBundleIconFile that names
+            # something else still wins, as it does in GNUstep.
+            info['NSIcon'] = icon
         exported = {entry['UTTypeIdentifier']: entry for entry in info.get('UTExportedTypeDeclarations', []) if entry.get('UTTypeIdentifier')}
         for document in info.get('CFBundleDocumentTypes', []):
             # GNUstep dispatches document APIs using CFBundleTypeName, whereas

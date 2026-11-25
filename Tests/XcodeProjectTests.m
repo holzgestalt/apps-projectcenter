@@ -886,6 +886,37 @@ static void TestDeployment(void)
         && [script rangeOfString:@"GNUstep/run"].location == NSNotFound
         && [script rangeOfString:@"exec \"%s\" \"$@\"\\n' \"$DEST/$APPNAME/$EXE\""].location != NSNotFound,
         @"without GNUstep inside, the package depends on GNUstep's, which goes next to it");
+  /* Without an Icon, the desktop entry's is the application's own:
+   * CFBundleIconFile, else NSIcon, in the compiler's XML Info-gnustep.plist
+   * or in gnustep-make's OpenStep one, if desktops can show it. */
+  {
+    NSRange  start = [script rangeOfString:@"ICON=''\n"];
+    NSRange  end = [script rangeOfString:@"\ndone\n" options:0
+                                   range:NSMakeRange(NSMaxRange(start), [script length] - NSMaxRange(start))];
+    NSString *lookup = [script substringWithRange:NSMakeRange(start.location, NSMaxRange(end) - start.location)];
+    NSArray  *cases = @[@[@"Xml", @"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\">\n<dict>\n"
+                          @"\t<key>CFBundleIconFile</key>\n\t<string></string>\n"
+                          @"\t<key>NSIcon</key>\n\t<string>AppIcon.png</string>\n</dict>\n</plist>\n",
+                          @"AppIcon.png"],
+                        @[@"Step", @"{\n    NSExecutable = Step;\n    NSIcon = \"Step.svg\";\n}\n", @"Step.svg"],
+                        @[@"Own", @"{\n    CFBundleIconFile = \"Own.png\";\n    NSIcon = \"Step.svg\";\n}\n", @"Own.png"],
+                        @[@"Tiff", @"{\n    NSIcon = Old.tiff;\n}\n", @"Old.tiff"]];
+
+    Check(start.location != NSNotFound && end.location != NSNotFound,
+          [NSString stringWithFormat:@"the icon is looked up in the bundle: %@", script]);
+    for (NSArray *entry in cases)
+    {
+      NSString *app = [NSString stringWithFormat:@"Icons/%@.app", [entry objectAtIndex:0]];
+      NSString *expected = [[entry objectAtIndex:0] isEqual:@"Tiff"] ? @""
+        : [NSString stringWithFormat:@"%@/%@/Resources/%@", root, app, [entry objectAtIndex:2]];
+
+      Write(root, [app stringByAppendingPathComponent:@"Resources/Info-gnustep.plist"], [entry objectAtIndex:1]);
+      Write(root, [app stringByAppendingPathComponent:[@"Resources" stringByAppendingPathComponent:[entry objectAtIndex:2]]],
+            @"image\n");
+      Check(Shell([NSString stringWithFormat:@"APP='%@/%@'\n%@\n[ \"$ICON\" = '%@' ]", root, app, lookup, expected]) == 0,
+            [NSString stringWithFormat:@"the desktop icon of %@ is '%@'", [entry objectAtIndex:0], expected]);
+    }
+  }
 
   /* A container build, with a stand-in docker that runs the command here
    * (the project is mounted at its own path) and records what it builds. */

@@ -275,7 +275,8 @@ static NSString *RootPath(NSString *path, NSString *root)
                            @"Off, it depends on projectcenter-gnustep, which Archive puts next to it.")];
     [fields addObject:Text(@"Categories", @"Menu Categories",
                            @"Categories of the desktop entry, separated by semicolons; empty makes no entry.")];
-    [fields addObject:Text(@"Icon", @"Icon", @"A PNG or SVG file of the project for the desktop entry.")];
+    [fields addObject:Text(@"Icon", @"Icon", @"A PNG or SVG file of the project for the desktop entry; empty uses the application's icon "
+                           @"(the target's App Icon set).")];
   }
   else
   {
@@ -1411,6 +1412,40 @@ static void AppendIncludeGNUstep(NSMutableString *s)
    @"echo \"Included GNUstep in $(basename \"$BUNDLE\")/GNUstep ($(du -sk \"$RUNTIME\" | cut -f1) KB)\"\n"];
 }
 
+/* The icon of the desktop entry, in /usr/share/pixmaps, with $ICON set to
+ * it: the Icon field's file, else the application's own icon, which the
+ * bundle's Info-gnustep.plist names: CFBundleIconFile, else NSIcon, the
+ * order in which GNUstep looks (the compiler sets NSIcon from the target's
+ * app icon set). Desktops show PNG, SVG and XPM icons. */
+static void AppendLinuxIcon(NSMutableString *s, NSString *icon, NSDictionary *projectDict)
+{
+  if ([icon length])
+  {
+    NSString *root = [[projectDict objectForKey:@"XCODE_PROJECT_PATH"] stringByDeletingLastPathComponent];
+    NSString *path = [icon isAbsolutePath] ? icon : [root stringByAppendingPathComponent:icon];
+
+    [s appendFormat:@"ICON=%@\n", RootPath(path, root)];
+  }
+  else
+  {
+    /* Info-gnustep.plist is XML from the compiler and OpenStep from
+     * gnustep-make: the line after <key>KEY</key>, or KEY = value;. */
+    [s appendString:@"ICON=''\n"
+     @"for key in CFBundleIconFile NSIcon; do\n"
+     @"  name=$(sed -n -e \"/<key>$key<\\/key>/{n;s/.*<string>\\(.*\\)<\\/string>.*/\\1/p;}\" \\\n"
+     @"    -e \"s/^[[:space:]]*$key[[:space:]]*=[[:space:]]*\\\"\\{0,1\\}\\([^\\\";]*\\)\\\"\\{0,1\\};.*/\\1/p\" \\\n"
+     @"    \"$APP/Resources/Info-gnustep.plist\" 2>/dev/null | head -n 1)\n"
+     @"  case \"$name\" in\n"
+     @"    *.png|*.svg|*.xpm) if [ -f \"$APP/Resources/$name\" ]; then ICON=\"$APP/Resources/$name\"; break; fi ;;\n"
+     @"  esac\n"
+     @"done\n"];
+  }
+  [s appendString:@"if [ -n \"$ICON\" ]; then\n"
+   @"  mkdir -p \"$STAGE/usr/share/pixmaps\"\n"
+   @"  cp \"$ICON\" \"$STAGE/usr/share/pixmaps/$PKG.${ICON##*.}\"\n"
+   @"fi\n"];
+}
+
 /* The files of a Linux package in $STAGE: the bundle in the install
  * folder, the command and the desktop entry. */
 static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDictionary *projectDict)
@@ -1430,6 +1465,7 @@ static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDic
    @"cp -R \"$APP\" \"$STAGE$DEST/\"\n"
    @"BUNDLE=\"$STAGE$DEST/$APPNAME\"\n"];
   if (included) AppendIncludeGNUstep(s);
+  AppendLinuxIcon(s, icon, projectDict);
   if (launcher)
   {
     [s appendFormat:@"mkdir -p \"$STAGE/usr/bin\"\n"
@@ -1453,16 +1489,8 @@ static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDic
      @"  echo %@\n"
      @"  echo 'Terminal=false'\n",
      SQ([@"Name=" stringByAppendingString:display]), SQ([@"Categories=" stringByAppendingString:categories])];
-    if ([icon length]) [s appendString:@"  echo \"Icon=$PKG\"\n"];
-    [s appendString:@"} > \"$STAGE/usr/share/applications/$PKG.desktop\"\n"];
-  }
-  if ([icon length])
-  {
-    NSString *root = [[projectDict objectForKey:@"XCODE_PROJECT_PATH"] stringByDeletingLastPathComponent];
-    NSString *path = [icon isAbsolutePath] ? icon : [root stringByAppendingPathComponent:icon];
-
-    [s appendFormat:@"mkdir -p \"$STAGE/usr/share/pixmaps\"\n"
-     @"cp %@ \"$STAGE/usr/share/pixmaps/$PKG.%@\"\n", RootPath(path, root), [icon pathExtension]];
+    [s appendString:@"  if [ -n \"$ICON\" ]; then echo \"Icon=$PKG\"; fi\n"
+     @"} > \"$STAGE/usr/share/applications/$PKG.desktop\"\n"];
   }
 }
 

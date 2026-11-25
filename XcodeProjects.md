@@ -406,6 +406,9 @@ target (`SDKROOT = windows`) is not supported yet.
 - **Debian** and **RPM** packages install the bundle in the **Install Folder**
   (`/usr/lib/GNUstep/Applications`), a command named after the package in
   `/usr/bin` and a desktop entry with the **Menu Categories** and **Icon**.
+  The icon goes in `/usr/share/pixmaps`. Without an **Icon**, it is the
+  application's own: the PNG, SVG or XPM file that the bundle's
+  `CFBundleIconFile` or `NSIcon` names (the target's app icon set).
   **Find Dependencies** adds the packages of the libraries the application
   links and of GNUstep's back end where `dpkg` knows them (native and container
   builds), or lets `rpmbuild` find them; **Depends** adds more.
@@ -458,6 +461,13 @@ headers and per-file ARC overrides. It builds C, C++ and Objective-C sources
 against the installed GNUstep SDK. Products and compiler caches live under
 `build/ProjectCenter/<configuration>` beside the `.xcodeproj`. Clean removes only
 the chosen configuration's products. Source project metadata is never rewritten.
+
+The images of asset catalogs are copied into the bundle's `Resources`. The
+target's app icon set (`ASSETCATALOG_COMPILER_APPICON_NAME`, **App Icon** in the
+General pane) is the application's icon: its largest PNG or SVG of up to 512
+pixels goes in as `<name>.png` (`AppIcon.png`), and `NSIcon` in
+`Info-gnustep.plist` names it. A non-empty `CFBundleIconFile` still wins, as it
+does in GNUstep.
 
 An installed appearance provider can expose an `xcode_sdk` pkg-config variable
 for its compiler flags, SDK sources, library replacements and resource adaptation.
