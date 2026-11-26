@@ -450,8 +450,8 @@ static const CGFloat Margin = 20;
         [makeToolchainButton setAction:@selector(makeToolchain:)];
         [makeToolchainButton setAutoresizingMask:NSViewMinXMargin];
         [makeToolchainButton setToolTip:@"Makes a GNUstep cross toolchain for this platform in "
-                             @"~/gnustep-toolchains (make-toolchain.sh): Debian's packages and GNUstep "
-                             @"built for them, without Docker."];
+                             @"~/gnustep-toolchains (make-toolchain.sh): Debian's or Fedora's packages and "
+                             @"GNUstep built for them, without Docker."];
         [form addSubview:makeToolchainButton];
       }
       control = [[[NSTextField alloc] initWithFrame:controlFrame] autorelease];

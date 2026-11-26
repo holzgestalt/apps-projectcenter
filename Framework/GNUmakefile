@@ -118,6 +118,7 @@ ProjectCenter_RESOURCE_FILES = \
   Resources/make-toolchain.sh \
   Resources/debian-sysroot.py \
   Resources/debian-depends.py \
+  Resources/fedora-sysroot.py \
   Resources/plmerge.py \
   Resources/libs-base-cross.config \
   Resources/cfile.template \

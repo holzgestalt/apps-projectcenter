@@ -459,16 +459,19 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
   arguments = [PCDeployment makeToolchainArgumentsForDeployment:deployment project:projectDict];
   if (arguments == nil)
   {
-    NSRunAlertPanel(@"Make Toolchain", @"ProjectCenter makes cross toolchains for Debian packages and "
-                    @"Linux tarballs, on arm64 and amd64.", @"OK", nil, nil);
+    NSRunAlertPanel(@"Make Toolchain", @"ProjectCenter makes cross toolchains for Debian packages, "
+                    @"RPMs and Linux tarballs, on arm64 and amd64.", @"OK", nil, nil);
     return;
   }
   folder = [arguments lastObject];
   if (NSRunAlertPanel(@"Make Toolchain",
-                      @"Make the cross toolchain for %@ in %@?\n\nIt downloads Debian's packages (about "
-                      @"110 MB) and builds GNUstep, libdispatch and GTK4Native for it, which takes a "
-                      @"while. It needs LLVM, lld, GNU make, CMake, pkgconf and dpkg (brew install llvm "
-                      @"lld make cmake pkgconf dpkg). The build log shows its steps.",
+                      @"Make the cross toolchain for %@ in %@?\n\nIt downloads the distribution's "
+                      @"packages (about 110 MB for Debian, 155 MB for Fedora) and builds GNUstep, "
+                      @"libdispatch and GTK4Native for it, which takes a while. The git checkouts in "
+                      @"the GNUstep sources are fetched and fast-forwarded first, except those with "
+                      @"local changes. It needs LLVM, lld, GNU "
+                      @"make, CMake, pkgconf, and dpkg for Debian or rpm for Fedora (brew install llvm "
+                      @"lld make cmake pkgconf dpkg rpm). The build log shows its steps.",
                       @"Make Toolchain", @"Cancel", nil,
                       [PCDeployment valueForKey:@"Name" ofDeployment:deployment project:projectDict], folder)
       != NSAlertDefaultReturn)

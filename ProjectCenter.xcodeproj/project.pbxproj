@@ -16,6 +16,7 @@
 		CCDE00000000000000000005 /* gnustep-image.sh in Resources */ = {isa = PBXBuildFile; fileRef = CCDE00000000000000000006 /* gnustep-image.sh */; };
 		CCDE00000000000000000007 /* make-toolchain.sh in Resources */ = {isa = PBXBuildFile; fileRef = CCDE00000000000000000008 /* make-toolchain.sh */; };
 		CCDE00000000000000000009 /* debian-sysroot.py in Resources */ = {isa = PBXBuildFile; fileRef = CCDE0000000000000000000A /* debian-sysroot.py */; };
+		CCDE00000000000000000011 /* fedora-sysroot.py in Resources */ = {isa = PBXBuildFile; fileRef = CCDE00000000000000000012 /* fedora-sysroot.py */; };
 		CCDE0000000000000000000B /* debian-depends.py in Resources */ = {isa = PBXBuildFile; fileRef = CCDE0000000000000000000C /* debian-depends.py */; };
 		CCDE0000000000000000000D /* plmerge.py in Resources */ = {isa = PBXBuildFile; fileRef = CCDE0000000000000000000E /* plmerge.py */; };
 		CCDE0000000000000000000F /* libs-base-cross.config in Resources */ = {isa = PBXBuildFile; fileRef = CCDE00000000000000000010 /* libs-base-cross.config */; };
@@ -606,6 +607,7 @@
 		CCDE00000000000000000006 /* gnustep-image.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "Framework/Resources/gnustep-image.sh"; sourceTree = SOURCE_ROOT; };
 		CCDE00000000000000000008 /* make-toolchain.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "Framework/Resources/make-toolchain.sh"; sourceTree = SOURCE_ROOT; };
 		CCDE0000000000000000000A /* debian-sysroot.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "Framework/Resources/debian-sysroot.py"; sourceTree = SOURCE_ROOT; };
+		CCDE00000000000000000012 /* fedora-sysroot.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "Framework/Resources/fedora-sysroot.py"; sourceTree = SOURCE_ROOT; };
 		CCDE0000000000000000000C /* debian-depends.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "Framework/Resources/debian-depends.py"; sourceTree = SOURCE_ROOT; };
 		CCDE0000000000000000000E /* plmerge.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "Framework/Resources/plmerge.py"; sourceTree = SOURCE_ROOT; };
 		CCDE00000000000000000010 /* libs-base-cross.config */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Framework/Resources/libs-base-cross.config"; sourceTree = SOURCE_ROOT; };
@@ -1217,6 +1219,7 @@
 				CCDE00000000000000000008 /* make-toolchain.sh */,
 				CCDE0000000000000000000A /* debian-sysroot.py */,
 				CCDE0000000000000000000C /* debian-depends.py */,
+				CCDE00000000000000000012 /* fedora-sysroot.py */,
 				CCDE0000000000000000000E /* plmerge.py */,
 				CCDE00000000000000000010 /* libs-base-cross.config */,
 				F84AE18E99CEF44FD09476C9 /* BuildAttributes.xib */,
@@ -2331,6 +2334,7 @@
 				CCDE00000000000000000007 /* make-toolchain.sh in Resources */,
 				CCDE00000000000000000009 /* debian-sysroot.py in Resources */,
 				CCDE0000000000000000000B /* debian-depends.py in Resources */,
+				CCDE00000000000000000011 /* fedora-sysroot.py in Resources */,
 				CCDE0000000000000000000D /* plmerge.py in Resources */,
 				CCDE0000000000000000000F /* libs-base-cross.config in Resources */,
 				32B86604A08E6257CDECC0D3 /* ProjectWindow.xib in Resources */,

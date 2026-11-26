@@ -68,9 +68,10 @@ Xcode-like IDE for Cocoa projects on GNUstep, and makes ProjectCenter itself bui
   virtualization, so Colima can't start; `Tests/ArchiveDemo` and its `check-packages.sh` are for
   that run. Without Docker, **Make Toolchain…** in the Deployment tab
   (`PCDeploymentEditor`, run by `PCProjectBuilder`) makes a Cross Toolchain with
-  `Framework/Resources/make-toolchain.sh` for Debian on the Mac (`CrossToolchain.md`): a sysroot from Debian's packages, and GNUstep, libdispatch and
+  `Framework/Resources/make-toolchain.sh` for Debian or Fedora on the Mac (`CrossToolchain.md`): a sysroot from
+  the distribution's packages (`debian-sysroot.py`, `fedora-sysroot.py`), and GNUstep, libdispatch and
   GTK4Native cross built into it, in `~/gnustep-toolchains/`. EditGlyphData archives to a
-  `.deb` with it; running the package needs a Debian machine. Linux packages carry the
+  `.deb` or an RPM with it; running the packages needs a Debian or Fedora machine. Linux packages carry the
   GNUstep they were built with inside the bundle (**Include GNUstep**, `<App>.app/GNUstep`,
   started by `GNUstep/run`), unless that is turned off. The XIB editor's
   model is `PCInterfaceDocument` (Foundation only): every edit changes only its own XML, and an

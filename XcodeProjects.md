@@ -348,16 +348,18 @@ target (`SDKROOT = windows`) is not supported yet.
     as a cross compiled sysroot or an MSYS2 MinGW tree; **Toolchain** is the
     folder of its `GNUstep.sh`. The package is made on this computer, so it
     needs `dpkg-deb` or `rpmbuild` (on a Mac: `brew install dpkg`,
-    `brew install rpm`). For Debian and Linux
-    tarballs on arm64 and amd64, **Make Toolchain…** next to **Toolchain**
-    makes one on the Mac, without Docker. It downloads Debian's packages into
-    a sysroot and cross-builds GNUstep, libdispatch and GTK4Native into it,
-    with its steps in the build log. It makes the toolchain in
-    `~/gnustep-toolchains/debian-trixie-<arch>`, the default **Toolchain**.
+    `brew install rpm`). For Debian packages, RPMs and Linux tarballs on
+    arm64 and amd64, **Make Toolchain…** next to **Toolchain** makes one on
+    the Mac, without Docker. It downloads the distribution's packages
+    (Debian's, or Fedora's for RPMs) into a sysroot and cross-builds GNUstep,
+    libdispatch and GTK4Native into it, with its steps in the build log. It
+    first fast-forwards the git checkouts in `GNUstepSources` (not one with
+    local changes, which it builds as it is, with a warning). It makes the toolchain in `~/gnustep-toolchains/debian-trixie-<arch>` or
+    `~/gnustep-toolchains/fedora-45-<arch>`, the default **Toolchain**.
     Once that is there, a platform whose **Build** is left at its default
     builds with it rather than in a container. The toolchain's
-    `bin/debian-depends` gives the package's **Find Dependencies**. See
-    `CrossToolchain.md`.
+    `bin/debian-depends` (`bin/rpm-requires` for RPMs) gives the package's
+    **Find Dependencies**. See `CrossToolchain.md`.
   - **Container**: in a Docker or Podman container, for any architecture the
     container tool runs (`--platform linux/amd64` or `linux/arm64`, emulated
     where it isn't this computer's). The container builds and packages, so
@@ -406,9 +408,18 @@ target (`SDKROOT = windows`) is not supported yet.
 - **Debian** and **RPM** packages install the bundle in the **Install Folder**
   (`/usr/lib/GNUstep/Applications`), a command named after the package in
   `/usr/bin` and a desktop entry with the **Menu Categories** and **Icon**.
-  The icon goes in `/usr/share/pixmaps`. Without an **Icon**, it is the
-  application's own: the PNG, SVG or XPM file that the bundle's
-  `CFBundleIconFile` or `NSIcon` names (the target's app icon set).
+  Without an **Icon**, the icon is the application's own: the PNG, SVG or
+  XPM file that the bundle's `CFBundleIconFile` or `NSIcon` names (the
+  target's app icon set). The desktop entry and icon are named after the
+  application's ID, the bundle's `CFBundleIdentifier`
+  (`com.schriftgestaltung.EditGlyphData.desktop`), and the icon goes in the
+  hicolor icon theme in its size (`/usr/share/icons/hicolor/512x512/apps`),
+  or in `/usr/share/pixmaps` for a size the theme has no folder for.
+  With the desktop entry comes AppStream metadata,
+  `/usr/share/metainfo/<ID>.metainfo.xml`, made from the platform's settings
+  (Summary, License, Maintainer, Homepage, the categories), which Fedora's
+  Software and other software centers need to open the package. A filled-in
+  **Homepage** and a **Summary** longer than the name make it complete.
   **Find Dependencies** adds the packages of the libraries the application
   links and of GNUstep's back end where `dpkg` knows them (native and container
   builds), or lets `rpmbuild` find them; **Depends** adds more.

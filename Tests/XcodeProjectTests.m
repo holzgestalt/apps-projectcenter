@@ -808,6 +808,11 @@ static void TestDeployment(void)
         == NSNotFound
         && [[scripts objectForKey:@"2-Fedora-arm.sh"] rangeOfString:@"__requires_exclude ^($OWN)"].location != NSNotFound,
         @"the RPM has GNUstep inside, whose libraries it neither provides nor requires");
+  Check([[scripts objectForKey:@"2-Fedora-arm.sh"] rangeOfString:@"FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/rpm-requires\" \"$BUNDLE\")"].location
+        != NSNotFound
+        && [[scripts objectForKey:@"2-Fedora-arm.sh"] rangeOfString:@"LC_ALL=C rpmbuild -bb --target \"$ARCH-linux\""].location != NSNotFound
+        && [[scripts objectForKey:@"2-Fedora-arm.sh"] rangeOfString:@"--define '_rpmformat 4'"].location != NSNotFound,
+        @"the RPM's Requires come from a cross toolchain's sysroot, and it is a v4 package for Linux, also when made on a Mac");
   Check([[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"hdiutil create"].location != NSNotFound
         && [[scripts objectForKey:@"3-macOS.sh"] rangeOfString:@"--sign \"$IDENTITY\""].location != NSNotFound,
         @"the macOS disk image, signed");
@@ -886,11 +891,15 @@ static void TestDeployment(void)
         && [script rangeOfString:@"GNUstep/run"].location == NSNotFound
         && [script rangeOfString:@"exec \"%s\" \"$@\"\\n' \"$DEST/$APPNAME/$EXE\""].location != NSNotFound,
         @"without GNUstep inside, the package depends on GNUstep's, which goes next to it");
+  Check([script rangeOfString:@"} > \"$STAGE/usr/share/applications/$APPID.desktop\""].location != NSNotFound
+        && [script rangeOfString:@"} > \"$STAGE/usr/share/metainfo/$APPID.metainfo.xml\""].location != NSNotFound
+        && [script rangeOfString:@"<project_license>LicenseRef-proprietary</project_license>"].location != NSNotFound,
+        @"the desktop entry and the AppStream metadata are named after the application's ID");
   /* Without an Icon, the desktop entry's is the application's own:
    * CFBundleIconFile, else NSIcon, in the compiler's XML Info-gnustep.plist
    * or in gnustep-make's OpenStep one, if desktops can show it. */
   {
-    NSRange  start = [script rangeOfString:@"ICON=''\n"];
+    NSRange  start = [script rangeOfString:@"plist_value() {\n"];
     NSRange  end = [script rangeOfString:@"\ndone\n" options:0
                                    range:NSMakeRange(NSMaxRange(start), [script length] - NSMaxRange(start))];
     NSString *lookup = [script substringWithRange:NSMakeRange(start.location, NSMaxRange(end) - start.location)];
@@ -1006,18 +1015,28 @@ static void TestCrossToolchain(void)
         && [[[PCDeployment standardToolchainForDeployment:amd64 project:nil] lastPathComponent]
             isEqual:@"debian-trixie-amd64"],
         @"Debian packages and Linux tarballs share the toolchain of their architecture");
-  Check([PCDeployment standardToolchainForDeployment:@{@"Kind": @"RPM", @"Architecture": @"aarch64"} project:nil] == nil
-        && [PCDeployment standardToolchainForDeployment:@{@"Kind": @"Windows", @"Architecture": @"x86_64"} project:nil] == nil
+  Check([[PCDeployment standardToolchainForDeployment:@{@"Kind": @"RPM", @"Architecture": @"aarch64"} project:nil]
+         isEqual:[toolchains stringByAppendingPathComponent:@"fedora-45-aarch64"]]
+        && [[[PCDeployment standardToolchainForDeployment:@{@"Kind": @"RPM", @"Architecture": @"x86_64"} project:nil]
+             lastPathComponent] isEqual:@"fedora-45-x86_64"],
+        @"RPMs build with a Fedora toolchain, in Fedora's architecture names");
+  arguments = [PCDeployment makeToolchainArgumentsForDeployment:@{@"Kind": @"RPM", @"Architecture": @"aarch64"} project:nil];
+  Check([[arguments subarrayWithRange:NSMakeRange(1, 6)]
+         isEqual:(@[@"--distribution", @"fedora", @"--arch", @"aarch64", @"--release", @"45"])]
+        && [[[arguments lastObject] lastPathComponent] isEqual:@"fedora-45-aarch64"],
+        [NSString stringWithFormat:@"make-toolchain.sh's arguments for Fedora: %@", arguments]);
+  Check([PCDeployment standardToolchainForDeployment:@{@"Kind": @"Windows", @"Architecture": @"x86_64"} project:nil] == nil
         && [PCDeployment standardToolchainForDeployment:@{@"Kind": @"Debian", @"Architecture": @"armhf"} project:nil] == nil
-        && [PCDeployment makeToolchainArgumentsForDeployment:@{@"Kind": @"RPM", @"Architecture": @"aarch64"} project:nil] == nil,
-        @"no toolchain for RPM, Windows or other architectures");
+        && [PCDeployment makeToolchainArgumentsForDeployment:@{@"Kind": @"Windows", @"Architecture": @"x86_64"} project:nil] == nil,
+        @"no toolchain for Windows or other architectures");
   Check([[PCDeployment valueForKey:@"Toolchain" ofDeployment:debian project:nil] isEqual:arm64],
         @"the default Toolchain is the standard one");
   arguments = [PCDeployment makeToolchainArgumentsForDeployment:debian project:nil];
-  Check([arguments count] >= 6
+  Check([arguments count] >= 8
         && [[[arguments objectAtIndex:0] lastPathComponent] isEqual:@"make-toolchain.sh"]
         && [[NSFileManager defaultManager] fileExistsAtPath:[arguments objectAtIndex:0]]
-        && [[arguments subarrayWithRange:NSMakeRange(1, 4)] isEqual:(@[@"--arch", @"arm64", @"--release", @"trixie"])]
+        && [[arguments subarrayWithRange:NSMakeRange(1, 6)]
+            isEqual:(@[@"--distribution", @"debian", @"--arch", @"arm64", @"--release", @"trixie"])]
         && [[arguments lastObject] isEqual:arm64],
         [NSString stringWithFormat:@"make-toolchain.sh's arguments: %@", arguments]);
   if (!linuxHost)

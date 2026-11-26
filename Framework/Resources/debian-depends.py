@@ -4,10 +4,13 @@
 # that debian-sysroot.py made: the packages of the shared libraries that the
 # ELF files in FOLDER need, other than those FOLDER holds itself.
 #
-#   debian-depends.py [--gnustep PREFIX PACKAGE] SYSROOT FOLDER
+#   debian-depends.py [--gnustep PREFIX PACKAGE] [--capabilities] SYSROOT FOLDER
 #
 # With --gnustep, the libraries in SYSROOT/PREFIX (GNUstep, which is not from
-# Debian) are PACKAGE's.
+# the distribution) are PACKAGE's. With --capabilities, for an RPM built
+# against a sysroot that fedora-sysroot.py made, the libraries are named as
+# rpm's capabilities (libgtk-4.so.1()(64bit)) rather than by their packages,
+# as rpmbuild finds them on Fedora; GNUstep's are still PACKAGE.
 #
 # This file is part of GNUstep ProjectCenter.
 #
@@ -48,6 +51,7 @@ def needed(path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gnustep', nargs=2, metavar=('PREFIX', 'PACKAGE'))
+    parser.add_argument('--capabilities', action='store_true')
     parser.add_argument('sysroot', type=Path)
     parser.add_argument('folder', type=Path)
     args = parser.parse_args()
@@ -56,10 +60,12 @@ def main():
     for line in (sysroot / 'files.tsv').read_text().splitlines():
         path, package = line.split('\t')
         owners[Path(path).name] = owners.get(Path(path).name) or package
+    gnustep = set()
     if args.gnustep:
         prefix, package = args.gnustep
         for path in (sysroot / prefix.lstrip('/')).rglob('*.so*'):
             owners[path.name] = package
+            gnustep.add(path.name)
     own = {p.name for p in folder.rglob('*') if p.is_file() or p.is_symlink()}
     packages = set()
     missing = set()
@@ -70,7 +76,7 @@ def main():
             if name in own:
                 continue
             if name in owners:
-                packages.add(owners[name])
+                packages.add(f'{name}()(64bit)' if args.capabilities and name not in gnustep else owners[name])
             else:
                 missing.add(name)
     for name in sorted(missing):

@@ -1,21 +1,28 @@
 #!/bin/sh
 #
-# make-toolchain.sh: makes a GNUstep cross toolchain for Debian on this
-# computer (a Mac or a Linux machine), without Docker, a virtual machine or
-# root. Make Toolchain... in ProjectCenter's Deployment tab runs it
+# make-toolchain.sh: makes a GNUstep cross toolchain for Debian or Fedora on
+# this computer (a Mac or a Linux machine), without Docker, a virtual machine
+# or root. Make Toolchain... in ProjectCenter's Deployment tab runs it
 # (+[PCDeployment makeToolchainArgumentsForDeployment:project:]); Archive
 # then builds a Linux target with it when its Build is Cross Toolchain and
 # its Toolchain is the folder this makes (see CrossToolchain.md).
 #
 #   make-toolchain.sh [options] [FOLDER]
-#     FOLDER            default: ~/gnustep-toolchains/debian-<release>-<arch>
-#     --arch ARCH       arm64 (default) or amd64
-#     --release NAME    the Debian release, default trixie
+#     FOLDER            default: ~/gnustep-toolchains/<distribution>-<release>-<arch>
+#     --distribution D  debian (default) or fedora
+#     --arch ARCH       arm64 (default) or amd64; Fedora's names, aarch64 and
+#                       x86_64, are the same
+#     --release NAME    the release, default trixie for Debian, 45 for Fedora
 #     --sources DIR     GNUstep sources to build (libdispatch, libobjc2,
 #                       tools-make, libs-base, libs-gui, libs-back and a
 #                       gtk4native* theme), default $GNUSTEP_SOURCES; the
 #                       missing ones (all, without a folder) are cloned,
 #                       from holzgestalt where it has a fork
+#     --no-fetch        build the sources in --sources as they are: without
+#                       it, each one that is a git checkout first fetches
+#                       its remotes and fast-forwards its branch (not one
+#                       with local changes, which is built as it is); the
+#                       others are cloned new each time
 #     --no-theme        leave GTK4Native out
 #     --from STEP       start at a step: sysroot, wrappers, libdispatch,
 #                       libobjc2, tools-make, libs-base, libs-gui,
@@ -25,22 +32,25 @@
 #     --jobs N          parallel jobs
 #
 # FOLDER then holds:
-#   sysroot/          Debian's libraries and headers (debian-sysroot.py)
-#                     and GNUstep built for it in sysroot/opt/gnustep
+#   sysroot/          the distribution's libraries and headers
+#                     (debian-sysroot.py, fedora-sysroot.py) and GNUstep
+#                     built for it in sysroot/opt/gnustep
 #   bin/              clang, clang++, pkg-config, gnustep-config, ar, ...
 #                     for the target, and GNU make as make
 #   GNUstep.sh        the toolchain's environment: what ProjectCenter's
 #                     Toolchain setting names (its folder)
-#   packages/         projectcenter-gnustep_<version>_<arch>.deb, GNUstep
-#                     for the target's computers, which the application's
-#                     package depends on
+#   packages/         projectcenter-gnustep_<version>_<arch>.deb (or
+#                     projectcenter-gnustep-<version>-1.<arch>.rpm), GNUstep
+#                     for the target's computers, which an application's
+#                     package without Include GNUstep depends on
 #   logs/             a log for each step
 #
 # The host needs clang and lld (LLVM's, not Apple's: brew install llvm lld),
-# GNU make 4 (brew install make), CMake, pkgconf, Python 3 and dpkg-deb
-# (brew install dpkg). GNUstep is built as gnustep-image.sh builds it for
-# the container: clang, libobjc2, library combo ng-gnu-gnu, fhs layout in
-# /opt/gnustep, so the package is the same.
+# GNU make 4 (brew install make), CMake, pkgconf, Python 3, and dpkg-deb
+# for Debian (brew install dpkg) or rpmbuild for Fedora (brew install rpm).
+# GNUstep is built as gnustep-image.sh builds it for the container: clang,
+# libobjc2, library combo ng-gnu-gnu, fhs layout in /opt/gnustep, so the
+# package is the same.
 #
 # This file is part of GNUstep ProjectCenter.
 #
@@ -56,10 +66,12 @@ PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:/opt/local/bin"
 export PATH
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+DISTRIBUTION=debian
 ARCH=arm64
-RELEASE=trixie
+RELEASE=""
 SOURCES="${GNUSTEP_SOURCES:-}"
 THEME=1
+FETCH=1
 FROM=sysroot
 ONLY=""
 JOBS="$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)"
@@ -68,25 +80,46 @@ PREFIX=/opt/gnustep
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    --distribution) DISTRIBUTION="$2"; shift 2 ;;
     --arch) ARCH="$2"; shift 2 ;;
     --release) RELEASE="$2"; shift 2 ;;
     --sources) SOURCES="$2"; shift 2 ;;
     --no-theme) THEME=0; shift ;;
+    --no-fetch) FETCH=0; shift ;;
     --from) FROM="$2"; shift 2 ;;
     --only) FROM="$2"; ONLY="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
-    -h|--help) sed -n '2,43p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,53p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "Unknown option $1 (see --help)" >&2; exit 2 ;;
     *) DEST="$1"; shift ;;
   esac
 done
 
 case "$ARCH" in
-  arm64) TRIPLE=aarch64-linux-gnu; PROCESSOR=aarch64 ;;
-  amd64) TRIPLE=x86_64-linux-gnu; PROCESSOR=x86_64 ;;
+  arm64|aarch64) PROCESSOR=aarch64 ;;
+  amd64|x86_64) PROCESSOR=x86_64 ;;
   *) echo "error: --arch is arm64 or amd64, not $ARCH" >&2; exit 2 ;;
 esac
-DEST="${DEST:-$HOME/gnustep-toolchains/debian-$RELEASE-$ARCH}"
+# The distribution's names: its release, architecture, target triple (the
+# folder of GCC's files) and library folder.
+case "$DISTRIBUTION" in
+  debian)
+    TITLE=Debian
+    RELEASE="${RELEASE:-trixie}"
+    case "$PROCESSOR" in aarch64) ARCH=arm64 ;; *) ARCH=amd64 ;; esac
+    TRIPLE="$PROCESSOR-linux-gnu"
+    LIBDIR="/usr/lib/$TRIPLE"
+    ;;
+  fedora)
+    TITLE=Fedora
+    RELEASE="${RELEASE:-45}"
+    ARCH="$PROCESSOR"
+    TRIPLE="$PROCESSOR-redhat-linux"
+    LIBDIR=/usr/lib64
+    ;;
+  *) echo "error: --distribution is debian or fedora, not $DISTRIBUTION" >&2; exit 2 ;;
+esac
+DEST="${DEST:-$HOME/gnustep-toolchains/$DISTRIBUTION-$RELEASE-$ARCH}"
 mkdir -p "$DEST"
 DEST="$(cd "$DEST" && pwd)"
 SYSROOT="$DEST/sysroot"
@@ -114,6 +147,11 @@ PKGCONF="$(tool "$BREW/bin/pkgconf" pkgconf pkg-config)" || { echo "error: no pk
 case "$("$CLANG" --version | head -n 1)" in
   Apple*) echo "error: $CLANG is Apple's clang; use LLVM's (brew install llvm)" >&2; exit 1 ;;
 esac
+if [ "$DISTRIBUTION" = debian ]; then
+  command -v dpkg-deb >/dev/null 2>&1 || { echo "error: no dpkg-deb (brew install dpkg)" >&2; exit 1; }
+else
+  command -v rpmbuild >/dev/null 2>&1 || { echo "error: no rpmbuild (brew install rpm)" >&2; exit 1; }
+fi
 
 # --- Steps ------------------------------------------------------------------
 
@@ -152,6 +190,70 @@ step() {
   fi
 }
 
+# The theme's folder in --sources, if there is one.
+theme_folder() {
+  if [ -n "$SOURCES" ]; then
+    find "$SOURCES" -mindepth 1 -maxdepth 1 -type d -iname 'gtk4native*' 2>/dev/null | head -n 1
+  fi
+}
+
+# Where the sources that aren't in --sources are cloned from.
+LIBDISPATCH_URL=https://github.com/swiftlang/swift-corelibs-libdispatch.git
+LIBOBJC2_URL=https://github.com/gnustep/libobjc2.git
+TOOLS_MAKE_URL=https://github.com/gnustep/tools-make.git
+LIBS_BASE_URL=https://github.com/holzgestalt/libs-base.git
+LIBS_GUI_URL=https://github.com/holzgestalt/libs-gui.git
+LIBS_BACK_URL=https://github.com/gnustep/libs-back.git
+THEME_URL=https://github.com/holzgestalt/GTK4Native.git
+
+# Brings the sources up to date and lists them, with the commit each is
+# built from. A git checkout in --sources fetches all its remotes and
+# fast-forwards its branch to the branch it tracks, as build-gnustep.sh
+# does; one with local changes, without a tracked branch, or that has
+# commits of its own is built as it is, with a warning. The others are
+# cloned new by their step, from the default branch.
+update_sources() {
+  command -v git >/dev/null 2>&1 || { echo "warning: no git; the sources in --sources are built as they are" >&2; return 0; }
+  theme="$(theme_folder)"
+  while read -r name url; do
+    if [ "$name" = theme ]; then
+      [ "$THEME" = 1 ] || continue
+      if [ -n "$theme" ]; then name="$(basename "$theme")"; else name=GTK4Native; fi
+    fi
+    folder="$SOURCES/$name"
+    if [ -z "$SOURCES" ] || [ ! -d "$folder" ]; then
+      head="$(git ls-remote "$url" HEAD 2>/dev/null | cut -c1-9)"
+      echo "   $name: cloned from $url${head:+ at $head}"
+      continue
+    fi
+    if [ ! -d "$folder/.git" ]; then
+      echo "   $name: $folder (not a git checkout), as it is"
+      continue
+    fi
+    branch="$(git -C "$folder" branch --show-current)"
+    if [ "$FETCH" = 0 ]; then
+      :
+    elif ! git -C "$folder" fetch --all --prune --quiet; then
+      echo "warning: $name: couldn't fetch; built as it is" >&2
+    elif [ -n "$(git -C "$folder" status --porcelain --untracked-files=no)" ]; then
+      echo "warning: $name: local changes; fetched, built as it is" >&2
+    elif ! tracked="$(git -C "$folder" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"; then
+      echo "warning: $name: ${branch:-a detached HEAD} tracks no branch; fetched, built as it is" >&2
+    elif ! git -C "$folder" merge --ff-only --quiet '@{u}' 2>/dev/null; then
+      echo "warning: $name: $branch has commits $tracked hasn't; fetched, built as it is" >&2
+    fi
+    echo "   $name: $folder, ${branch:-detached} at $(git -C "$folder" log -1 --format='%h %s')"
+  done <<SOURCES
+libdispatch $LIBDISPATCH_URL
+libobjc2 $LIBOBJC2_URL
+tools-make $TOOLS_MAKE_URL
+libs-base $LIBS_BASE_URL
+libs-gui $LIBS_GUI_URL
+libs-back $LIBS_BACK_URL
+theme $THEME_URL
+SOURCES
+}
+
 # A source folder in $WORK: a copy of the one in --sources, else a clone.
 source_folder() {
   name="$1" url="$2"
@@ -163,12 +265,12 @@ source_folder() {
     echo "$name: from $SOURCES/$name"
   else
     git clone --quiet --depth 1 "$url" "$WORK/$name"
-    echo "$name: cloned from $url"
+    echo "$name: cloned from $url at $(git -C "$WORK/$name" log -1 --format='%h %s')"
   fi
 }
 
 step_sysroot() {
-  python3 -I "$HERE/debian-sysroot.py" --arch "$ARCH" --release "$RELEASE" "$SYSROOT"
+  python3 -I "$HERE/$DISTRIBUTION-sysroot.py" --arch "$ARCH" --release "$RELEASE" "$SYSROOT"
 }
 
 # The wrappers: the target's compilers, with the sysroot and lld, which
@@ -193,7 +295,7 @@ for argument; do
 done
 shift "\$count"
 if [ "\$link" = yes ]; then
-  set -- --ld-path='$LLD' "\$@" -Wl,-rpath-link,$SYSROOT$PREFIX/lib -Wl,-rpath-link,$SYSROOT/usr/lib/$TRIPLE
+  set -- --ld-path='$LLD' "\$@" -Wl,-rpath-link,$SYSROOT$PREFIX/lib -Wl,-rpath-link,$SYSROOT$LIBDIR
 fi
 # Newer clang than Debian's makes this an error; Debian's (and the
 # container's) warns, so builds behave the same here.
@@ -221,11 +323,11 @@ step_wrappers() {
 #!/bin/sh
 # Written by make-toolchain.sh: pkg-config for $TRIPLE, in $SYSROOT.
 PKG_CONFIG_SYSROOT_DIR='$SYSROOT'
-PKG_CONFIG_LIBDIR='$SYSROOT$PREFIX/lib/pkgconfig:$SYSROOT/usr/lib/$TRIPLE/pkgconfig:$SYSROOT/usr/lib/pkgconfig:$SYSROOT/usr/share/pkgconfig'
+PKG_CONFIG_LIBDIR='$SYSROOT$PREFIX/lib/pkgconfig:$SYSROOT$LIBDIR/pkgconfig:$SYSROOT/usr/lib/pkgconfig:$SYSROOT/usr/share/pkgconfig'
 # The sysroot's own folders are system folders: no -I or -L for them, which
 # would put C's headers before C++'s.
 PKG_CONFIG_SYSTEM_INCLUDE_PATH='$SYSROOT/usr/include'
-PKG_CONFIG_SYSTEM_LIBRARY_PATH='$SYSROOT/usr/lib:$SYSROOT/usr/lib/$TRIPLE'
+PKG_CONFIG_SYSTEM_LIBRARY_PATH='$SYSROOT/usr/lib:$SYSROOT$LIBDIR'
 export PKG_CONFIG_SYSROOT_DIR PKG_CONFIG_LIBDIR PKG_CONFIG_SYSTEM_INCLUDE_PATH PKG_CONFIG_SYSTEM_LIBRARY_PATH
 unset PKG_CONFIG_PATH
 exec '$PKGCONF' "\$@"
@@ -270,7 +372,7 @@ EOF
 }
 
 step_libobjc2() {
-  source_folder libobjc2 https://github.com/gnustep/libobjc2.git
+  source_folder libobjc2 "$LIBOBJC2_URL"
   cd "$WORK/libobjc2"
   cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$DEST/toolchain.cmake" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DTESTS=OFF -DGNUSTEP_INSTALL_TYPE=NONE -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_INSTALL_LIBDIR=lib \
@@ -285,7 +387,7 @@ step_libobjc2() {
 # which libobjc2 then uses instead of its own, so there is only one.
 step_libdispatch() {
   rm -rf "$SYSROOT$PREFIX"
-  source_folder libdispatch https://github.com/swiftlang/swift-corelibs-libdispatch.git
+  source_folder libdispatch "$LIBDISPATCH_URL"
   cd "$WORK/libdispatch"
   cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$DEST/toolchain.cmake" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DBUILD_TESTING=OFF -DINSTALL_PRIVATE_HEADERS=YES \
@@ -302,7 +404,7 @@ cross_configure() {
 }
 
 step_tools_make() {
-  source_folder tools-make https://github.com/gnustep/tools-make.git
+  source_folder tools-make "$TOOLS_MAKE_URL"
   cd "$WORK/tools-make"
   # tools-make's configure (autoconf 2.73, since tools-make cffce46) adds
   # -std=gnu23 to CC, then runs "${CC}" -v as one word to see if it is clang,
@@ -320,14 +422,15 @@ step_tools_make() {
   } > "$DEST/GNUstep.conf"
   cat > "$DEST/GNUstep.sh" <<EOF
 # GNUstep.sh of a cross toolchain, written by make-toolchain.sh: source it
-# to build for Debian $RELEASE $ARCH ($TRIPLE). GNUstep is in
+# to build for $TITLE $RELEASE $ARCH ($TRIPLE). GNUstep is in
 # $SYSROOT$PREFIX; installing with
 # DESTDIR='$SYSROOT' adds to it.
 GNUSTEP_TOOLCHAIN='$DEST'
+GNUSTEP_TOOLCHAIN_DISTRIBUTION='$DISTRIBUTION'
 GNUSTEP_SYSROOT='$SYSROOT'
 GNUSTEP_CONFIG_FILE='$DEST/GNUstep.conf'
 GNUSTEP_MAKEFILES='$SYSROOT$PREFIX/share/GNUstep/Makefiles'
-export GNUSTEP_TOOLCHAIN GNUSTEP_SYSROOT GNUSTEP_CONFIG_FILE GNUSTEP_MAKEFILES
+export GNUSTEP_TOOLCHAIN GNUSTEP_TOOLCHAIN_DISTRIBUTION GNUSTEP_SYSROOT GNUSTEP_CONFIG_FILE GNUSTEP_MAKEFILES
 . "\$GNUSTEP_MAKEFILES/GNUstep.sh"
 PATH='$DEST/bin':"\$PATH"
 CC='$DEST/bin/clang'
@@ -337,7 +440,7 @@ AR='$DEST/bin/ar'
 RANLIB='$DEST/bin/ranlib'
 PKG_CONFIG='$DEST/bin/pkg-config'
 PKG_CONFIG_SYSROOT_DIR='$SYSROOT'
-PKG_CONFIG_LIBDIR='$SYSROOT$PREFIX/lib/pkgconfig:$SYSROOT/usr/lib/$TRIPLE/pkgconfig:$SYSROOT/usr/lib/pkgconfig:$SYSROOT/usr/share/pkgconfig'
+PKG_CONFIG_LIBDIR='$SYSROOT$PREFIX/lib/pkgconfig:$SYSROOT$LIBDIR/pkgconfig:$SYSROOT/usr/lib/pkgconfig:$SYSROOT/usr/share/pkgconfig'
 export PATH CC CXX OBJC AR RANLIB PKG_CONFIG PKG_CONFIG_SYSROOT_DIR PKG_CONFIG_LIBDIR
 unset PKG_CONFIG_PATH
 EOF
@@ -372,28 +475,31 @@ gnustep_library() {
 }
 
 step_libs_base() {
-  gnustep_library libs-base https://github.com/holzgestalt/libs-base.git \
+  gnustep_library libs-base "$LIBS_BASE_URL" \
     --with-config-file="$PREFIX/etc/GNUstep/GNUstep.conf" \
     --with-default-config="$SYSROOT$PREFIX/etc/GNUstep/GNUstep.conf" \
     --with-cross-compilation-info="$HERE/libs-base-cross.config"
 }
 
 step_libs_gui() {
-  gnustep_library libs-gui https://github.com/holzgestalt/libs-gui.git
+  # libs-gui uses ICU's common library as well as i18n, but asks pkg-config
+  # only for icu-i18n, which names icu-uc only privately on Fedora.
+  gnustep_library libs-gui "$LIBS_GUI_URL" \
+    ICU_LIBS="-licui18n -licuuc -licudata"
 }
 
 step_libs_back() {
-  gnustep_library libs-back https://github.com/gnustep/libs-back.git
+  gnustep_library libs-back "$LIBS_BACK_URL"
 }
 
 step_theme() {
   if [ "$THEME" = 0 ]; then echo "left out (--no-theme)"; return 0; fi
-  theme="$([ -n "$SOURCES" ] && find "$SOURCES" -mindepth 1 -maxdepth 1 -type d -iname 'gtk4native*' 2>/dev/null | head -n 1)"
+  theme="$(theme_folder)"
   if [ -n "$theme" ]; then
     source_folder "$(basename "$theme")" -
     name="$(basename "$theme")"
   else
-    source_folder GTK4Native https://github.com/holzgestalt/GTK4Native.git
+    source_folder GTK4Native "$THEME_URL"
     name=GTK4Native
   fi
   cd "$WORK/$name"
@@ -406,9 +512,14 @@ step_theme() {
     echo "error: the theme installed no gnustep-theme-*.pc" >&2; exit 1; }
 }
 
-# projectcenter-gnustep: $PREFIX as a Debian package, as gnustep-image.sh
-# makes it in the container, with Depends from the libraries it links.
+# projectcenter-gnustep: $PREFIX as a package of the distribution, as
+# gnustep-image.sh makes it in the container, with Depends (Requires) from
+# the libraries it links.
 step_package() {
+  "package_$DISTRIBUTION"
+}
+
+package_debian() {
   name=projectcenter-gnustep
   version="1.0+$(date +%Y%m%d)"
   stage="$WORK/package"
@@ -449,6 +560,104 @@ EOF
   rm -rf "$stage" 2>/dev/null || echo "note: couldn't remove $stage"
 }
 
+# An RPM, made with rpmbuild for the target. rpmbuild finds no dependencies
+# here (it has no ELF reader on a Mac), so the package lists them itself:
+# Requires from the sysroot, and Provides of GNUstep's libraries.
+package_fedora() {
+  name=projectcenter-gnustep
+  version="1.0.$(date +%Y%m%d)"
+  stage="$WORK/package"
+  # rpmbuild's tree is a temporary folder: rpmbuild removes its build folder
+  # with an rm that fails when Finder, showing the folder, writes a .DS_Store
+  # into it meanwhile.
+  top="$(mktemp -d "${TMPDIR:-/tmp}/projectcenter-rpm.XXXXXX")"
+  rm -rf "$stage" "$WORK/rpm" 2>/dev/null || true
+  mkdir -p "$stage$PREFIX" "$stage/etc/ld.so.conf.d" "$top/SPECS" "$top/BUILD" "$DEST/packages"
+  (cd "$SYSROOT$PREFIX" && tar -cf - --exclude .DS_Store .) | (cd "$stage$PREFIX" && tar -xf -)
+  echo "$PREFIX/lib" > "$stage/etc/ld.so.conf.d/$name.conf"
+  find "$stage" -name .DS_Store -delete
+  requires="$(python3 -I "$HERE/debian-depends.py" --capabilities "$SYSROOT" "$stage$PREFIX")"
+  # The sonames of GNUstep's libraries, as rpm would provide them.
+  provides="$(python3 -I - "$stage$PREFIX/lib" <<'PYTHON'
+import struct, sys
+from pathlib import Path
+names = set()
+for path in Path(sys.argv[1]).glob('*.so*'):
+    if path.is_symlink() or not path.is_file():
+        continue
+    data = path.read_bytes()
+    if data[:4] != b'\x7fELF' or data[4] != 2 or data[5] != 1:
+        continue
+    shoff, = struct.unpack_from('<Q', data, 0x28)
+    shentsize, shnum = struct.unpack_from('<HH', data, 0x3a)
+    sections = [struct.unpack_from('<IIQQQQIIQQ', data, shoff + i * shentsize) for i in range(shnum)]
+    for _, kind, _, _, offset, size, link, _, _, entsize in sections:
+        if kind != 6:
+            continue
+        for i in range(0, size, entsize or 16):
+            tag, value = struct.unpack_from('<qQ', data, offset + i)
+            if tag == 0:
+                break
+            if tag == 14:  # DT_SONAME
+                start = sections[link][4] + value
+                names.add(data[start:data.index(b'\0', start)].decode() + '()(64bit)')
+print(', '.join(sorted(names)))
+PYTHON
+)"
+  # For Archive (PCDeployment): the Requires of an application built here.
+  cp "$HERE/debian-depends.py" "$DEST/bin/debian-depends.py"
+  cat > "$DEST/bin/rpm-requires" <<EOF
+#!/bin/sh
+# Written by make-toolchain.sh: the capabilities (libraries) that the ELF
+# files in a folder (an application bundle) need, from the sysroot's.
+exec python3 -I '$DEST/bin/debian-depends.py' --capabilities --gnustep '$PREFIX' '$name' '$SYSROOT' "\$1"
+EOF
+  chmod 755 "$DEST/bin/rpm-requires"
+  {
+    echo "Name: $name"
+    echo "Version: $version"
+    echo "Release: 1"
+    echo "Summary: GNUstep (libobjc2, base, gui, back, GTK4Native) for applications archived by ProjectCenter"
+    echo "License: LGPL-2.1-or-later AND GPL-3.0-or-later"
+    echo "AutoReqProv: no"
+    if [ -n "$requires" ]; then echo "Requires: $requires"; fi
+    if [ -n "$provides" ]; then echo "Provides: $provides"; fi
+    echo
+    echo "%description"
+    echo "GNUstep built by ProjectCenter's make-toolchain.sh, in $PREFIX."
+    echo
+    echo "%install"
+    echo "mkdir -p %{buildroot}"
+    echo "cp -R '$stage'/. %{buildroot}/"
+    echo
+    echo "%post -p /sbin/ldconfig"
+    echo "%postun -p /sbin/ldconfig"
+    echo
+    echo "%files"
+    echo "$PREFIX"
+    echo "/etc/ld.so.conf.d/$name.conf"
+  } > "$top/SPECS/$name.spec"
+  rm -f "$DEST/packages/$name-"*.rpm
+  # No post-install processing: these binaries are not for this computer's
+  # strip. The target's system is Linux, whatever this computer's is. In the
+  # C locale, as libmagic's patterns are invalid ranges in a macOS UTF-8 one.
+  # In the v4 format Fedora ships, which rpm 6 doesn't write by default.
+  LC_ALL=C rpmbuild -bb --target "$ARCH-linux" --define "_topdir $top" --define '__os_install_post %{nil}' \
+    --define '__arch_install_post %{nil}' --define 'debug_package %{nil}' \
+    --define '_build_id_links none' --define '_rpmformat 4' --define "_target_platform $ARCH-linux-gnu" \
+    "$top/SPECS/$name.spec"
+  made="$(find "$top/RPMS" -type f -name '*.rpm' | head -n 1)"
+  [ -n "$made" ] || { echo "error: rpmbuild made no package" >&2; exit 1; }
+  cp "$made" "$DEST/packages/"
+  sed -n '1,8p' "$top/SPECS/$name.spec"
+  rm -rf "$stage" "$top" 2>/dev/null || echo "note: couldn't remove $stage"
+}
+
+# The sources, unless no step builds them.
+case "$FROM:$ONLY" in
+  package:*|*:sysroot|*:wrappers) ;;
+  *) echo "== sources"; update_sources ;;
+esac
 step sysroot step_sysroot
 step wrappers step_wrappers
 step libdispatch step_libdispatch
@@ -462,9 +671,9 @@ step package step_package
 
 cat <<EOF
 
-The toolchain for Debian $RELEASE $ARCH is in $DEST.
+The toolchain for $TITLE $RELEASE $ARCH is in $DEST.
 In ProjectCenter: Deployment, the Linux target's platform, Build: Cross
 Toolchain, Toolchain: $DEST
 On the target's computers, install first:
-  $(ls "$DEST/packages/"*.deb 2>/dev/null | head -n 1)
+  $(ls "$DEST/packages/"*.deb "$DEST/packages/"*.rpm 2>/dev/null | head -n 1)
 EOF

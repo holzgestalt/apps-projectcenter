@@ -86,20 +86,34 @@ static NSString *ContainerPlatform(NSString *architecture)
   return [platforms objectForKey:architecture];
 }
 
-/* The Debian architecture of ProjectCenter's cross toolchain for an
- * architecture of a kind (make-toolchain.sh --arch), or nil: it makes them
- * for Debian packages and Linux tarballs, which run on Debian's glibc. */
-static NSString *ToolchainArchitecture(NSString *kind, NSString *architecture)
+/* The distribution of ProjectCenter's cross toolchains for a kind
+ * (make-toolchain.sh --distribution), or nil: Debian for Debian packages
+ * and Linux tarballs, which run on Debian's glibc, Fedora for RPMs. */
+static NSString *ToolchainDistribution(NSString *kind)
 {
-  NSDictionary *architectures = @{@"amd64": @"amd64", @"x86_64": @"amd64", @"arm64": @"arm64",
-                                  @"aarch64": @"arm64"};
-
-  if (![kind isEqual:@"Debian"] && ![kind isEqual:@"Linux"]) return nil;
-  return [architectures objectForKey:architecture];
+  if ([kind isEqual:@"Debian"] || [kind isEqual:@"Linux"]) return @"debian";
+  if ([kind isEqual:@"RPM"]) return @"fedora";
+  return nil;
 }
 
-/* The Debian release of the toolchains make-toolchain.sh makes. */
-static NSString *const ToolchainRelease = @"trixie";
+/* The architecture of a kind's cross toolchain for one of its
+ * architectures (make-toolchain.sh --arch), in its distribution's words,
+ * or nil. */
+static NSString *ToolchainArchitecture(NSString *kind, NSString *architecture)
+{
+  NSDictionary *debian = @{@"amd64": @"amd64", @"x86_64": @"amd64", @"arm64": @"arm64", @"aarch64": @"arm64"};
+  NSDictionary *fedora = @{@"amd64": @"x86_64", @"x86_64": @"x86_64", @"arm64": @"aarch64", @"aarch64": @"aarch64"};
+  NSString     *distribution = ToolchainDistribution(kind);
+
+  if (distribution == nil) return nil;
+  return [([distribution isEqual:@"fedora"] ? fedora : debian) objectForKey:architecture];
+}
+
+/* The release of the toolchains make-toolchain.sh makes for a distribution. */
+static NSString *ToolchainRelease(NSString *distribution)
+{
+  return [distribution isEqual:@"fedora"] ? @"45" : @"trixie";
+}
 
 static BOOL IsGNUstepKind(NSString *kind)
 {
@@ -910,7 +924,7 @@ static NSString *PackageName(NSString *name)
   if ([key isEqual:@"Release"]) return @"1";
   if ([key isEqual:@"License"]) return @"Proprietary";
   if ([key isEqual:@"InstallFolder"]) return @"/usr/lib/GNUstep/Applications";
-  if ([key isEqual:@"Categories"]) return @"GNUstep;Utility;";
+  if ([key isEqual:@"Categories"]) return @"Utility;";
   if ([key isEqual:@"FileName"]) return [self _defaultFileNameOfDeployment:deployment project:projectDict];
   return @"";
 }
@@ -1033,10 +1047,11 @@ static NSString *PackageName(NSString *name)
   NSString *kind = [deployment objectForKey:@"Kind"];
   NSString *architecture = ToolchainArchitecture(kind, [self valueForKey:@"Architecture"
                                                              ofDeployment:deployment project:projectDict]);
+  NSString *distribution = ToolchainDistribution(kind);
 
   if (architecture == nil) return nil;
   return [[self toolchainsFolder] stringByAppendingPathComponent:
-          [NSString stringWithFormat:@"debian-%@-%@", ToolchainRelease, architecture]];
+          [NSString stringWithFormat:@"%@-%@-%@", distribution, ToolchainRelease(distribution), architecture]];
 }
 
 + (NSArray *)makeToolchainArgumentsForDeployment:(NSDictionary *)deployment
@@ -1050,10 +1065,12 @@ static NSString *PackageName(NSString *name)
                             stringByExpandingTildeInPath];
   NSString       *sources = [[[NSUserDefaults standardUserDefaults] stringForKey:@"GNUstepSources"]
                              stringByExpandingTildeInPath];
+  NSString       *distribution = ToolchainDistribution(kind);
   NSMutableArray *arguments;
 
   if (architecture == nil || script == nil || ![folder length]) return nil;
-  arguments = [NSMutableArray arrayWithObjects:script, @"--arch", architecture, @"--release", ToolchainRelease, nil];
+  arguments = [NSMutableArray arrayWithObjects:script, @"--distribution", distribution, @"--arch", architecture,
+               @"--release", ToolchainRelease(distribution), nil];
   if ([sources length]) [arguments addObjectsFromArray:@[@"--sources", sources]];
   [arguments addObject:folder];
   return arguments;
@@ -1412,11 +1429,35 @@ static void AppendIncludeGNUstep(NSMutableString *s)
    @"echo \"Included GNUstep in $(basename \"$BUNDLE\")/GNUstep ($(du -sk \"$RUNTIME\" | cut -f1) KB)\"\n"];
 }
 
-/* The icon of the desktop entry, in /usr/share/pixmaps, with $ICON set to
- * it: the Icon field's file, else the application's own icon, which the
- * bundle's Info-gnustep.plist names: CFBundleIconFile, else NSIcon, the
- * order in which GNUstep looks (the compiler sets NSIcon from the target's
- * app icon set). Desktops show PNG, SVG and XPM icons. */
+/* $APPID, the application's ID (AppStream's and the desktop entry's): the
+ * bundle's CFBundleIdentifier, else the project's, in the characters
+ * AppStream allows; and plist_value, which reads the bundle's
+ * Info-gnustep.plist: XML from the compiler and OpenStep from gnustep-make,
+ * the line after <key>KEY</key>, or KEY = value;. */
+static void AppendLinuxIdentifier(NSMutableString *s, NSDictionary *projectDict)
+{
+  NSString *identifier = [[PCDeployment productOfProject:projectDict] objectForKey:@"Identifier"];
+
+  [s appendString:@"plist_value() {\n"
+   @"  sed -n -e \"/<key>$1<\\/key>/{n;s/.*<string>\\(.*\\)<\\/string>.*/\\1/p;}\" \\\n"
+   @"    -e \"s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\\\"\\{0,1\\}\\([^\\\";]*\\)\\\"\\{0,1\\};.*/\\1/p\" \\\n"
+   @"    \"$APP/Resources/Info-gnustep.plist\" 2>/dev/null | head -n 1\n"
+   @"}\n"
+   @"APPID=$(plist_value CFBundleIdentifier)\n"
+   @"case \"$APPID\" in *'$'*|'') APPID="];
+  [s appendString:SQ([identifier rangeOfString:@"$"].location == NSNotFound ? identifier : @"")];
+  [s appendString:@" ;; esac\n"
+   @"if [ -z \"$APPID\" ]; then APPID=\"org.gnustep.$PKG\"; fi\n"
+   @"APPID=$(printf '%s' \"$APPID\" | tr -c 'A-Za-z0-9._-' '_')\n"];
+}
+
+/* The icon of the desktop entry, with $ICON set to it: the Icon field's
+ * file, else the application's own icon, which the bundle's
+ * Info-gnustep.plist names: CFBundleIconFile, else NSIcon, the order in
+ * which GNUstep looks (the compiler sets NSIcon from the target's app icon
+ * set). Desktops show PNG, SVG and XPM icons. It goes in the hicolor icon
+ * theme, named $APPID as AppStream wants it, in its size's folder; one of
+ * a size the theme has no folder for in /usr/share/pixmaps. */
 static void AppendLinuxIcon(NSMutableString *s, NSString *icon, NSDictionary *projectDict)
 {
   if ([icon length])
@@ -1428,22 +1469,104 @@ static void AppendLinuxIcon(NSMutableString *s, NSString *icon, NSDictionary *pr
   }
   else
   {
-    /* Info-gnustep.plist is XML from the compiler and OpenStep from
-     * gnustep-make: the line after <key>KEY</key>, or KEY = value;. */
     [s appendString:@"ICON=''\n"
      @"for key in CFBundleIconFile NSIcon; do\n"
-     @"  name=$(sed -n -e \"/<key>$key<\\/key>/{n;s/.*<string>\\(.*\\)<\\/string>.*/\\1/p;}\" \\\n"
-     @"    -e \"s/^[[:space:]]*$key[[:space:]]*=[[:space:]]*\\\"\\{0,1\\}\\([^\\\";]*\\)\\\"\\{0,1\\};.*/\\1/p\" \\\n"
-     @"    \"$APP/Resources/Info-gnustep.plist\" 2>/dev/null | head -n 1)\n"
+     @"  name=$(plist_value \"$key\")\n"
      @"  case \"$name\" in\n"
      @"    *.png|*.svg|*.xpm) if [ -f \"$APP/Resources/$name\" ]; then ICON=\"$APP/Resources/$name\"; break; fi ;;\n"
      @"  esac\n"
      @"done\n"];
   }
   [s appendString:@"if [ -n \"$ICON\" ]; then\n"
-   @"  mkdir -p \"$STAGE/usr/share/pixmaps\"\n"
-   @"  cp \"$ICON\" \"$STAGE/usr/share/pixmaps/$PKG.${ICON##*.}\"\n"
+   @"  ICONDIR=/usr/share/pixmaps\n"
+   @"  case \"$ICON\" in\n"
+   @"    *.svg) ICONDIR=/usr/share/icons/hicolor/scalable/apps ;;\n"
+   @"    *.png)\n"
+   @"      WIDTH=$(od -An -j16 -N4 -tu1 \"$ICON\" | awk 'NF { print $1 * 16777216 + $2 * 65536 + $3 * 256 + $4; exit }')\n"
+   @"      case \" 16 22 24 32 48 64 96 128 192 256 512 \" in\n"
+   @"        *\" $WIDTH \"*) ICONDIR=\"/usr/share/icons/hicolor/${WIDTH}x$WIDTH/apps\" ;;\n"
+   @"      esac ;;\n"
+   @"  esac\n"
+   @"  mkdir -p \"$STAGE$ICONDIR\"\n"
+   @"  cp \"$ICON\" \"$STAGE$ICONDIR/$APPID.${ICON##*.}\"\n"
    @"fi\n"];
+}
+
+/* Text for an XML element. */
+static NSString *XMLText(NSString *text)
+{
+  text = [text stringByReplacingOccurrencesOfString:@"&" withString:@"&amp;"];
+  text = [text stringByReplacingOccurrencesOfString:@"<" withString:@"&lt;"];
+  text = [text stringByReplacingOccurrencesOfString:@">" withString:@"&gt;"];
+  return [text stringByReplacingOccurrencesOfString:@"\"" withString:@"&quot;"];
+}
+
+/* The AppStream metadata, /usr/share/metainfo/$APPID.metainfo.xml, with
+ * which software centers (GNOME's Software, KDE's Discover) show and
+ * install the package: name, summary, license, developer, its desktop
+ * entry, command and release. */
+static void AppendLinuxMetainfo(NSMutableString *s, NSDictionary *deployment, NSDictionary *projectDict,
+                                NSString *display, NSString *categories, BOOL launcher)
+{
+  NSString *(^value)(NSString *) = ^NSString *(NSString *key) {
+    return [PCDeployment valueForKey:key ofDeployment:deployment project:projectDict];
+  };
+  NSString *summary = value(@"Summary");
+  NSString *license = value(@"License");
+  NSString *homepage = value(@"Homepage");
+  NSString *developer = value(@"Maintainer");
+  NSRange  mail = [developer rangeOfString:@"<"];
+  NSArray  *lines;
+  NSMutableString *registered = [NSMutableString string];
+
+  /* The desktop entry's categories, without those of its own (X-...) and
+   * GNUstep, which freedesktop.org doesn't list. */
+  for (NSString *category in [categories componentsSeparatedByString:@";"])
+  {
+    category = Trimmed(category);
+    if ([category length] && ![category hasPrefix:@"X-"] && ![category isEqual:@"GNUstep"])
+    {
+      [registered appendFormat:@"<category>%@</category>", XMLText(category)];
+    }
+  }
+
+  /* AppStream's license is an SPDX expression. */
+  if ([[license lowercaseString] isEqual:@"proprietary"]) license = @"LicenseRef-proprietary";
+  if (mail.location != NSNotFound) developer = Trimmed([developer substringToIndex:mail.location]);
+  lines = @[@"<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+            @"<component type=\"desktop-application\">"];
+  [s appendString:@"mkdir -p \"$STAGE/usr/share/metainfo\"\n{\n"];
+  for (NSString *line in lines) [s appendFormat:@"  echo %@\n", SQ(line)];
+  [s appendString:@"  echo \"  <id>$APPID</id>\"\n"];
+  lines = @[@"  <metadata_license>CC0-1.0</metadata_license>",
+            [NSString stringWithFormat:@"  <project_license>%@</project_license>", XMLText(license)],
+            [NSString stringWithFormat:@"  <name>%@</name>", XMLText(display)],
+            [NSString stringWithFormat:@"  <summary>%@</summary>", XMLText(summary)],
+            [NSString stringWithFormat:@"  <description><p>%@</p></description>", XMLText(summary)]];
+  for (NSString *line in lines) [s appendFormat:@"  echo %@\n", SQ(line)];
+  if ([developer length])
+  {
+    /* Its ID: the application's reverse domain, com.example of
+     * com.example.App. */
+    [s appendFormat:@"  echo \"  <developer id=\\\"${APPID%%.*}\\\">\"%@\n",
+     SQ([NSString stringWithFormat:@"<name>%@</name></developer>", XMLText(developer)])];
+  }
+  if ([registered length])
+  {
+    [s appendFormat:@"  echo %@\n", SQ([NSString stringWithFormat:@"  <categories>%@</categories>", registered])];
+  }
+  if ([homepage length])
+  {
+    [s appendFormat:@"  echo %@\n", SQ([NSString stringWithFormat:@"  <url type=\"homepage\">%@</url>", XMLText(homepage)])];
+  }
+  [s appendString:@"  echo \"  <launchable type=\\\"desktop-id\\\">$APPID.desktop</launchable>\"\n"];
+  if (launcher) [s appendString:@"  echo \"  <provides><binary>$PKG</binary></provides>\"\n"];
+  /* A stock icon is one in the icon theme. */
+  [s appendString:@"  case \"${ICONDIR:-}\" in */hicolor/*) echo \"  <icon type=\\\"stock\\\">$APPID</icon>\" ;; esac\n"
+   @"  echo \"  <releases><release version=\\\"$VERSION\\\" date=\\\"$(date +%Y-%m-%d)\\\"/></releases>\"\n"
+   @"  echo '  <content_rating type=\"oars-1.1\"/>'\n"
+   @"  echo '</component>'\n"
+   @"} > \"$STAGE/usr/share/metainfo/$APPID.metainfo.xml\"\n"];
 }
 
 /* The files of a Linux package in $STAGE: the bundle in the install
@@ -1465,6 +1588,7 @@ static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDic
    @"cp -R \"$APP\" \"$STAGE$DEST/\"\n"
    @"BUNDLE=\"$STAGE$DEST/$APPNAME\"\n"];
   if (included) AppendIncludeGNUstep(s);
+  AppendLinuxIdentifier(s, projectDict);
   AppendLinuxIcon(s, icon, projectDict);
   if (launcher)
   {
@@ -1489,8 +1613,9 @@ static void AppendLinuxStage(NSMutableString *s, NSDictionary *deployment, NSDic
      @"  echo %@\n"
      @"  echo 'Terminal=false'\n",
      SQ([@"Name=" stringByAppendingString:display]), SQ([@"Categories=" stringByAppendingString:categories])];
-    [s appendString:@"  if [ -n \"$ICON\" ]; then echo \"Icon=$PKG\"; fi\n"
-     @"} > \"$STAGE/usr/share/applications/$PKG.desktop\"\n"];
+    [s appendString:@"  if [ -n \"$ICON\" ]; then echo \"Icon=$APPID\"; fi\n"
+     @"} > \"$STAGE/usr/share/applications/$APPID.desktop\"\n"];
+    AppendLinuxMetainfo(s, deployment, projectDict, display, categories, launcher);
   }
 }
 
@@ -1579,7 +1704,6 @@ static NSString *RPMScript(NSDictionary *deployment, NSDictionary *projectDict)
     return [PCDeployment valueForKey:key ofDeployment:deployment project:projectDict];
   };
   NSString        *homepage = value(@"Homepage");
-  NSString        *requires = value(@"Depends");
   BOOL            launcher = [value(@"Launcher") boolValue];
 
   [s appendFormat:@"PKG=%@\nVERSION=%@\nARCH=%@\n", SQ(value(@"PackageName")),
@@ -1589,7 +1713,20 @@ static NSString *RPMScript(NSDictionary *deployment, NSDictionary *projectDict)
   {
     [s appendString:@"OWN=$(ls \"$BUNDLE/GNUstep/lib\" | sed 's/\\.so.*//' | sort -u | paste -sd'|' -)\n"];
   }
-  [s appendString:@"TOP=\"$BUILD/rpm\"\n"
+  [s appendFormat:@"REQUIRES=%@\n", SQ(value(@"Depends"))];
+  if ([value(@"AutomaticDependencies") boolValue])
+  {
+    /* rpmbuild finds them on Fedora. A cross toolchain's rpmbuild (on a
+     * Mac) has no ELF reader: its rpm-requires answers from the sysroot. */
+    [s appendString:@"if [ -n \"${GNUSTEP_TOOLCHAIN:-}\" ] && [ -x \"$GNUSTEP_TOOLCHAIN/bin/rpm-requires\" ]; then\n"
+     @"  FOUND=$(\"$GNUSTEP_TOOLCHAIN/bin/rpm-requires\" \"$BUNDLE\")\n"
+     @"  if [ -n \"$FOUND\" ]; then REQUIRES=\"${REQUIRES:+$REQUIRES, }$FOUND\"; fi\n"
+     @"fi\n"];
+  }
+  /* rpmbuild's tree is a temporary folder: rpmbuild removes its build
+   * folder with an rm that fails when Finder, showing the folder, writes a
+   * .DS_Store into it meanwhile. */
+  [s appendString:@"TOP=$(mktemp -d \"${TMPDIR:-/tmp}/projectcenter-rpm.XXXXXX\")\n"
    @"mkdir -p \"$TOP/SPECS\" \"$TOP/RPMS\" \"$TOP/BUILD\"\n"
    @"SPEC=\"$TOP/SPECS/$PKG.spec\"\n"
    @"{\n"
@@ -1605,7 +1742,7 @@ static NSString *RPMScript(NSDictionary *deployment, NSDictionary *projectDict)
   [s appendFormat:@"  echo %@\n", SQ([@"Summary: " stringByAppendingString:value(@"Summary")])];
   [s appendFormat:@"  echo %@\n", SQ([@"License: " stringByAppendingString:value(@"License")])];
   if ([homepage length]) [s appendFormat:@"  echo %@\n", SQ([@"URL: " stringByAppendingString:homepage])];
-  if ([requires length]) [s appendFormat:@"  echo %@\n", SQ([@"Requires: " stringByAppendingString:requires])];
+  [s appendString:@"  if [ -n \"$REQUIRES\" ]; then echo \"Requires: $REQUIRES\"; fi\n"];
   [s appendFormat:@"  echo 'AutoReqProv: %@'\n", [value(@"AutomaticDependencies") boolValue] ? @"yes" : @"no"];
   [s appendFormat:@"  echo; echo '%%description'; echo %@; echo\n", SQ(value(@"Summary"))];
   [s appendString:@"  echo '%install'\n"
@@ -1614,20 +1751,26 @@ static NSString *RPMScript(NSDictionary *deployment, NSDictionary *projectDict)
    @"  echo; echo '%files'\n"
    @"  echo \"\\\"$DEST/$APPNAME\\\"\"\n"];
   if (launcher) [s appendString:@"  echo \"/usr/bin/$PKG\"\n"];
-  [s appendString:@"  if [ -f \"$STAGE/usr/share/applications/$PKG.desktop\" ]; then\n"
-   @"    echo \"/usr/share/applications/$PKG.desktop\"\n"
+  /* The desktop entry, icon and metadata. */
+  [s appendString:@"  if [ -d \"$STAGE/usr/share\" ]; then\n"
+   @"    (cd \"$STAGE\" && find usr/share -type f ! -path \"${DEST#/}/*\") | sed 's|^\\(.*\\)$|\"/\\1\"|'\n"
    @"  fi\n"
-   @"  if [ -d \"$STAGE/usr/share/pixmaps\" ]; then echo '/usr/share/pixmaps/*'; fi\n"
    @"} > \"$SPEC\"\n"];
   [s appendFormat:@"FILE=%@\n", SQ([PCDeployment fileNameOfDeployment:deployment project:projectDict])];
   /* No post-install processing: a cross build's binaries are not for this
-   * computer's strip. */
+   * computer's strip. The target's system is Linux, also on a Mac, whose
+   * rpm has no platform for it. In the C locale, as libmagic's patterns are
+   * invalid ranges in a macOS UTF-8 one. In the v4 format that Fedora and
+   * openSUSE ship, which rpm 6 (Homebrew's) doesn't write by default and
+   * Fedora's Software can't open. */
   [s appendString:@"echo \"Packaging $FILE...\"\n"
-   @"rpmbuild -bb --target \"$ARCH\" --define \"_topdir $TOP\" --define '__os_install_post %{nil}' "
-   @"--define '_build_id_links none' \"$SPEC\"\n"
+   @"LC_ALL=C rpmbuild -bb --target \"$ARCH-linux\" --define \"_topdir $TOP\" --define '__os_install_post %{nil}' "
+   @"--define '__arch_install_post %{nil}' --define '_build_id_links none' --define '_rpmformat 4' "
+   @"--define \"_target_platform $ARCH-linux-gnu\" \"$SPEC\"\n"
    @"MADE=$(find \"$TOP/RPMS\" -type f -name '*.rpm' | head -n 1)\n"
    @"if [ -z \"$MADE\" ]; then echo \"error: rpmbuild made no package\" >&2; exit 1; fi\n"
-   @"cp \"$MADE\" \"$OUT/$FILE\"\n"];
+   @"cp \"$MADE\" \"$OUT/$FILE\"\n"
+   @"rm -rf \"$TOP\" 2>/dev/null || true\n"];
   if (!IncludesGNUstep(deployment, projectDict)) AppendRuntimePackage(s, @"rpm");
   return s;
 }
