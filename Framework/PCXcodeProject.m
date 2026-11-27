@@ -1,4 +1,5 @@
 #import "PCXcodeProject.h"
+#import <ProjectCenter/PCLaunchPath.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
@@ -1634,7 +1635,7 @@ static NSData *RunTool(NSString *tool, NSArray *arguments)
   NSPipe *output = [NSPipe pipe];
   NSData *data = nil;
 
-  [task setLaunchPath:tool];
+  [task setLaunchPath:PCLaunchPath(tool)];
   [task setArguments:arguments];
   [task setStandardOutput:output];
   [task setStandardError:[NSFileHandle fileHandleWithNullDevice]];
@@ -1875,8 +1876,15 @@ static NSString *XcodebuildOfDeveloperFolder(NSString *folder)
   if (runTarget) [targets addObject:runTarget];
   for (NSString *target in [scheme objectForKey:@"Targets"])
     if (![targets containsObject:target]) [targets addObject:target];
-  NSMutableArray *arguments = [NSMutableArray arrayWithObjects:@"python3", tool,
-    @"--project", path, @"--configuration", [selection objectForKey:@"Configuration"] ?: @"Debug", nil];
+#ifdef _WIN32
+  /* MSYS2's python, not a native one: the script runs gnustep-config, a shell
+   * script, and MSYS2 hands the native compiler Windows paths. */
+  NSString *python = @"/usr/bin/python3";
+#else
+  NSString *python = @"python3";
+#endif
+  NSMutableArray *arguments = [NSMutableArray arrayWithObjects:python, PCMSYS2Path(tool),
+    @"--project", PCMSYS2Path(path), @"--configuration", [selection objectForKey:@"Configuration"] ?: @"Debug", nil];
   for (NSString *target in targets) [arguments addObjectsFromArray:@[@"--target", target]];
   NSString *theme = [projectDict objectForKey:@"XCODE_Theme"];
   if (theme.length) [arguments addObjectsFromArray:@[@"--theme", theme]];
@@ -2102,7 +2110,14 @@ static BOOL IsGNUstepMakefiles(NSString *path)
 
 + (NSDictionary *)buildEnvironmentForProject:(NSDictionary *)projectDict
 {
+#ifdef _WIN32
+  /* The environment that GNUstep.sh's shell prints is in MSYS2's form
+   * (PATH=/usr/bin:...), which MSYS2's tools don't expect from a native parent.
+   * ProjectCenter is started from a console that has sourced GNUstep.sh. */
+  NSDictionary *environment = nil;
+#else
   NSDictionary *environment = [self GNUstepEnvironment];
+#endif
 
   return [self buildEnvironmentForProject:projectDict
                           baseEnvironment:environment ?: [[NSProcessInfo processInfo] environment]];

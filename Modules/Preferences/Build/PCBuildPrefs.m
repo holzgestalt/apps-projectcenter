@@ -24,6 +24,7 @@
 // Foundation, Inc., 31 Milk Street #960789 Boston, MA 02196 USA.
 
 #import <ProjectCenter/PCFileManager.h>
+#import <ProjectCenter/PCLaunchPath.h>
 
 #import "PCBuildPrefs.h"
 
@@ -91,6 +92,12 @@
                        nil]];
   
   
+#ifdef _WIN32
+  if (buildToolDefault == nil)
+    {
+      buildToolDefault = PCLaunchPath(@"/usr/bin/make");
+    }
+#endif
   NSLog(@"Build tool found: %@", buildToolDefault);
   
   val = [prefs stringForKey:SuccessSound defaultValue:@""];

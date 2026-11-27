@@ -31,6 +31,7 @@
 #import <ProjectCenter/PCProjectManager.h>
 #import <ProjectCenter/PCProjectLauncher.h>
 #import "PCXcodeProject.h"
+#import <ProjectCenter/PCLaunchPath.h>
 #import <ProjectCenter/PCProjectWindow.h>
 #import <ProjectCenter/PCBundleManager.h>
 #import <ProjectCenter/PCButton.h>
@@ -348,7 +349,7 @@ enum {
 {
   NSString *gdbPath = [[[project projectManager] prefController] stringForKey:Debugger];
 
-  return gdbPath ? gdbPath : @"/usr/bin/gdb";
+  return PCLaunchPath(gdbPath ? gdbPath : @"/usr/bin/gdb");
 }
 
 - (BOOL)canDebug

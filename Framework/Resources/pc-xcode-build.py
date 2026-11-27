@@ -21,6 +21,24 @@ import sys
 import tempfile
 
 
+# MSYS2's python on Windows (ProjectCenter runs it so, see PCXcodeProject.m):
+# ProjectCenter, a native program, passes and expects Windows paths, while the
+# script works with MSYS2's, and products are .exe files.
+WINDOWS = sys.platform in ('cygwin', 'msys')
+
+
+def posix_path(path):
+    if path is None or not WINDOWS:
+        return path
+    return Path(output(['cygpath', '-u', str(path)]))
+
+
+def native_path(path):
+    if not WINDOWS:
+        return str(path)
+    return output(['cygpath', '-m', str(path)])
+
+
 def words(value):
     return list(value) if isinstance(value, list) else shlex.split(str(value or ''))
 
@@ -237,16 +255,18 @@ class Build:
         project, ref = self.selected
         name = self.name(project, ref)
         kind = project.objects[ref]['productType']
+        suffix = '.exe' if WINDOWS else ''
         if kind == 'com.apple.product-type.application':
-            return self.build_dir / (name + '.app') / name
+            return self.build_dir / (name + '.app') / (name + suffix)
         if kind == 'com.apple.product-type.tool':
-            return self.build_dir / name
+            return self.build_dir / (name + suffix)
         return self.directory(project, ref) / ('lib' + name + '.a')
 
     def describe(self):
-        return dict(executable=str(self.executable()), build_directory=str(self.build_dir),
-                    targets=[dict(project=str(p.path), target=p.objects[r]['name'],
-                                  sources=[str(p.paths[f]) for f, _ in p.files(r, 'PBXSourcesBuildPhase')]) for p, r in self.ordered])
+        return dict(executable=native_path(self.executable()), build_directory=native_path(self.build_dir),
+                    targets=[dict(project=native_path(p.path), target=p.objects[r]['name'],
+                                  sources=[native_path(p.paths[f]) for f, _ in p.files(r, 'PBXSourcesBuildPhase')])
+                             for p, r in self.ordered])
 
     def prepare_headers(self):
         include = self.build_dir / 'Headers'
@@ -499,6 +519,8 @@ def main():
     parser.add_argument('--describe', action='store_true')
     parser.add_argument('--action', choices=('build', 'clean'), default='build')
     args = parser.parse_args()
+    args.project = posix_path(args.project)
+    args.build_dir = posix_path(args.build_dir)
     build = Build(args)
     if args.describe:
         print(json.dumps(build.describe()))

@@ -26,6 +26,7 @@ ProjectCenter_LIBRARIES_DEPEND_UPON += $(OBJC_LIBS) $(FND_LIBS) $(GUI_LIBS)
 ProjectCenter_HEADER_FILES = \
   PCDefines.h \
   PCCompat.h \
+  PCLaunchPath.h \
   ProjectCenter.h \
   \
   PCBundleManager.h \

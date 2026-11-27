@@ -25,6 +25,7 @@
  */
 
 #import "PCEditor.h"
+#import <ProjectCenter/PCLaunchPath.h>
 #import "PCEditorView.h"
 #import "PCLineNumberRulerView.h"
 
@@ -1466,7 +1467,7 @@ willChangeSelectionFromCharacterRange:(NSRange)oldSelectedCharRange
 
   task = [[NSTask new] autorelease];
 
-  [task setLaunchPath: @"/bin/sh"];
+  [task setLaunchPath: PCLaunchPath(@"/bin/sh")];
   [task setArguments: [NSArray arrayWithObjects: @"-c", command, nil]];
   [task setStandardInput: inPipe];
   [task setStandardOutput: outPipe];

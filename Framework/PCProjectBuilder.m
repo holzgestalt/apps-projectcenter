@@ -30,6 +30,7 @@
 #import <ProjectCenter/PCButton.h>
 
 #import <ProjectCenter/PCFileManager.h>
+#import <ProjectCenter/PCLaunchPath.h>
 
 #import <ProjectCenter/PCProjectManager.h>
 #import <ProjectCenter/PCProject.h>
@@ -361,9 +362,15 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
   ASSIGN(failureSound, [prefs stringForKey:FailureSound]);
 
   ASSIGN(rootBuildDir, [prefs stringForKey:RootBuildDirectory]);
-  ASSIGN(buildTool, [prefs stringForKey:BuildTool]);
+  ASSIGN(buildTool, PCLaunchPath([prefs stringForKey:BuildTool]));
+#ifdef _WIN32
+  if (buildTool == nil)
+    {
+      ASSIGN(buildTool, PCLaunchPath(@"/usr/bin/make"));
+    }
+#endif
   if ([[project projectDict] objectForKey:@"XCODE_BuildScript"])
-    ASSIGN(buildTool, @"/bin/bash");
+    ASSIGN(buildTool, PCLaunchPath(@"/bin/bash"));
 
   promptOnClean = [prefs boolForKey:PromptOnClean];
 }
@@ -1030,9 +1037,9 @@ static void SetBuildControl(NSButton *button, NSString *symbol, NSString *fallba
     [makeTask setEnvironment:[PCXcodeProject buildEnvironmentForProject:[project projectDict]]];
   }
   [makeTask setCurrentDirectoryPath:[project projectPath]];
-  [makeTask setLaunchPath:_isArchiving ? @"/bin/sh"
+  [makeTask setLaunchPath:PCLaunchPath(_isArchiving ? @"/bin/sh"
     : _usesXcodebuild ? [PCXcodeProject xcodebuildPath]
-    : nativeArgs ? @"/usr/bin/env" : buildTool];
+    : nativeArgs ? @"/usr/bin/env" : buildTool)];
   [makeTask setStandardOutput:stdOutPipe];
   [makeTask setStandardError:stdErrorPipe];
 
