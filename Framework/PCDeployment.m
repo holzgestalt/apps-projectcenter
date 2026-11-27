@@ -15,7 +15,9 @@
 #import "PCDeployment.h"
 #import "PCXcodeProject.h"
 
+#ifndef _WIN32
 #include <sys/utsname.h>
+#endif
 
 
 // --- Kinds and their settings
@@ -990,10 +992,24 @@ static NSString *PackageName(NSString *name)
 
 + (NSString *)hostMachine
 {
+#ifdef _WIN32
+  /* Windows has no uname: the machine ProjectCenter was built for, named as
+     uname would name it. */
+#if defined(__aarch64__)
+  return @"aarch64";
+#elif defined(__x86_64__)
+  return @"x86_64";
+#elif defined(__i386__)
+  return @"i686";
+#else
+  return @"";
+#endif
+#else
   struct utsname name;
 
   if (uname(&name) != 0) return @"";
   return [NSString stringWithUTF8String:name.machine];
+#endif
 }
 
 + (NSArray *)_toolFolders

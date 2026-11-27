@@ -22,6 +22,12 @@
 
 #import "PCInterfaceDocument.h"
 
+#ifdef _WIN32
+/* MinGW has no random() and srandom(); rand() is good enough for identifiers. */
+#define random() rand()
+#define srandom(seed) srand(seed)
+#endif
+
 static NSString *Attribute(NSXMLElement *element, NSString *name)
 {
   return [[element attributeForName:name] stringValue];
