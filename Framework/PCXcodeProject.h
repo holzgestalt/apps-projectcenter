@@ -84,6 +84,9 @@
 /* Installed application appearance providers, registered through the same
  * pkg-config profiles used by GNUstep Make. Sorted names. */
 + (NSArray *)installedThemes;
+/* -installedThemes is looked up once and then remembered until this is
+ * called, so a theme installed meanwhile is listed. */
++ (void)forgetInstalledThemes;
 /* Legacy bundle discovery, retained for older project metadata/tools. */
 + (NSArray *)themesInLibraries:(NSArray *)libraries;
 /* Arguments for running the application with the project's Theme on

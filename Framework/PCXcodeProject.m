@@ -1076,35 +1076,85 @@ withIntermediateDirectories:YES attributes:nil error:NULL];
   return [[themes allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 }
 
+static NSArray *installedThemes = nil;
+
++ (void)forgetInstalledThemes
+{
+  [installedThemes release];
+  installedThemes = nil;
+}
+
 + (NSArray *)installedThemes
+{
+  if (installedThemes == nil)
+  {
+    installedThemes = [[self _findInstalledThemes] retain];
+  }
+  return installedThemes;
+}
+
+/* The folders that a path list such as PKG_CONFIG_PATH names. A native Windows
+ * program gets the list from MSYS2 converted to Windows form, separated by ';'. */
+static NSArray *PathList(NSString *list)
+{
+#ifdef _WIN32
+  NSString *separator = @";";
+#else
+  NSString *separator = @":";
+#endif
+  NSMutableArray *folders = [NSMutableArray array];
+
+  for (NSString *folder in [list componentsSeparatedByString:separator])
+    if ([folder length]) [folders addObject:folder];
+  return folders;
+}
+
++ (NSArray *)_findInstalledThemes
 {
   NSMutableSet *names = [NSMutableSet set];
   NSMutableArray *folders = [NSMutableArray array];
   NSDictionary *environment = [[NSProcessInfo processInfo] environment];
+  void (^collect)(void) = ^{
+    for (NSString *folder in folders)
+      for (NSString *file in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:folder error:NULL])
+        if ([file hasPrefix:@"gnustep-theme-"] && [file hasSuffix:@".pc"])
+        {
+          NSString *name = [[file stringByDeletingPathExtension] substringFromIndex:[@"gnustep-theme-" length]];
+          if ([name length]) [names addObject:name];
+        }
+  };
 
   /* Installed application providers register the same pkg-config profiles
-   * that GNUstep Make uses when linking the selected appearance. */
+   * that GNUstep Make uses when linking the selected appearance. Starting a
+   * program is slow (seconds in MSYS2), so the GNUstep library folders come
+   * from GNUstep's own configuration where ProjectCenter runs on it. */
   for (NSString *key in @[@"PKG_CONFIG_PATH", @"PKG_CONFIG_LIBDIR"])
-    if ([[environment objectForKey:key] length])
-      [folders addObjectsFromArray:[[environment objectForKey:key] componentsSeparatedByString:@":"]];
+    [folders addObjectsFromArray:PathList([environment objectForKey:key])];
+#ifdef GNUSTEP
+  for (NSString *path in NSSearchPathForDirectoriesInDomains(GSLibrariesDirectory, NSAllDomainsMask, YES))
+    [folders addObject:[path stringByAppendingPathComponent:@"pkgconfig"]];
+#else
   for (NSString *variable in @[@"GNUSTEP_SYSTEM_LIBRARIES", @"GNUSTEP_LOCAL_LIBRARIES", @"GNUSTEP_USER_LIBRARIES"])
   {
     NSData *data = RunTool(@"/usr/bin/env", @[@"gnustep-config", [@"--variable=" stringByAppendingString:variable]]);
     NSString *path = data ? [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease] : nil;
+
     path = [path stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if ([path length]) [folders addObject:[path stringByAppendingPathComponent:@"pkgconfig"]];
   }
-  NSData *data = RunTool(@"/usr/bin/env", @[@"pkg-config", @"--variable=pc_path", @"pkg-config"]);
-  NSString *path = data ? [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease] : nil;
-  if ([path length]) [folders addObjectsFromArray:[[path stringByTrimmingCharactersInSet:
-    [NSCharacterSet whitespaceAndNewlineCharacterSet]] componentsSeparatedByString:@":"]];
-  for (NSString *folder in folders)
-    for (NSString *file in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:folder error:NULL])
-      if ([file hasPrefix:@"gnustep-theme-"] && [file hasSuffix:@".pc"])
-      {
-        NSString *name = [[file stringByDeletingPathExtension] substringFromIndex:[@"gnustep-theme-" length]];
-        if ([name length]) [names addObject:name];
-      }
+#endif
+  collect();
+  /* pkg-config's own search path, if that found nothing. */
+  if ([names count] == 0)
+  {
+    NSData *data = RunTool(@"/usr/bin/env", @[@"pkg-config", @"--variable=pc_path", @"pkg-config"]);
+    NSString *path = data ? [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease] : nil;
+
+    [folders removeAllObjects];
+    if ([path length]) [folders addObjectsFromArray:[[path stringByTrimmingCharactersInSet:
+      [NSCharacterSet whitespaceAndNewlineCharacterSet]] componentsSeparatedByString:@":"]];
+    collect();
+  }
   return [[names allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 }
 

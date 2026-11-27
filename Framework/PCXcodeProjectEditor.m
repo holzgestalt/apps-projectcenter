@@ -278,6 +278,8 @@ static NSString *ProductTypeName(NSString *type, NSString *kind)
   NSString *selectedName = [selection objectForKey:@"Name"];
   NSInteger index = 0, i = 1;
 
+  /* Themes installed since the editor was last shown are listed again. */
+  [PCXcodeProject forgetInstalledThemes];
   ASSIGN(overview, fresh);
   targetList->overview = overview;
   [targetList reloadItems];
